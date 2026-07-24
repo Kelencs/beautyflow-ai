@@ -1,4 +1,5 @@
 Esse documento vai descrever cada passo que a cliente percorre, desde a primeira mensagem até o pós-atendimento.
+
 Cliente envia "Olá"
 
 ↓
