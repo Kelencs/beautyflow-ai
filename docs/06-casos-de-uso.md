@@ -22,6 +22,7 @@ Cliente
     │
     ▼
 Envia mensagem
+
 "Quero agendar um horário"
     │
     ▼
