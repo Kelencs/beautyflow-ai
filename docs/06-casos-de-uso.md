@@ -3202,3 +3202,1429 @@ O sistema registra o erro e informa que a atualização não foi concluída.
 **Quando** o processo for concluído,
 
 **Então** os dados deverão permanecer consistentes e sincronizados no Google Sheets, sem criar registros duplicados.
+
+
+# **UC009 – Atualizar Cadastro da Cliente**
+
+---
+
+# Objetivo
+
+Permitir que a cliente atualize suas informações cadastrais por meio do WhatsApp, garantindo que os dados armazenados no sistema permaneçam corretos e atualizados para utilização nos processos de agendamento, atendimento e comunicação.
+
+---
+
+# Atores
+
+## Ator Principal
+
+- Cliente
+
+## Atores Secundários
+
+- WhatsApp Cloud API
+- n8n
+- AI Agent
+- Google Sheets (Cadastro de Clientes)
+
+---
+
+# Pré-condições
+
+- A cliente deve possuir um cadastro ativo.
+- A WhatsApp Cloud API deve estar configurada e ativa.
+- O Webhook da Meta deve estar operacional.
+- O AI Agent deve estar operacional.
+- O Google Sheets deve estar acessível.
+
+---
+
+# Fluxo Principal
+
+1. A cliente envia uma mensagem solicitando a atualização de seus dados.
+
+2. A WhatsApp Cloud API encaminha a mensagem ao Webhook do n8n.
+
+3. O Workflow recebe a mensagem.
+
+4. O AI Agent identifica a intenção **Atualizar Cadastro**.
+
+5. O sistema localiza o cadastro da cliente no Google Sheets.
+
+6. O sistema apresenta quais informações podem ser alteradas, como:
+   - Nome;
+   - E-mail;
+   - Data de nascimento (opcional);
+   - Observações (quando permitido).
+
+7. A cliente informa o dado que deseja alterar.
+
+8. O sistema valida a informação recebida.
+
+9. O sistema atualiza o cadastro no Google Sheets.
+
+10. O sistema registra a data e hora da alteração.
+
+11. O sistema envia uma mensagem confirmando a atualização.
+
+12. O caso de uso é encerrado.
+
+---
+
+# Fluxos Alternativos
+
+## FA001 – Cliente altera apenas o nome
+
+O sistema atualiza somente o campo **Nome**.
+
+---
+
+## FA002 – Cliente altera mais de um dado
+
+O sistema valida e atualiza todos os campos informados em uma única operação.
+
+---
+
+## FA003 – Cliente desiste da atualização
+
+O sistema encerra o fluxo sem alterar os dados.
+
+---
+
+## FA004 – Cliente informa um dado inválido
+
+O sistema solicita a correção da informação antes de continuar.
+
+---
+
+## FA005 – Cliente interrompe a conversa
+
+O sistema encerra o fluxo mantendo os dados atuais.
+
+---
+
+# Exceções
+
+## EX001 – Cliente não cadastrada
+
+O sistema informa:
+
+> "Não encontrei um cadastro para este número de WhatsApp."
+
+E poderá direcionar para o **UC008 – Cadastrar Cliente**.
+
+---
+
+## EX002 – Google Sheets indisponível
+
+O sistema informa:
+
+> "No momento não foi possível atualizar seu cadastro. Tente novamente em alguns minutos."
+
+O erro é registrado.
+
+---
+
+## EX003 – Erro ao atualizar os dados
+
+O sistema registra o erro e informa que a atualização não foi concluída.
+
+---
+
+# Regras de Negócio
+
+- RN001 – O número do WhatsApp é o identificador único da cliente e não poderá ser alterado por este caso de uso.
+- RN002 – Apenas clientes cadastradas poderão atualizar seus dados.
+- RN003 – Toda alteração deverá registrar data e hora.
+- RN004 – Os dados deverão ser validados antes da atualização.
+- RN005 – O sistema deverá manter apenas um cadastro por número de WhatsApp.
+- RN023 – As mensagens deverão utilizar linguagem cordial.
+- RN031 – Todas as alterações deverão ser registradas para auditoria.
+
+---
+
+# Dados Utilizados
+
+## Entrada
+
+- Número do WhatsApp
+- Campo a ser atualizado
+- Novo valor informado pela cliente
+
+---
+
+## Processamento
+
+- Identificação da cliente
+- Localização do cadastro
+- Validação do novo dado
+- Atualização do Google Sheets
+- Registro da data e hora da alteração
+
+---
+
+## Saída
+
+- Cadastro atualizado
+- Google Sheets atualizado
+- Confirmação enviada à cliente
+
+---
+
+# User Story
+
+**ID:** US009
+
+**Título:** Atualizar cadastro da cliente
+
+**Como** cliente,
+
+**Quero** atualizar minhas informações cadastrais pelo WhatsApp,
+
+**Para que** meus dados permaneçam corretos e atualizados.
+
+---
+
+# Workflows n8n Relacionados
+
+| Workflow | Nome | Responsabilidade |
+|-----------|------|------------------|
+| WF001 | Receber Mensagem WhatsApp | Receber mensagens enviadas pela WhatsApp Cloud API. |
+| WF002 | Identificar Cliente | Localizar a cliente pelo número do WhatsApp. |
+| WF003 | AI Agent | Identificar a intenção de atualização de cadastro. |
+| WF004 | Consultar Cadastro | Consultar os dados da cliente no Google Sheets. |
+| WF005 | Validar Dados | Validar o novo valor informado. |
+| WF006 | Atualizar Cadastro | Atualizar o registro da cliente no Google Sheets. |
+| WF007 | Registrar Histórico | Registrar a alteração para auditoria. |
+| WF008 | Enviar Confirmação | Enviar mensagem confirmando a atualização do cadastro. |
+
+---
+
+# Critérios de Aceite
+
+### CA001 – Receber solicitação de atualização
+
+**Dado que** a cliente envie uma mensagem solicitando a atualização de seus dados,
+
+**Quando** o sistema receber a mensagem,
+
+**Então** deverá iniciar automaticamente o fluxo de atualização cadastral.
+
+---
+
+### CA002 – Identificar a cliente
+
+**Dado que** uma mensagem tenha sido recebida,
+
+**Quando** o número do WhatsApp for identificado,
+
+**Então** o sistema deverá localizar o cadastro correspondente.
+
+---
+
+### CA003 – Apresentar campos disponíveis
+
+**Dado que** a cliente tenha sido localizada,
+
+**Quando** o fluxo iniciar,
+
+**Então** o sistema deverá informar quais dados podem ser alterados.
+
+---
+
+### CA004 – Validar os dados
+
+**Dado que** a cliente informe um novo valor,
+
+**Quando** o sistema receber a informação,
+
+**Então** deverá validar o conteúdo antes de realizar a atualização.
+
+---
+
+### CA005 – Atualizar cadastro
+
+**Dado que** os dados sejam válidos,
+
+**Quando** a atualização for executada,
+
+**Então** o Google Sheets deverá ser atualizado.
+
+---
+
+### CA006 – Registrar data da alteração
+
+**Dado que** o cadastro seja atualizado,
+
+**Quando** o processo terminar,
+
+**Então** o sistema deverá registrar a data e hora da alteração.
+
+---
+
+### CA007 – Confirmar atualização
+
+**Dado que** a atualização tenha sido concluída,
+
+**Quando** o processo finalizar,
+
+**Então** a cliente deverá receber uma mensagem confirmando a alteração.
+
+---
+
+### CA008 – Impedir atualização de cliente inexistente
+
+**Dado que** não exista cadastro para o número informado,
+
+**Quando** a atualização for solicitada,
+
+**Então** o sistema deverá informar que a cliente não está cadastrada e poderá direcionar para o UC008 – Cadastrar Cliente.
+
+---
+
+### CA009 – Tratar erros de atualização
+
+**Dado que** ocorra uma falha ao gravar os dados,
+
+**Quando** o processo falhar,
+
+**Então** o sistema deverá registrar o erro e informar a cliente.
+
+---
+
+### CA010 – Registrar logs
+
+**Dado que** qualquer etapa do processo seja executada,
+
+**Quando** ocorrer sucesso ou falha,
+
+**Então** o sistema deverá registrar logs para auditoria.
+
+---
+
+### CA011 – Utilizar linguagem cordial
+
+**Dado que** o sistema envie mensagens para a cliente,
+
+**Quando** houver interação,
+
+**Então** deverá utilizar linguagem clara, objetiva e profissional.
+
+---
+
+### CA012 – Manter integridade dos dados
+
+**Dado que** o cadastro seja atualizado,
+
+**Quando** o processo for concluído,
+
+**Então** os dados deverão permanecer consistentes e sincronizados no Google Sheets, sem criar registros duplicados.
+
+
+# **UC010 – Consultar Histórico de Atendimentos**
+
+---
+
+# Objetivo
+
+Permitir que a cliente consulte seu histórico de atendimentos realizados por meio do WhatsApp, apresentando informações como datas, serviços executados, valores pagos (quando configurado), profissional responsável e observações registradas, permitindo maior transparência e auxiliando na fidelização da cliente.
+
+---
+
+# Atores
+
+## Ator Principal
+
+- Cliente
+
+## Atores Secundários
+
+- WhatsApp Cloud API
+- n8n
+- AI Agent
+- Google Sheets (Histórico de Atendimentos)
+- Google Calendar
+
+---
+
+# Pré-condições
+
+- A cliente deve possuir cadastro ativo.
+- A cliente deve possuir pelo menos um atendimento registrado.
+- A WhatsApp Cloud API deve estar configurada e ativa.
+- O Webhook da Meta deve estar operacional.
+- O AI Agent deve estar operacional.
+- O Google Sheets deve estar acessível.
+- O Google Calendar deve estar sincronizado.
+
+---
+
+# Fluxo Principal
+
+1. A cliente envia uma mensagem solicitando seu histórico de atendimentos.
+
+2. A WhatsApp Cloud API encaminha a mensagem para o Webhook do n8n.
+
+3. O Workflow recebe a mensagem.
+
+4. O AI Agent identifica a intenção **Consultar Histórico de Atendimentos**.
+
+5. O sistema identifica a cliente pelo número do WhatsApp.
+
+6. O sistema consulta o Google Sheets.
+
+7. O sistema recupera todos os atendimentos relacionados à cliente.
+
+8. O sistema organiza os registros em ordem cronológica (do mais recente para o mais antigo).
+
+9. O sistema monta uma resposta contendo, para cada atendimento:
+
+- Data;
+- Horário;
+- Serviço realizado;
+- Profissional responsável (quando aplicável);
+- Valor pago (quando permitido);
+- Status do atendimento.
+
+10. Caso a cliente solicite detalhes de um atendimento específico, o sistema apresenta todas as informações registradas.
+
+11. O sistema envia a resposta pelo WhatsApp.
+
+12. O caso de uso é encerrado.
+
+---
+
+# Fluxos Alternativos
+
+## FA001 – Cliente solicita apenas o último atendimento
+
+O sistema apresenta somente o atendimento mais recente.
+
+---
+
+## FA002 – Cliente solicita histórico de um período específico
+
+Exemplo:
+
+> "Mostre meus atendimentos deste ano."
+
+O sistema filtra os registros conforme o período informado.
+
+---
+
+## FA003 – Cliente solicita detalhes de um atendimento
+
+O sistema apresenta informações detalhadas, incluindo observações registradas pela profissional (quando permitido).
+
+---
+
+## FA004 – Cliente deseja realizar um novo agendamento
+
+Após consultar o histórico, a cliente responde:
+
+> "Quero agendar novamente."
+
+O sistema inicia automaticamente o **UC001 – Agendar Atendimento**.
+
+---
+
+## FA005 – Cliente interrompe a conversa
+
+O sistema encerra o fluxo sem realizar novas ações.
+
+---
+
+# Exceções
+
+## EX001 – Cliente não cadastrada
+
+O sistema informa:
+
+> "Não encontrei um cadastro para este número."
+
+E poderá direcionar para o **UC008 – Cadastrar Cliente**.
+
+---
+
+## EX002 – Nenhum atendimento encontrado
+
+O sistema informa:
+
+> "Você ainda não possui atendimentos registrados."
+
+---
+
+## EX003 – Google Sheets indisponível
+
+O sistema informa:
+
+> "No momento não foi possível consultar seu histórico. Tente novamente mais tarde."
+
+O erro é registrado.
+
+---
+
+## EX004 – Erro durante a consulta
+
+O sistema registra o erro e informa que a consulta não pôde ser concluída.
+
+---
+
+# Regras de Negócio
+
+- RN001 – Apenas a própria cliente poderá consultar seu histórico.
+- RN002 – O número do WhatsApp será utilizado como identificador da cliente.
+- RN003 – Os atendimentos deverão ser apresentados do mais recente para o mais antigo.
+- RN004 – Apenas atendimentos concluídos poderão aparecer no histórico, salvo configuração específica.
+- RN005 – Valores financeiros somente serão exibidos quando essa funcionalidade estiver habilitada.
+- RN006 – Observações internas da profissional somente poderão ser exibidas se forem classificadas como compartilháveis.
+- RN023 – Utilizar linguagem cordial em todas as respostas.
+- RN031 – Toda consulta deverá ser registrada para auditoria.
+
+---
+
+# Dados Utilizados
+
+## Entrada
+
+- Número do WhatsApp
+- Solicitação da cliente
+- Período informado (opcional)
+
+---
+
+## Processamento
+
+- Identificação da cliente
+- Consulta ao Google Sheets
+- Consulta ao Google Calendar (quando necessário)
+- Ordenação dos atendimentos
+- Filtragem por período (quando aplicável)
+- Montagem da resposta
+
+---
+
+## Saída
+
+- Lista de atendimentos
+- Informações detalhadas do atendimento
+- Registro da consulta
+- Resposta enviada pelo WhatsApp
+
+---
+
+# User Story
+
+**ID:** US010
+
+**Título:** Consultar histórico de atendimentos
+
+**Como** cliente,
+
+**Quero** consultar meu histórico de atendimentos pelo WhatsApp,
+
+**Para que** eu possa acompanhar os serviços já realizados e consultar informações dos meus atendimentos anteriores.
+
+---
+
+# Workflows n8n Relacionados
+
+| Workflow | Nome | Responsabilidade |
+|-----------|------|------------------|
+| WF001 | Receber Mensagem WhatsApp | Receber mensagens enviadas pela WhatsApp Cloud API. |
+| WF002 | Identificar Cliente | Localizar a cliente pelo número do WhatsApp. |
+| WF003 | AI Agent | Identificar a intenção "Consultar Histórico". |
+| WF004 | Consultar Histórico | Buscar os atendimentos da cliente no Google Sheets. |
+| WF005 | Consultar Agenda | Buscar informações complementares no Google Calendar (quando necessário). |
+| WF006 | Organizar Histórico | Ordenar e filtrar os registros conforme a solicitação da cliente. |
+| WF007 | Gerar Resposta | Formatar a resposta com os dados do histórico. |
+| WF008 | Registrar Consulta | Registrar a consulta realizada para auditoria. |
+| WF009 | Enviar Resposta | Enviar o histórico pelo WhatsApp. |
+
+---
+
+# Critérios de Aceite
+
+### CA001 – Receber solicitação
+
+**Dado que** a cliente envie uma mensagem solicitando seu histórico,
+
+**Quando** o sistema receber a mensagem,
+
+**Então** deverá iniciar automaticamente o fluxo de consulta.
+
+---
+
+### CA002 – Identificar a cliente
+
+**Dado que** uma mensagem tenha sido recebida,
+
+**Quando** o número do WhatsApp for identificado,
+
+**Então** o sistema deverá localizar a cliente cadastrada.
+
+---
+
+### CA003 – Consultar histórico
+
+**Dado que** a cliente tenha sido identificada,
+
+**Quando** o sistema consultar o Google Sheets,
+
+**Então** deverá recuperar todos os atendimentos relacionados.
+
+---
+
+### CA004 – Ordenar registros
+
+**Dado que** existam atendimentos cadastrados,
+
+**Quando** os dados forem apresentados,
+
+**Então** deverão estar ordenados do mais recente para o mais antigo.
+
+---
+
+### CA005 – Filtrar por período
+
+**Dado que** a cliente informe um período específico,
+
+**Quando** a consulta for realizada,
+
+**Então** o sistema deverá apresentar apenas os atendimentos correspondentes.
+
+---
+
+### CA006 – Exibir detalhes do atendimento
+
+**Dado que** a cliente solicite detalhes de um atendimento,
+
+**Quando** o sistema localizar o registro,
+
+**Então** deverá apresentar todas as informações permitidas para compartilhamento.
+
+---
+
+### CA007 – Exibir histórico vazio
+
+**Dado que** a cliente não possua atendimentos registrados,
+
+**Quando** a consulta for realizada,
+
+**Então** o sistema deverá informar que nenhum histórico foi encontrado.
+
+---
+
+### CA008 – Direcionar para novo agendamento
+
+**Dado que** a cliente manifeste interesse em agendar novamente,
+
+**Quando** responder positivamente,
+
+**Então** o sistema deverá iniciar automaticamente o **UC001 – Agendar Atendimento**.
+
+---
+
+### CA009 – Registrar consulta
+
+**Dado que** o histórico tenha sido consultado,
+
+**Quando** o processo terminar,
+
+**Então** o sistema deverá registrar a consulta para fins de auditoria.
+
+---
+
+### CA010 – Utilizar dados atualizados
+
+**Dado que** existam alterações recentes no histórico,
+
+**Quando** a consulta for realizada,
+
+**Então** o sistema deverá utilizar os dados mais recentes armazenados no Google Sheets.
+
+---
+
+### CA011 – Tratar falhas de consulta
+
+**Dado que** ocorra falha na consulta ao Google Sheets,
+
+**Quando** o sistema não conseguir recuperar os dados,
+
+**Então** deverá informar a cliente e registrar o erro.
+
+---
+
+### CA012 – Utilizar linguagem cordial
+
+**Dado que** a IA responda à cliente,
+
+**Quando** enviar qualquer mensagem,
+
+**Então** deverá utilizar linguagem clara, objetiva, cordial e profissional.
+
+---
+
+### CA013 – Registrar logs
+
+**Dado que** qualquer etapa do processo seja executada,
+
+**Quando** ocorrer sucesso ou falha,
+
+**Então** o sistema deverá registrar logs para auditoria.
+
+---
+
+### CA014 – Garantir privacidade das informações
+
+**Dado que** a consulta seja realizada,
+
+**Quando** o sistema recuperar os dados,
+
+**Então** deverá apresentar apenas o histórico pertencente à cliente identificada pelo número do WhatsApp, sem expor informações de outras clientes.
+
+# **UC011 – Lista de Espera**
+
+---
+
+# Objetivo
+
+Permitir que a cliente seja incluída em uma lista de espera quando não houver horários disponíveis para o serviço desejado, possibilitando que seja notificada automaticamente caso ocorra uma vaga devido a cancelamentos, reagendamentos ou abertura de novos horários.
+
+---
+
+# Atores
+
+## Ator Principal
+
+- Cliente
+
+## Atores Secundários
+
+- Nail Designer
+- WhatsApp Cloud API
+- n8n
+- AI Agent
+- Google Calendar
+- Google Sheets
+
+---
+
+# Pré-condições
+
+- A cliente deve possuir cadastro ativo.
+- Não deve haver horários disponíveis para a data ou período desejado.
+- A WhatsApp Cloud API deve estar configurada e ativa.
+- O Webhook da Meta deve estar operacional.
+- O Google Calendar deve estar sincronizado.
+- O Google Sheets deve estar acessível.
+- O AI Agent deve estar operacional.
+- A funcionalidade de Lista de Espera deve estar habilitada.
+
+---
+
+# Fluxo Principal
+
+1. A cliente solicita um agendamento.
+
+2. O sistema consulta a agenda disponível.
+
+3. O sistema identifica que não existem horários compatíveis.
+
+4. O sistema informa a indisponibilidade de horários.
+
+5. O sistema oferece a opção de entrar na Lista de Espera.
+
+6. A cliente aceita participar da Lista de Espera.
+
+7. O sistema solicita as preferências da cliente:
+
+- Serviço desejado;
+- Período preferencial (manhã, tarde ou noite);
+- Dias da semana (opcional);
+- Data limite (opcional).
+
+8. O sistema registra a solicitação no Google Sheets.
+
+9. O sistema envia uma confirmação de inclusão na Lista de Espera.
+
+10. O Workflow de Monitoramento permanece verificando cancelamentos e novas vagas.
+
+11. Quando surgir uma vaga compatível, o sistema identifica a primeira cliente elegível.
+
+12. O sistema envia automaticamente uma oferta da vaga pelo WhatsApp.
+
+13. A cliente responde:
+
+- Aceitar;
+- Recusar.
+
+14. Caso aceite, o sistema realiza automaticamente o agendamento.
+
+15. Caso recuse ou não responda dentro do tempo configurado, a vaga é oferecida para a próxima cliente da lista.
+
+16. O caso de uso é encerrado.
+
+---
+
+# Fluxos Alternativos
+
+## FA001 – Cliente não deseja entrar na Lista de Espera
+
+O sistema encerra o atendimento normalmente.
+
+---
+
+## FA002 – Cliente aceita a vaga
+
+O sistema direciona automaticamente para o **UC001 – Agendar Atendimento**, utilizando o horário disponível.
+
+---
+
+## FA003 – Cliente recusa a vaga
+
+O sistema mantém a cliente na Lista de Espera ou remove seu registro, conforme configuração da profissional.
+
+---
+
+## FA004 – Cliente não responde
+
+Após o tempo configurado (ex.: 30 minutos), o sistema considera a vaga recusada e a oferece para a próxima cliente.
+
+---
+
+## FA005 – Cliente solicita remoção da Lista de Espera
+
+O sistema remove seu registro e envia uma confirmação.
+
+---
+
+# Exceções
+
+## EX001 – Google Sheets indisponível
+
+O sistema informa:
+
+> "No momento não foi possível registrar sua solicitação na Lista de Espera. Tente novamente mais tarde."
+
+O erro é registrado.
+
+---
+
+## EX002 – Google Calendar indisponível
+
+O sistema interrompe temporariamente o monitoramento de vagas e registra o erro.
+
+---
+
+## EX003 – Erro ao criar o agendamento
+
+Caso a vaga seja aceita, mas ocorra falha no agendamento, o sistema informa a cliente e registra o erro.
+
+---
+
+## EX004 – Cliente já está na Lista de Espera
+
+O sistema informa:
+
+> "Você já possui uma solicitação ativa na Lista de Espera."
+
+---
+
+# Regras de Negócio
+
+- RN001 – Apenas clientes cadastradas poderão entrar na Lista de Espera.
+- RN002 – Cada cliente poderá possuir apenas uma solicitação ativa por serviço.
+- RN003 – A ordem da Lista de Espera deverá respeitar a data e hora da solicitação (FIFO).
+- RN004 – Apenas vagas compatíveis com as preferências da cliente deverão ser oferecidas.
+- RN005 – O tempo de resposta da oferta deverá ser configurável.
+- RN006 – Caso a cliente não responda no prazo, a vaga será oferecida para a próxima cliente.
+- RN007 – Toda inclusão, remoção e oferta deverá ser registrada.
+- RN023 – O sistema deverá utilizar linguagem cordial.
+- RN032 – A vaga somente poderá ser reservada após a confirmação da cliente.
+
+---
+
+# Dados Utilizados
+
+## Entrada
+
+- Número do WhatsApp
+- Serviço desejado
+- Preferência de período
+- Preferência de dias
+- Data limite (opcional)
+
+---
+
+## Processamento
+
+- Verificação da disponibilidade na agenda
+- Registro na Lista de Espera
+- Monitoramento de vagas
+- Comparação entre vaga disponível e preferências da cliente
+- Envio da oferta
+- Registro da resposta
+
+---
+
+## Saída
+
+- Cliente incluída na Lista de Espera
+- Oferta de vaga enviada
+- Agendamento realizado (quando aceito)
+- Atualização do Google Sheets
+- Atualização do Google Calendar
+
+---
+
+# User Story
+
+**ID:** US011
+
+**Título:** Entrar na Lista de Espera
+
+**Como** cliente,
+
+**Quero** entrar em uma Lista de Espera quando não houver horários disponíveis,
+
+**Para que** eu seja avisada automaticamente caso surja uma vaga compatível.
+
+---
+
+# Workflows n8n Relacionados
+
+| Workflow | Nome | Responsabilidade |
+|-----------|------|------------------|
+| WF001 | Receber Mensagem WhatsApp | Receber mensagens da WhatsApp Cloud API. |
+| WF002 | Consultar Agenda | Verificar disponibilidade no Google Calendar. |
+| WF003 | AI Agent | Identificar a intenção de entrar na Lista de Espera. |
+| WF004 | Registrar Lista de Espera | Inserir a solicitação no Google Sheets. |
+| WF005 | Scheduler de Monitoramento | Verificar periodicamente novas vagas e cancelamentos. |
+| WF006 | Comparar Preferências | Comparar a vaga disponível com as preferências cadastradas. |
+| WF007 | Enviar Oferta de Vaga | Enviar a proposta de horário via WhatsApp. |
+| WF008 | Processar Resposta | Identificar se a cliente aceitou ou recusou a vaga. |
+| WF009 | Agendar Atendimento | Criar automaticamente o evento no Google Calendar (UC001). |
+| WF010 | Atualizar Lista | Atualizar o status da Lista de Espera no Google Sheets. |
+| WF011 | Registrar Histórico | Registrar todas as movimentações da Lista de Espera. |
+
+---
+
+# Critérios de Aceite
+
+### CA001 – Oferecer Lista de Espera
+
+**Dado que** não existam horários disponíveis,
+
+**Quando** a consulta à agenda for concluída,
+
+**Então** o sistema deverá oferecer a opção de entrar na Lista de Espera.
+
+---
+
+### CA002 – Registrar solicitação
+
+**Dado que** a cliente aceite participar,
+
+**Quando** informar suas preferências,
+
+**Então** o sistema deverá registrar a solicitação no Google Sheets.
+
+---
+
+### CA003 – Evitar duplicidade
+
+**Dado que** a cliente já possua uma solicitação ativa para o mesmo serviço,
+
+**Quando** tentar entrar novamente,
+
+**Então** o sistema deverá impedir um novo registro.
+
+---
+
+### CA004 – Registrar preferências
+
+**Dado que** a cliente informe período ou dias preferenciais,
+
+**Quando** a solicitação for gravada,
+
+**Então** essas preferências deverão ser armazenadas.
+
+---
+
+### CA005 – Monitorar vagas
+
+**Dado que** existam clientes na Lista de Espera,
+
+**Quando** ocorrer um cancelamento ou abertura de horário,
+
+**Então** o sistema deverá verificar automaticamente as vagas disponíveis.
+
+---
+
+### CA006 – Comparar preferências
+
+**Dado que** exista uma vaga disponível,
+
+**Quando** o sistema analisar a Lista de Espera,
+
+**Então** deverá selecionar apenas clientes compatíveis com aquela vaga.
+
+---
+
+### CA007 – Respeitar ordem da fila
+
+**Dado que** mais de uma cliente seja elegível,
+
+**Quando** houver uma vaga,
+
+**Então** o sistema deverá oferecer primeiro à cliente com a solicitação mais antiga.
+
+---
+
+### CA008 – Enviar oferta da vaga
+
+**Dado que** uma cliente elegível tenha sido identificada,
+
+**Quando** o sistema localizar a vaga,
+
+**Então** deverá enviar automaticamente a oferta pelo WhatsApp.
+
+---
+
+### CA009 – Criar agendamento
+
+**Dado que** a cliente aceite a vaga,
+
+**Quando** responder positivamente,
+
+**Então** o sistema deverá iniciar automaticamente o **UC001 – Agendar Atendimento**.
+
+---
+
+### CA010 – Oferecer vaga à próxima cliente
+
+**Dado que** a cliente recuse ou não responda dentro do prazo,
+
+**Quando** o tempo configurado expirar,
+
+**Então** o sistema deverá oferecer a vaga para a próxima cliente elegível.
+
+---
+
+### CA011 – Remover da Lista
+
+**Dado que** a cliente solicite sair da Lista de Espera,
+
+**Quando** o sistema receber a solicitação,
+
+**Então** deverá remover o registro e confirmar a exclusão.
+
+---
+
+### CA012 – Atualizar Google Sheets
+
+**Dado que** qualquer alteração ocorra na Lista de Espera,
+
+**Quando** o processo for concluído,
+
+**Então** o Google Sheets deverá ser atualizado.
+
+---
+
+### CA013 – Registrar logs
+
+**Dado que** qualquer etapa do processo seja executada,
+
+**Quando** ocorrer sucesso ou falha,
+
+**Então** o sistema deverá registrar logs para auditoria.
+
+---
+
+### CA014 – Utilizar linguagem cordial
+
+**Dado que** o sistema envie mensagens para a cliente,
+
+**Quando** houver interação,
+
+**Então** deverá utilizar linguagem clara, amigável e profissional.
+
+---
+
+### CA015 – Garantir sincronização
+
+**Dado que** uma vaga seja aceita e transformada em agendamento,
+
+**Quando** o fluxo for concluído,
+
+**Então** Google Calendar, Google Sheets e o histórico da Lista de Espera deverão permanecer sincronizados.
+
+
+
+# **UC012 – Avaliar Atendimento**
+
+---
+
+# Objetivo
+
+Permitir que a cliente avalie o atendimento recebido após a conclusão do serviço, por meio do WhatsApp, registrando sua satisfação, comentários e sugestões de melhoria. As avaliações poderão ser utilizadas para indicadores de qualidade, fidelização de clientes e melhoria contínua dos serviços prestados.
+
+---
+
+# Atores
+
+## Ator Principal
+
+- Cliente
+
+## Atores Secundários
+
+- Nail Designer
+- WhatsApp Cloud API
+- n8n
+- AI Agent
+- Google Sheets (Avaliações)
+- Google Calendar
+
+---
+
+# Pré-condições
+
+- A cliente deve possuir um atendimento concluído.
+- O atendimento deve estar registrado como **Concluído**.
+- A WhatsApp Cloud API deve estar configurada e ativa.
+- O Webhook da Meta deve estar operacional.
+- O AI Agent deve estar operacional.
+- O Google Sheets deve estar acessível.
+- O Workflow de envio de avaliações deve estar habilitado.
+
+---
+
+# Fluxo Principal
+
+1. Após a conclusão do atendimento, o sistema agenda automaticamente o envio da pesquisa de satisfação.
+
+2. No horário configurado, o n8n envia uma mensagem pelo WhatsApp.
+
+3. A cliente recebe uma mensagem solicitando sua avaliação.
+
+4. O sistema apresenta uma escala de avaliação de 1 a 5 estrelas.
+
+Exemplo:
+
+⭐ 1 - Muito Insatisfeita
+
+⭐⭐ 2 - Insatisfeita
+
+⭐⭐⭐ 3 - Regular
+
+⭐⭐⭐⭐ 4 - Satisfeita
+
+⭐⭐⭐⭐⭐ 5 - Muito Satisfeita
+
+5. A cliente informa sua nota.
+
+6. O sistema registra a avaliação.
+
+7. O sistema pergunta se a cliente deseja deixar um comentário.
+
+8. A cliente envia um comentário (opcional).
+
+9. O sistema registra o comentário.
+
+10. O sistema atualiza o Google Sheets.
+
+11. O sistema agradece pela avaliação.
+
+12. O caso de uso é encerrado.
+
+---
+
+# Fluxos Alternativos
+
+## FA001 – Cliente informa apenas a nota
+
+O sistema registra a nota e encerra o fluxo.
+
+---
+
+## FA002 – Cliente informa nota e comentário
+
+O sistema registra ambas as informações.
+
+---
+
+## FA003 – Cliente não deseja avaliar
+
+O sistema registra a recusa e encerra o atendimento.
+
+---
+
+## FA004 – Cliente envia apenas comentário
+
+O sistema solicita que seja informada também a nota da avaliação.
+
+---
+
+## FA005 – Cliente altera a avaliação
+
+Enquanto o fluxo estiver aberto, a cliente poderá alterar sua nota antes da finalização.
+
+---
+
+# Exceções
+
+## EX001 – Atendimento não encontrado
+
+O sistema informa:
+
+> "Não encontrei um atendimento concluído para realizar esta avaliação."
+
+---
+
+## EX002 – Atendimento já avaliado
+
+O sistema informa:
+
+> "Este atendimento já foi avaliado anteriormente."
+
+---
+
+## EX003 – Google Sheets indisponível
+
+O sistema registra o erro e informa que não foi possível salvar a avaliação.
+
+---
+
+## EX004 – Erro durante o registro
+
+O sistema registra o erro para auditoria e informa a cliente sobre a indisponibilidade temporária.
+
+---
+
+# Regras de Negócio
+
+- RN001 – Apenas atendimentos concluídos poderão ser avaliados.
+- RN002 – Cada atendimento poderá receber apenas uma avaliação.
+- RN003 – A nota deverá estar entre 1 e 5 estrelas.
+- RN004 – O comentário será opcional.
+- RN005 – A avaliação ficará vinculada ao atendimento realizado.
+- RN006 – Todas as avaliações deverão possuir data e hora.
+- RN007 – O histórico de avaliações não poderá ser excluído automaticamente.
+- RN023 – O sistema deverá utilizar linguagem cordial.
+- RN033 – Todas as avaliações deverão ser registradas para geração de indicadores.
+
+---
+
+# Dados Utilizados
+
+## Entrada
+
+- Número do WhatsApp
+- Identificador do atendimento
+- Nota da avaliação
+- Comentário (opcional)
+
+---
+
+## Processamento
+
+- Localização do atendimento
+- Validação do status
+- Validação da nota
+- Registro da avaliação
+- Registro do comentário
+- Atualização do Google Sheets
+
+---
+
+## Saída
+
+- Avaliação registrada
+- Comentário registrado
+- Google Sheets atualizado
+- Mensagem de agradecimento enviada
+
+---
+
+# User Story
+
+**ID:** US012
+
+**Título:** Avaliar atendimento
+
+**Como** cliente,
+
+**Quero** avaliar o atendimento recebido,
+
+**Para que** eu possa compartilhar minha experiência e contribuir para a melhoria dos serviços prestados.
+
+---
+
+# Workflows n8n Relacionados
+
+| Workflow | Nome | Responsabilidade |
+|-----------|------|------------------|
+| WF001 | Scheduler Pós-Atendimento | Identificar atendimentos concluídos e iniciar a pesquisa de satisfação. |
+| WF002 | Buscar Atendimento | Localizar o atendimento realizado no Google Calendar ou Google Sheets. |
+| WF003 | Enviar Pesquisa | Enviar a solicitação de avaliação pelo WhatsApp. |
+| WF004 | Receber Resposta | Receber a nota enviada pela cliente. |
+| WF005 | AI Agent | Interpretar a nota e identificar comentários adicionais. |
+| WF006 | Validar Avaliação | Validar a nota e verificar se o atendimento já foi avaliado. |
+| WF007 | Registrar Avaliação | Salvar nota e comentário no Google Sheets. |
+| WF008 | Atualizar Indicadores | Atualizar métricas de satisfação (NPS interno, média de avaliações etc.). |
+| WF009 | Enviar Agradecimento | Enviar mensagem de agradecimento à cliente. |
+| WF010 | Registrar Logs | Registrar toda a execução do processo para auditoria. |
+
+---
+
+# Critérios de Aceite
+
+### CA001 – Enviar pesquisa automaticamente
+
+**Dado que** um atendimento tenha sido concluído,
+
+**Quando** o horário configurado para envio da pesquisa for atingido,
+
+**Então** o sistema deverá enviar automaticamente uma solicitação de avaliação pelo WhatsApp.
+
+---
+
+### CA002 – Validar atendimento
+
+**Dado que** a pesquisa seja iniciada,
+
+**Quando** o sistema localizar o atendimento,
+
+**Então** deverá confirmar que ele possui status **Concluído**.
+
+---
+
+### CA003 – Apresentar escala de avaliação
+
+**Dado que** a cliente receba a pesquisa,
+
+**Quando** visualizar a mensagem,
+
+**Então** deverá ser apresentada uma escala de 1 a 5 estrelas.
+
+---
+
+### CA004 – Registrar nota
+
+**Dado que** a cliente informe uma nota válida,
+
+**Quando** o sistema receber a resposta,
+
+**Então** deverá registrar a nota no Google Sheets.
+
+---
+
+### CA005 – Solicitar comentário
+
+**Dado que** a nota tenha sido registrada,
+
+**Quando** o fluxo continuar,
+
+**Então** o sistema deverá perguntar se a cliente deseja deixar um comentário.
+
+---
+
+### CA006 – Registrar comentário
+
+**Dado que** a cliente envie um comentário,
+
+**Quando** o sistema receber a mensagem,
+
+**Então** deverá registrar o comentário juntamente com a avaliação.
+
+---
+
+### CA007 – Permitir avaliação sem comentário
+
+**Dado que** a cliente informe apenas a nota,
+
+**Quando** o fluxo terminar,
+
+**Então** o sistema deverá concluir a avaliação normalmente.
+
+---
+
+### CA008 – Impedir avaliações duplicadas
+
+**Dado que** o atendimento já tenha sido avaliado,
+
+**Quando** uma nova tentativa ocorrer,
+
+**Então** o sistema deverá impedir o registro de uma segunda avaliação.
+
+---
+
+### CA009 – Validar nota
+
+**Dado que** a cliente informe uma nota,
+
+**Quando** o sistema validar a resposta,
+
+**Então** deverá aceitar apenas valores entre 1 e 5 estrelas.
+
+---
+
+### CA010 – Atualizar indicadores
+
+**Dado que** uma nova avaliação seja registrada,
+
+**Quando** o processo for concluído,
+
+**Então** os indicadores de satisfação deverão ser atualizados automaticamente.
+
+---
+
+### CA011 – Atualizar Google Sheets
+
+**Dado que** a avaliação tenha sido registrada,
+
+**Quando** o processo terminar,
+
+**Então** o Google Sheets deverá conter a nota, comentário, data e identificação do atendimento.
+
+---
+
+### CA012 – Enviar agradecimento
+
+**Dado que** a avaliação tenha sido concluída,
+
+**Quando** o registro for salvo,
+
+**Então** o sistema deverá enviar uma mensagem agradecendo a participação da cliente.
+
+---
+
+### CA013 – Registrar logs
+
+**Dado que** qualquer etapa do processo seja executada,
+
+**Quando** ocorrer sucesso ou falha,
+
+**Então** o sistema deverá registrar logs para auditoria.
+
+---
+
+### CA014 – Utilizar linguagem cordial
+
+**Dado que** o sistema interaja com a cliente,
+
+**Quando** enviar qualquer mensagem,
+
+**Então** deverá utilizar linguagem clara, respeitosa, amigável e profissional.
+
+---
+
+### CA015 – Garantir rastreabilidade
+
+**Dado que** uma avaliação seja registrada,
+
+**Quando** o processo for concluído,
+
+**Então** a avaliação deverá permanecer vinculada ao atendimento correspondente, permitindo consultas futuras, geração de relatórios e análise de indicadores de qualidade.
