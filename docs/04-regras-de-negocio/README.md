@@ -210,3 +210,4 @@ RN040
 
 Nunca confirmar um horário sem consultar a agenda.
 
+
