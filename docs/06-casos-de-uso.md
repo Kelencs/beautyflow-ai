@@ -1,8 +1,8 @@
-<> Markdow
 
-Caso de Uso 01 – Agendar Atendimento
 
-Objetivo: Permitir que a cliente agende um horário pelo WhatsApp.
+# Caso de Uso 01 – Agendar Atendimento
+
+## Objetivo: Permitir que a cliente agende um horário pelo WhatsApp.
 
 Atores: 
 Cliente /
@@ -17,7 +17,7 @@ WhatsApp conectado /
 Google Calendar configurado /
 Google Sheets disponível.
 
-Fluxo Principal
+## Fluxo Principal
 
 Cliente
     │
@@ -75,12 +75,13 @@ Enviar confirmação
 Fim****
 
 --------
-UC002 – Consultar Horários Disponíveis
-Objetivo
+# UC002 – Consultar Horários Disponíveis
+
+## Objetivo
 
 Permitir que a cliente consulte os horários disponíveis para um determinado serviço, considerando a agenda da profissional e as regras de negócio definidas.
 
-Atores
+Atores:
 Ator Principal
 Cliente
 Atores Secundários
@@ -89,6 +90,7 @@ n8n
 AI Agent
 Google Calendar
 Google Sheets (registro da consulta)
+
 Pré-condições
 O WhatsApp Cloud API deve estar conectado.
 O webhook da Meta deve estar ativo.
@@ -96,6 +98,7 @@ O Google Calendar deve estar configurado.
 O AI Agent deve estar operacional.
 O serviço solicitado deve estar cadastrado.
 A agenda da profissional deve estar sincronizada com o Google Calendar.
+
 Pós-condições
 Em caso de sucesso
 Os horários disponíveis são enviados ao cliente.
@@ -103,7 +106,8 @@ A consulta pode ser registrada para fins de análise.
 Em caso de falha
 O cliente é informado que não foi possível consultar a agenda.
 O erro é registrado nos logs do sistema.
-Fluxo Principal
+
+## Fluxo Principal
 Cliente envia:
 
 "Tem horário amanhã?"
@@ -164,8 +168,10 @@ Registrar consulta (opcional)
 ↓
 
 Fim
-Fluxos Alternativos
-FA01 – Cliente não informa o serviço
+
+# Fluxos Alternativos
+
+## FA01 – Cliente não informa o serviço
 
 A IA pergunta:
 
@@ -173,20 +179,21 @@ A IA pergunta:
 
 Após a resposta, o fluxo principal continua.
 
-FA02 – Cliente informa uma data inválida
+## FA02 – Cliente informa uma data inválida
 
 A IA responde:
 
 "Não consegui identificar a data. Poderia informar novamente?"
 
-FA03 – Cliente solicita horários para outro dia
+## FA03 – Cliente solicita horários para outro dia
 
 A IA consulta a nova data e reinicia a busca.
 
-Exceções
+## Exceções
 EX01 – Google Calendar indisponível
 Registrar erro.
 Informar ao cliente que a agenda está temporariamente indisponível.
+
 EX02 – Serviço não encontrado
 
 A IA informa:
