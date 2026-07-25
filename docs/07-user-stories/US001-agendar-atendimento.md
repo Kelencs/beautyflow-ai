@@ -292,3 +292,4 @@ A User Story será considerada concluída quando:
 - Esta é uma das funcionalidades centrais do BeautyFlow AI.
 - Todos os demais casos de uso relacionados ao agendamento (reagendamento, cancelamento, lembretes e lista de espera) dependem desta User Story.
 - O fluxo deverá ser implementado utilizando n8n como orquestrador, Google Calendar como agenda oficial, Google Sheets como base de dados inicial e WhatsApp Cloud API como canal de comunicação com a cliente.
+  
