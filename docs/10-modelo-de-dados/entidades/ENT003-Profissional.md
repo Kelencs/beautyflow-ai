@@ -2,7 +2,7 @@
 
 **Código:** ENT003
 
-**Versão:** 1.0
+**Versão:** 2.0
 
 **Módulo:** Cadastros
 
@@ -14,55 +14,44 @@
 
 # 1. Objetivo
 
-A entidade **Profissional** representa os colaboradores responsáveis pela execução dos serviços oferecidos pela empresa.
+A entidade Profissional representa os colaboradores responsáveis pela execução dos serviços disponibilizados pela empresa.
 
-Um profissional pode realizar um ou mais serviços, possuir agenda própria, receber agendamentos e atender diversos clientes.
+Os profissionais possuem agenda própria, recebem agendamentos e realizam atendimentos aos clientes.
 
-Exemplos:
-
-- Cabeleireiro(a)
-- Barbeiro(a)
-- Manicure
-- Nail Designer
-- Lash Designer
-- Esteticista
-- Maquiador(a)
-- Massoterapeuta
+A definição dos serviços executados por cada profissional é realizada através da entidade de associação **ENT017 – Profissional Serviço**.
 
 ---
 
 # 2. Descrição
 
-A tabela **profissionais** armazena as informações cadastrais dos profissionais que trabalham na empresa.
+A tabela profissionais armazena os dados cadastrais dos profissionais da empresa.
 
-Ela é utilizada pelos módulos de:
+Ela é utilizada pelos módulos:
 
 - Agenda
-- Agendamentos
-- Lista de Espera
+- Agendamento
 - Histórico
-- Pagamentos
+- Lista de Espera
 - Relatórios
+- Comissões
 
 ---
 
 # 3. Tipo da Entidade
 
-**Entidade Mestre (Master Data)**
+Master Data
 
 ---
 
 # 4. Relacionamentos
 
 | Relacionamento | Entidade | Cardinalidade | Chave |
-|----------------|----------|---------------|--------|
+|---------------|-----------|---------------|--------|
 | Pertence à | Empresa | N:1 | id_empresa |
 | Possui | Agenda | 1:N | id_profissional |
 | Possui | Agendamentos | 1:N | id_profissional |
-| Executa | Serviços | N:N* | tabela_profissional_servico |
-| Atende | Clientes | N:N* | através dos agendamentos |
-
-> *O relacionamento N:N entre profissionais e serviços poderá ser implementado futuramente por meio da tabela `profissional_servico`.
+| Executa | Serviços | N:N | profissional_servico |
+| Atende | Clientes | N:N | através de agendamentos |
 
 ---
 
@@ -73,21 +62,20 @@ Ela é utilizada pelos módulos de:
 | UC002 | Agendar Atendimento |
 | UC003 | Reagendar Atendimento |
 | UC004 | Cancelar Atendimento |
-| UC006 | Cadastrar Serviço |
 | UC007 | Cadastrar Profissional |
 | UC008 | Configurar Agenda |
-| UC010 | Consultar Histórico de Atendimentos |
+| UC010 | Consultar Histórico |
 
 ---
 
 # 6. User Stories Relacionadas
 
-- US001 — Agendar Atendimento
-- US003 — Reagendar Atendimento
-- US004 — Cancelar Atendimento
-- US007 — Cadastrar Profissional
-- US008 — Configurar Agenda
-- US010 — Consultar Histórico
+- US001
+- US003
+- US004
+- US007
+- US008
+- US010
 
 ---
 
@@ -98,24 +86,22 @@ Ela é utilizada pelos módulos de:
 | WF007 | Cadastro de Profissional |
 | WF008 | Atualização de Cadastro |
 | WF009 | Consulta de Disponibilidade |
-| WF010 | Sincronização da Agenda |
-| WF011 | Notificação de Agendamentos |
-| WF012 | Auditoria de Alterações |
+| WF010 | Sincronização de Agenda |
+| WF011 | Notificações |
+| WF012 | Auditoria |
 
 ---
 
 # 8. APIs Relacionadas
 
-| Método | Endpoint | Descrição |
-|---------|----------|-----------|
-| GET | /profissionais | Listar profissionais |
-| GET | /profissionais/{id} | Consultar profissional |
-| POST | /profissionais | Cadastrar profissional |
-| PUT | /profissionais/{id} | Atualizar profissional |
-| PATCH | /profissionais/{id}/status | Ativar/Inativar profissional |
-| DELETE* | /profissionais/{id} | Exclusão lógica |
-
-> *A exclusão deverá ser lógica.
+| Método | Endpoint |
+|---------|----------|
+| GET | /profissionais |
+| GET | /profissionais/{id} |
+| POST | /profissionais |
+| PUT | /profissionais/{id} |
+| PATCH | /profissionais/{id}/status |
+| DELETE | /profissionais/{id} |
 
 ---
 
@@ -129,18 +115,18 @@ profissionais
 
 # 10. Dicionário de Dados
 
-| Campo | Tipo | Obrigatório | Descrição | Regra de Negócio | Valor Padrão | Exemplo |
-|--------|------|-------------|-----------|------------------|--------------|----------|
+| Campo | Tipo | Obrigatório | Descrição | Regra de Negócio | Default | Exemplo |
+|--------|------|-------------|-----------|------------------|----------|----------|
 | id_profissional | UUID | Sim | Identificador do profissional | Gerado automaticamente | gen_random_uuid() | UUID |
 | id_empresa | UUID | Sim | Empresa proprietária | Deve existir na tabela empresas | — | UUID |
 | nome | VARCHAR(120) | Sim | Nome completo | Entre 3 e 120 caracteres | — | Ana Paula Silva |
-| telefone | VARCHAR(20) | Sim | Telefone | Deve possuir DDD | — | +55 34 99999-9999 |
-| email | VARCHAR(150) | Não | E-mail | Deve possuir formato válido quando informado | NULL | ana@studio.com.br |
-| especialidade | VARCHAR(100) | Sim | Especialidade principal | Deve existir no catálogo de especialidades (quando implementado) | — | Nail Designer |
-| percentual_comissao | NUMERIC(5,2) | Não | Comissão (%) | Valor entre 0 e 100 | 0.00 | 45.00 |
-| ativo | BOOLEAN | Sim | Situação do profissional | Utilizado para exclusão lógica | TRUE | TRUE |
-| criado_em | TIMESTAMP | Sim | Data de criação | Gerado automaticamente | CURRENT_TIMESTAMP | 2026-07-25 09:00:00 |
-| atualizado_em | TIMESTAMP | Sim | Última atualização | Atualizado automaticamente | CURRENT_TIMESTAMP | 2026-07-25 16:00:00 |
+| telefone | VARCHAR(20) | Sim | Telefone principal | Deve possuir DDD | — | +55 34 99999-9999 |
+| email | VARCHAR(150) | Não | E-mail | Deve ser válido | NULL | ana@email.com |
+| percentual_comissao | NUMERIC(5,2) | Não | Comissão do profissional | Entre 0 e 100 | 0.00 | 40.00 |
+| observacoes | TEXT | Não | Observações gerais | Campo livre | NULL | Especialista em unhas de gel |
+| ativo | BOOLEAN | Sim | Situação do profissional | Exclusão lógica | TRUE | TRUE |
+| criado_em | TIMESTAMP | Sim | Data de criação | Automática | CURRENT_TIMESTAMP | 2026-07-27 |
+| atualizado_em | TIMESTAMP | Sim | Última atualização | Automática | CURRENT_TIMESTAMP | 2026-07-27 |
 
 ---
 
@@ -149,12 +135,12 @@ profissionais
 | Código | Regra |
 |---------|--------|
 | RN001 | Todo profissional deve pertencer a uma empresa válida. |
-| RN002 | Um profissional somente poderá receber agendamentos se estiver ativo. |
-| RN003 | Um profissional não poderá possuir dois atendimentos no mesmo horário. |
-| RN004 | A agenda deverá respeitar o horário de funcionamento da empresa. |
+| RN002 | Um profissional só poderá receber agendamentos quando estiver ativo. |
+| RN003 | Um profissional não poderá possuir dois atendimentos simultâneos. |
+| RN004 | Os serviços executados serão definidos pela entidade Profissional Serviço. |
 | RN005 | O percentual de comissão deve estar entre 0% e 100%. |
-| RN006 | Um profissional poderá executar diversos serviços. |
-| RN007 | A exclusão deverá ser lógica utilizando o campo **ativo**. |
+| RN006 | A agenda do profissional deverá respeitar o horário de funcionamento da empresa. |
+| RN007 | A exclusão deverá ser lógica. |
 
 ---
 
@@ -163,10 +149,9 @@ profissionais
 | Constraint | Descrição |
 |------------|-----------|
 | PK_profissionais | PRIMARY KEY(id_profissional) |
-| FK_profissionais_empresa | FOREIGN KEY(id_empresa) REFERENCES empresas(id_empresa) |
+| FK_profissionais_empresa | FOREIGN KEY(id_empresa) |
 | NN_nome | NOT NULL |
 | NN_telefone | NOT NULL |
-| NN_especialidade | NOT NULL |
 | CK_comissao | percentual_comissao BETWEEN 0 AND 100 |
 
 ---
@@ -175,10 +160,10 @@ profissionais
 
 | Índice | Objetivo |
 |---------|----------|
-| idx_profissional_empresa | Consultas por empresa |
+| idx_profissional_empresa | Pesquisa por empresa |
 | idx_profissional_nome | Pesquisa por nome |
-| idx_profissional_especialidade | Pesquisa por especialidade |
 | idx_profissional_ativo | Profissionais ativos |
+| idx_profissional_comissao | Relatórios |
 
 ---
 
@@ -186,35 +171,14 @@ profissionais
 
 | Perfil | Permissão |
 |---------|-----------|
-| Administrador | Acesso total |
-| Gerente | Cadastrar, editar e consultar |
-| Recepcionista | Consultar e agendar |
-| Profissional | Consultar apenas seus próprios dados e agenda |
+| Administrador | Total |
+| Gerente | Cadastro e edição |
+| Recepcionista | Consulta |
+| Profissional | Consulta própria |
 
 ---
 
 # 15. Exemplos SQL
-
-## Inserção
-
-```sql
-INSERT INTO profissionais (
-    id_empresa,
-    nome,
-    telefone,
-    email,
-    especialidade,
-    percentual_comissao
-)
-VALUES (
-    '550e8400-e29b-41d4-a716-446655440000',
-    'Ana Paula Silva',
-    '+55 34 99999-9999',
-    'ana@studio.com.br',
-    'Nail Designer',
-    45.00
-);
-```
 
 ## Consulta
 
@@ -223,53 +187,64 @@ SELECT *
 FROM profissionais;
 ```
 
-## Consulta por Empresa
+## Pesquisa por empresa
 
 ```sql
 SELECT *
 FROM profissionais
-WHERE id_empresa = '550e8400-e29b-41d4-a716-446655440000';
+WHERE id_empresa = 'UUID';
 ```
 
 ---
 
 # 16. Segurança
 
-- Utiliza UUID como chave primária.
-- Compatível com Row Level Security (RLS).
-- Suporta Multi-Tenant.
-- Exclusão lógica por meio do campo **ativo**.
-- Alterações cadastrais devem ser registradas na tabela **logs_auditoria**.
+- UUID como chave primária.
+- Compatível com RLS.
+- Multi-Tenant.
+- Soft Delete.
+- Auditoria obrigatória.
 
 ---
 
-# 17. Observações Técnicas
+# 17. Integrações
 
-- Um profissional poderá possuir diversos horários disponíveis.
-- A disponibilidade será controlada pela entidade **Agenda**.
-- Os atendimentos serão registrados na entidade **Agendamentos**.
-- Futuramente será criada a tabela **profissional_servico** para representar o relacionamento N:N entre profissionais e serviços.
-- Compatível com PostgreSQL, Supabase e integração via n8n.
-
----
-
-# 18. Histórico de Alterações
-
-| Versão | Data | Responsável | Alteração |
-|---------|------|-------------|-----------|
-| 1.0 | 27/07/2026 | Product Owner | Criação da documentação da entidade Profissional. |
+- n8n
+- Supabase
+- PostgreSQL
+- Google Calendar
+- WhatsApp Business API
+- Power BI
 
 ---
 
-# 19. Aprovação
+# 18. Observações Técnicas
 
-| Papel | Responsável | Status |
-|--------|-------------|--------|
-| Product Owner | Kelen Cristina | ☐ Pendente |
-| Arquiteto de Software | __________________ | ☐ Pendente |
-| DBA | __________________ | ☐ Pendente |
-| Desenvolvedor Backend | __________________ | ☐ Pendente |
-| QA | __________________ | ☐ Pendente |
+- Não armazenar especialidades como texto.
+- Serviços atendidos pelo profissional devem ser controlados pela ENT017.
+- A agenda será gerenciada pela ENT007.
+- Os atendimentos serão registrados na ENT008.
+
+---
+
+# 19. Histórico de Alterações
+
+| Versão | Data | Alteração |
+|---------|------|------------|
+| 1.0 | 27/07/2026 | Versão inicial |
+| 2.0 | 27/07/2026 | Remoção do campo especialidade e normalização do relacionamento com serviços |
+
+---
+
+# 20. Aprovação
+
+| Papel | Status |
+|---------|--------|
+| Product Owner | ☐ |
+| Arquiteto | ☐ |
+| DBA | ☐ |
+| Desenvolvedor | ☐ |
+| QA | ☐ |
 
 ---
 
