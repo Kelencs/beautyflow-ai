@@ -2,7 +2,7 @@
 
 **Código:** ENT011
 
-**Versão:** 1.0
+**Versão:** 2.0
 
 **Módulo:** Financeiro
 
@@ -14,17 +14,17 @@
 
 # 1. Objetivo
 
-A entidade **Pagamento** registra todas as transações financeiras referentes aos atendimentos realizados pela empresa.
+A entidade **Pagamento** registra todas as transações financeiras referentes aos atendimentos realizados.
 
-Seu objetivo é controlar:
+Ela controla:
 
-- recebimentos;
-- formas de pagamento;
-- situação financeira;
-- estornos;
-- descontos;
-- comissões;
-- integração com gateways de pagamento.
+- recebimentos
+- descontos
+- acréscimos
+- forma de pagamento
+- estornos
+- situação financeira
+- integração com gateways de pagamento
 
 Esta entidade é responsável pelo controle financeiro do BeautyFlow AI.
 
@@ -32,11 +32,11 @@ Esta entidade é responsável pelo controle financeiro do BeautyFlow AI.
 
 # 2. Descrição
 
-A tabela **pagamentos** armazena os pagamentos realizados pelos clientes referentes aos agendamentos.
+A tabela **pagamentos** registra o pagamento de um atendimento.
 
-Cada pagamento pertence obrigatoriamente a um agendamento.
+Todo pagamento obrigatoriamente pertence a um agendamento.
 
-Um agendamento poderá possuir apenas um pagamento principal.
+Os dados do cliente, profissional e serviço são obtidos através da entidade **Agendamento**, evitando redundância e garantindo integridade referencial.
 
 ---
 
@@ -52,8 +52,6 @@ Um agendamento poderá possuir apenas um pagamento principal.
 |----------------|----------|---------------|--------|
 | Pertence à | Empresa | N:1 | id_empresa |
 | Refere-se ao | Agendamento | 1:1 | id_agendamento |
-| Refere-se ao | Cliente | N:1 | id_cliente |
-| Refere-se ao | Profissional | N:1 | id_profissional |
 
 ---
 
@@ -113,44 +111,42 @@ pagamentos
 |--------|------|-------------|-----------|------------------|--------------|----------|
 | id_pagamento | UUID | Sim | Identificador do pagamento | Gerado automaticamente | gen_random_uuid() | UUID |
 | id_empresa | UUID | Sim | Empresa proprietária | Deve existir na tabela empresas | — | UUID |
-| id_agendamento | UUID | Sim | Agendamento relacionado | Deve existir na tabela agendamentos | — | UUID |
-| id_cliente | UUID | Sim | Cliente pagador | Deve existir na tabela clientes | — | UUID |
-| id_profissional | UUID | Sim | Profissional responsável | Deve existir na tabela profissionais | — | UUID |
-| valor_bruto | NUMERIC(10,2) | Sim | Valor original do atendimento | Maior que zero | — | 180.00 |
-| desconto | NUMERIC(10,2) | Não | Valor de desconto | Não pode ser negativo | 0.00 | 20.00 |
+| id_agendamento | UUID | Sim | Atendimento relacionado | Deve existir na tabela agendamentos | — | UUID |
+| valor_bruto | NUMERIC(10,2) | Sim | Valor original do atendimento | Deve ser maior que zero | — | 180.00 |
+| desconto | NUMERIC(10,2) | Não | Valor do desconto | Não pode ser negativo | 0.00 | 20.00 |
 | acrescimo | NUMERIC(10,2) | Não | Valor adicional | Não pode ser negativo | 0.00 | 10.00 |
-| valor_final | NUMERIC(10,2) | Sim | Valor efetivamente pago | Calculado automaticamente | — | 170.00 |
-| forma_pagamento | VARCHAR(30) | Sim | Forma de pagamento | Ver lista permitida | Pix | Cartão de Crédito |
-| status | VARCHAR(20) | Sim | Situação do pagamento | Ver tabela de status | Pendente | Pago |
-| data_pagamento | TIMESTAMP | Não | Data da confirmação | Preenchida após pagamento | NULL | 2026-08-10 16:30 |
-| observacoes | TEXT | Não | Observações | Campo livre | NULL | Pagamento em duas etapas |
-| criado_em | TIMESTAMP | Sim | Data de criação | Automático | CURRENT_TIMESTAMP | 2026-07-27 09:00 |
-| atualizado_em | TIMESTAMP | Sim | Última atualização | Automático | CURRENT_TIMESTAMP | 2026-07-27 15:00 |
+| valor_final | NUMERIC(10,2) | Sim | Valor pago | Calculado automaticamente | — | 170.00 |
+| forma_pagamento | VARCHAR(30) | Sim | Forma de pagamento | Deve existir na lista de formas permitidas | Pix | Cartão de Crédito |
+| status | VARCHAR(20) | Sim | Situação do pagamento | Deve existir na lista de status | Pendente | Pago |
+| data_pagamento | TIMESTAMP | Não | Data do pagamento | Preenchida após confirmação | NULL | 2026-08-10 16:30 |
+| observacoes | TEXT | Não | Observações | Campo livre | NULL | Pagamento realizado via QR Code Pix |
+| criado_em | TIMESTAMP | Sim | Data de criação | Automático | CURRENT_TIMESTAMP | 2026-07-27 10:00 |
+| atualizado_em | TIMESTAMP | Sim | Última atualização | Atualizado automaticamente | CURRENT_TIMESTAMP | 2026-07-27 15:00 |
 
 ---
 
 # 11. Formas de Pagamento
 
-| Forma |
-|--------|
-| Pix |
-| Dinheiro |
-| Cartão de Débito |
-| Cartão de Crédito |
-| Transferência Bancária |
-| Carteira Digital |
+| Código | Forma |
+|---------|-------|
+| FP001 | Pix |
+| FP002 | Dinheiro |
+| FP003 | Cartão de Débito |
+| FP004 | Cartão de Crédito |
+| FP005 | Transferência Bancária |
+| FP006 | Carteira Digital |
 
 ---
 
 # 12. Status Permitidos
 
-| Status |
-|--------|
-| Pendente |
-| Pago |
-| Parcial |
-| Estornado |
-| Cancelado |
+| Código | Status |
+|---------|--------|
+| ST001 | Pendente |
+| ST002 | Pago |
+| ST003 | Parcial |
+| ST004 | Estornado |
+| ST005 | Cancelado |
 
 ---
 
@@ -158,13 +154,14 @@ pagamentos
 
 | Código | Regra |
 |---------|--------|
-| RN001 | Todo pagamento deve estar vinculado a um agendamento. |
-| RN002 | O valor final será calculado por: Valor Bruto + Acréscimos − Descontos. |
-| RN003 | Descontos e acréscimos não podem gerar valor final negativo. |
-| RN004 | Apenas pagamentos com status **Pago** deverão compor o faturamento. |
-| RN005 | O pagamento poderá ser registrado antes ou após a conclusão do atendimento, conforme configuração da empresa. |
-| RN006 | Estornos deverão manter o histórico financeiro. |
-| RN007 | Toda alteração deverá ser registrada na auditoria. |
+| RN001 | Todo pagamento deve possuir um agendamento válido. |
+| RN002 | Um agendamento poderá possuir apenas um pagamento principal. |
+| RN003 | O valor final será calculado automaticamente (Valor Bruto + Acréscimos − Descontos). |
+| RN004 | O valor final nunca poderá ser negativo. |
+| RN005 | Apenas pagamentos com status **Pago** compõem o faturamento. |
+| RN006 | Estornos não excluem o pagamento, apenas alteram seu status. |
+| RN007 | Todas as alterações deverão ser registradas na auditoria. |
+| RN008 | O pagamento preserva o valor histórico do atendimento, independentemente de alterações futuras no preço do serviço. |
 
 ---
 
@@ -175,12 +172,13 @@ pagamentos
 | PK_pagamentos | PRIMARY KEY(id_pagamento) |
 | FK_pagamento_empresa | FOREIGN KEY(id_empresa) REFERENCES empresas(id_empresa) |
 | FK_pagamento_agendamento | FOREIGN KEY(id_agendamento) REFERENCES agendamentos(id_agendamento) |
-| FK_pagamento_cliente | FOREIGN KEY(id_cliente) REFERENCES clientes(id_cliente) |
-| FK_pagamento_profissional | FOREIGN KEY(id_profissional) REFERENCES profissionais(id_profissional) |
 | UQ_pagamento_agendamento | UNIQUE(id_agendamento) |
+| NN_valor_bruto | NOT NULL |
+| NN_valor_final | NOT NULL |
 | CK_valor_bruto | valor_bruto > 0 |
 | CK_desconto | desconto >= 0 |
 | CK_acrescimo | acrescimo >= 0 |
+| CK_valor_final | valor_final >= 0 |
 
 ---
 
@@ -189,10 +187,10 @@ pagamentos
 | Índice | Objetivo |
 |---------|----------|
 | idx_pagamento_empresa | Consultas por empresa |
-| idx_pagamento_data | Fluxo de caixa |
-| idx_pagamento_status | Financeiro |
-| idx_pagamento_forma | Relatórios |
-| idx_pagamento_profissional | Comissão |
+| idx_pagamento_agendamento | Localizar pagamento do atendimento |
+| idx_pagamento_status | Fluxo financeiro |
+| idx_pagamento_data | Relatórios financeiros |
+| idx_pagamento_forma | Estatísticas por forma de pagamento |
 
 ---
 
@@ -200,10 +198,10 @@ pagamentos
 
 | Perfil | Permissão |
 |---------|-----------|
-| Administrador | Acesso total |
-| Gerente | Acesso total |
+| Administrador | Total |
+| Gerente | Total |
 | Recepcionista | Registrar e consultar pagamentos |
-| Profissional | Consultar apenas seus próprios recebimentos |
+| Profissional | Apenas consulta dos pagamentos de seus atendimentos (via Agendamento) |
 
 ---
 
@@ -215,8 +213,6 @@ pagamentos
 INSERT INTO pagamentos (
     id_empresa,
     id_agendamento,
-    id_cliente,
-    id_profissional,
     valor_bruto,
     desconto,
     acrescimo,
@@ -227,8 +223,6 @@ INSERT INTO pagamentos (
 VALUES (
     'UUID_EMPRESA',
     'UUID_AGENDAMENTO',
-    'UUID_CLIENTE',
-    'UUID_PROFISSIONAL',
     180.00,
     20.00,
     0.00,
@@ -245,13 +239,23 @@ SELECT *
 FROM pagamentos;
 ```
 
-## Pagamentos realizados
+## Consulta completa
 
 ```sql
-SELECT *
-FROM pagamentos
-WHERE status='Pago'
-ORDER BY data_pagamento DESC;
+SELECT
+    p.*,
+    c.nome AS cliente,
+    pr.nome AS profissional,
+    s.nome AS servico
+FROM pagamentos p
+INNER JOIN agendamentos a
+    ON p.id_agendamento = a.id_agendamento
+INNER JOIN clientes c
+    ON a.id_cliente = c.id_cliente
+INNER JOIN profissionais pr
+    ON a.id_profissional = pr.id_profissional
+INNER JOIN servicos s
+    ON a.id_servico = s.id_servico;
 ```
 
 ---
@@ -263,35 +267,33 @@ ORDER BY data_pagamento DESC;
 - Compatível com Supabase.
 - Compatível com Row Level Security (RLS).
 - Multi-Tenant.
-- Todas as alterações financeiras deverão ser registradas em **logs_auditoria**.
 - Exclusão física não permitida.
+- Auditoria obrigatória para todas as alterações financeiras.
 
 ---
 
 # 19. Integrações
 
-Esta entidade integra-se com:
-
-- Stripe (futuro)
-- Mercado Pago
-- Asaas
-- PagSeguro
-- WhatsApp Business API
-- n8n
 - API REST
+- n8n
 - PostgreSQL
 - Supabase
 - Google Sheets (MVP)
 - Dashboard Power BI
+- WhatsApp Business API
+- Stripe (futuro)
+- Mercado Pago
+- Asaas
+- PagSeguro
 
 ---
 
 # 20. Observações Técnicas
 
-- O pagamento preserva o valor histórico do atendimento.
-- O cálculo de comissão poderá utilizar o valor final pago.
-- O sistema poderá suportar pagamentos parciais em versões futuras.
-- Todos os lançamentos deverão permanecer disponíveis para auditoria e conciliação financeira.
+- A entidade segue a Terceira Forma Normal (3FN).
+- Cliente, profissional e serviço são obtidos por meio da entidade **Agendamentos**.
+- A modelagem elimina redundâncias e reduz o risco de inconsistências.
+- O modelo suporta evolução futura para pagamentos parciais, parcelamentos e múltiplas formas de pagamento.
 
 ---
 
@@ -299,7 +301,8 @@ Esta entidade integra-se com:
 
 | Versão | Data | Responsável | Alteração |
 |---------|------|-------------|-----------|
-| 1.0 | 27/07/2026 | Product Owner | Criação da documentação da entidade Pagamento. |
+| 1.0 | 27/07/2026 | Product Owner | Criação da entidade |
+| 2.0 | 27/07/2026 | Product Owner | Normalização da modelagem (3FN), removendo os campos id_cliente e id_profissional. |
 
 ---
 
@@ -314,5 +317,7 @@ Esta entidade integra-se com:
 | QA | __________________ | ☐ Pendente |
 
 ---
+
+
 
 
