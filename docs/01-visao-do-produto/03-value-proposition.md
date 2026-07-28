@@ -260,7 +260,7 @@ O produto proporciona:
 
 ---
 
-## PER002 — Recepcionista
+## PER002 — Cliente
 
 ### Valor Entregue
 
