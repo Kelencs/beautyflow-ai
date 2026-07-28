@@ -84,10 +84,9 @@ Cada documento de Persona segue um padrão de documentação contendo:
 | Código | Persona | Perfil |
 |----------|-------------------------|----------------------------|
 | PER001 | Administrador | Proprietário da empresa |
-| PER002 | Recepcionista | Responsável pelos atendimentos e agenda |
-| PER003 | Profissional | Prestador de serviços |
-| PER004 | Cliente | Consumidor dos serviços |
-| PER005 | Gestor Financeiro | Responsável pelo controle financeiro |
+| PER002 | Profissional | Prestador de serviços |
+| PER034 | Cliente | Consumidor dos serviços |
+| PER004 | Gestor Financeiro | Responsável pelo controle financeiro |
 
 ---
 
@@ -135,10 +134,9 @@ personas/
 │
 ├── README.md
 ├── PER001-administrador.md
-├── PER002-recepcionista.md
-├── PER003-profissional.md
-├── PER004-cliente.md
-└── PER005-gestor-financeiro.md
+├── PER002-profissional.md
+├── PER003-cliente.md
+└── PER004-gestor-financeiro.md
 ```
 
 ---
