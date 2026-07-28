@@ -68,7 +68,6 @@ O escopo do produto foi definido para atender aos seguintes objetivos:
 
 - Proprietários
 - Administradores
-- Recepcionistas
 - Profissionais
 - Clientes
 - Gestores Financeiros
