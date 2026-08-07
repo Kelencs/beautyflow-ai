@@ -1,16 +1,66 @@
 # BeautyFlow AI
 
-> Plataforma SaaS de Atendimento Inteligente para Profissionais da Beleza
+<p align="center">
+  <strong>Plataforma SaaS de Atendimento Inteligente para Profissionais da Beleza</strong>
+</p>
+
+<p align="center">
+  Automação de atendimento, agendamentos, comunicação e gestão utilizando WhatsApp, n8n, Google Gemini, Google Calendar e PostgreSQL.
+</p>
 
 ---
 
-# Visão Geral
+## Status do Projeto
 
-O **BeautyFlow AI** é uma plataforma SaaS desenvolvida para automatizar o atendimento de profissionais da área da beleza utilizando Inteligência Artificial, WhatsApp, n8n, Google Calendar e banco de dados.
+![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
+![n8n](https://img.shields.io/badge/automation-n8n-orange)
+![AI](https://img.shields.io/badge/AI-Google%20Gemini-blue)
+![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
+![WhatsApp](https://img.shields.io/badge/integration-WhatsApp%20Cloud%20API-green)
+![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-O objetivo do projeto é reduzir o tempo gasto com atendimento manual, automatizar agendamentos e melhorar a experiência das clientes.
+> 🚧 Projeto em desenvolvimento ativo.
 
-O sistema foi projetado para atender:
+---
+
+# Sumário
+
+* [Sobre o Projeto](#sobre-o-projeto)
+* [Objetivos](#objetivos)
+* [Principais Funcionalidades](#principais-funcionalidades)
+* [Arquitetura](#arquitetura)
+* [Fluxo Principal](#fluxo-principal)
+* [Stack Tecnológica](#stack-tecnológica)
+* [Estrutura do Repositório](#estrutura-do-repositório)
+* [Workflows n8n](#workflows-n8n)
+* [Modelo de Dados](#modelo-de-dados)
+* [Integrações](#integrações)
+* [Configuração do Ambiente](#configuração-do-ambiente)
+* [Variáveis e Credenciais](#variáveis-e-credenciais)
+* [Como Executar](#como-executar)
+* [Testes](#testes)
+* [Segurança](#segurança)
+* [Logs e Observabilidade](#logs-e-observabilidade)
+* [Padrões de Desenvolvimento](#padrões-de-desenvolvimento)
+* [Git e Commits](#git-e-commits)
+* [Roadmap](#roadmap)
+* [Documentação](#documentação)
+* [Contribuição](#contribuição)
+* [Licença](#licença)
+
+---
+
+# Sobre o Projeto
+
+O **BeautyFlow AI** é uma plataforma SaaS criada para automatizar o atendimento e a gestão de profissionais e empresas do setor de beleza.
+
+A plataforma utiliza Inteligência Artificial para interpretar mensagens recebidas pelo WhatsApp, identificar intenções, consultar disponibilidade, realizar agendamentos e executar diferentes fluxos administrativos.
+
+O projeto foi concebido inicialmente como um MVP baseado em automações com n8n e integrações cloud, com evolução planejada para uma arquitetura SaaS completa.
+
+## Público-alvo
+
+A solução pode ser utilizada por:
 
 * Nail Designers
 * Manicures
@@ -22,22 +72,22 @@ O sistema foi projetado para atender:
 * Barbearias
 * Clínicas de Estética
 * Salões de Beleza
+* Profissionais autônomos
 
 ---
 
 # Objetivos
 
-* Automatizar o atendimento via WhatsApp
-* Agendar horários automaticamente
-* Consultar disponibilidade em tempo real
-* Confirmar atendimentos
-* Enviar lembretes automáticos
-* Reagendar atendimentos
-* Cancelar agendamentos
-* Cadastrar clientes automaticamente
-* Registrar pagamentos
-* Gerar histórico completo
-* Disponibilizar uma plataforma SaaS escalável
+O BeautyFlow AI tem como objetivos:
+
+* Automatizar o atendimento via WhatsApp.
+* Reduzir tarefas manuais.
+* Diminuir erros em agendamentos.
+* Melhorar a experiência das clientes.
+* Disponibilizar atendimento 24 horas.
+* Integrar agenda, cadastro, comunicação e financeiro.
+* Criar uma base escalável para operação multiempresa.
+* Evoluir para uma plataforma SaaS completa.
 
 ---
 
@@ -45,118 +95,151 @@ O sistema foi projetado para atender:
 
 ## Atendimento Inteligente
 
-* Atendimento 24 horas
-* IA para interpretação de mensagens
-* Identificação automática da intenção da cliente
-* Atendimento humanizado
-* Contexto da conversa
+* Recebimento automático de mensagens.
+* Identificação de clientes.
+* Cadastro automático.
+* Interpretação de linguagem natural.
+* Identificação da intenção da cliente.
+* Respostas personalizadas utilizando IA.
+* Registro de mensagens.
+* Encaminhamento para fluxos específicos.
 
 ---
 
 ## Agenda
 
-* Consulta de disponibilidade
-* Agendamento automático
-* Reagendamento
-* Cancelamento
-* Integração com Google Calendar
+* Consulta de horários disponíveis.
+* Criação de agendamentos.
+* Reagendamento.
+* Cancelamento.
+* Validação de disponibilidade.
+* Integração com Google Calendar.
+* Prevenção de conflitos de agenda.
 
 ---
 
-## Cadastro
+## Clientes
 
-* Cadastro automático de clientes
-* Atualização cadastral
-* Histórico completo
-* Lista de espera
+* Cadastro automático.
+* Atualização cadastral.
+* Histórico de atendimentos.
+* Identificação por telefone.
+* Status ativo/inativo.
 
 ---
 
 ## Comunicação
 
-* Confirmação de agendamento
-* Lembretes automáticos
-* Pesquisa de satisfação
-* Follow-up
+* Confirmação de agendamento.
+* Lembretes automáticos.
+* Pesquisa de satisfação.
+* Follow-up pós-atendimento.
+* Mensagens automáticas pelo WhatsApp.
 
 ---
 
 ## Financeiro
 
-* Registro de pagamentos
-* Cobranças
-* Histórico financeiro
+* Registro de pagamentos.
+* Histórico financeiro.
+* Cobranças.
+* Associação de pagamentos a clientes e agendamentos.
 
 ---
 
-# Arquitetura Geral
+## Administração
 
-```text
-Cliente
-    │
-    ▼
-WhatsApp Cloud API
-    │
-    ▼
-WF001 - Receber WhatsApp
-    │
-    ▼
-WF002 - IA Atendimento (Gemini)
-    │
-    ▼
-WF003 - Identificar Intenção
-    │
- ┌──┼──────────────────────────────────────────────┐
- ▼  ▼                  ▼             ▼             ▼
-Agenda          Clientes      Financeiro    Comunicação
- │                 │               │              │
- ▼                 ▼               ▼              ▼
-Google Calendar  Banco      Pagamentos      WhatsApp
+* Logs.
+* Auditoria.
+* Backup.
+* Limpeza de dados.
+* Rotinas administrativas.
+
+---
+
+# Arquitetura
+
+## Arquitetura de Alto Nível
+
+```mermaid
+flowchart TD
+
+    CLIENTE[Cliente]
+    WA[WhatsApp Cloud API]
+    N8N[n8n]
+    GEMINI[Google Gemini]
+    SHEETS[Google Sheets]
+    CALENDAR[Google Calendar]
+    POSTGRES[(PostgreSQL)]
+
+    CLIENTE --> WA
+    WA --> N8N
+    N8N --> GEMINI
+    GEMINI --> N8N
+
+    N8N --> SHEETS
+    N8N --> CALENDAR
+
+    SHEETS -. Migração futura .-> POSTGRES
 ```
 
 ---
 
-# Tecnologias Utilizadas
+# Fluxo Principal
 
-## Automação
+```mermaid
+flowchart TD
 
-* n8n
+    MSG[Mensagem recebida]
+    WF001[WF001 - Receber WhatsApp]
+    WF002[WF002 - IA Atendimento]
+    WF003[WF003 - Identificar Intenção]
 
-## Inteligência Artificial
+    AGENDA[Workflows de Agenda]
+    CLIENTE[Workflows de Clientes]
+    FIN[Workflows Financeiros]
+    COM[Workflows de Comunicação]
 
-* Google Gemini
+    MSG --> WF001
+    WF001 --> WF002
+    WF002 --> WF003
 
-## Comunicação
-
-* WhatsApp Cloud API
-
-## Banco de Dados
-
-* PostgreSQL
-
-## Banco Temporário (MVP)
-
-* Google Sheets
-
-## Agenda
-
-* Google Calendar
-
-## Versionamento
-
-* Git
-* GitHub
+    WF003 --> AGENDA
+    WF003 --> CLIENTE
+    WF003 --> FIN
+    WF003 --> COM
+```
 
 ---
 
-# Estrutura do Projeto
+# Stack Tecnológica
+
+| Tecnologia         | Finalidade                       |
+| ------------------ | -------------------------------- |
+| n8n                | Orquestração e automação         |
+| Google Gemini      | Inteligência Artificial          |
+| WhatsApp Cloud API | Canal de atendimento             |
+| Google Calendar    | Agenda                           |
+| Google Sheets      | Persistência temporária do MVP   |
+| PostgreSQL         | Banco de dados definitivo        |
+| Git                | Versionamento                    |
+| GitHub             | Repositório e colaboração        |
+| JavaScript         | Lógica complementar em workflows |
+| SQL                | Estrutura e manipulação do banco |
+
+---
+
+# Estrutura do Repositório
 
 ```text
 beautyflow-ai/
-
+│
 ├── arquitetura/
+│
 ├── assets/
+│
 ├── backend/
+│
 ├── database/
 │   ├── 01-create-tables.sql
 │   ├── 02-indexes.sql
@@ -174,137 +257,136 @@ beautyflow-ai/
 │   ├── 07-user-stories/
 │   ├── 08-product-backlog/
 │   ├── 09-arquitetura/
-│   └── 10-modelo-de-dados/
+│   ├── 10-modelo-de-dados/
+│   └── product-management/
 │
 ├── frontend/
 │
 ├── n8n/
 │   ├── workflows/
+│   │   ├── atendimento/
+│   │   ├── agenda/
+│   │   ├── clientes/
+│   │   ├── financeiro/
+│   │   ├── comunicacao/
+│   │   └── administracao/
+│   │
 │   ├── documentacao/
 │   ├── prompts/
 │   └── README.md
 │
 ├── tests/
+│   ├── Casos-de-Teste/
+│   ├── Evidencias/
+│   ├── Testes-de-API/
+│   ├── Testes-de-Aceitacao/
+│   ├── Testes-de-Carga/
+│   └── Testes-de-Seguranca/
 │
 ├── CLAUDE.md
+├── Roadmap.md
 └── README.md
 ```
 
 ---
 
-# Workflows
+# Workflows n8n
+
+O projeto utiliza uma convenção de nomenclatura baseada em domínio e identificador.
+
+Formato:
+
+```text
+DOMINIO - WFXXX - NOME
+```
+
+Exemplo:
+
+```text
+ATD - WF001 - Receber WhatsApp
+```
+
+---
 
 ## Atendimento
 
-| Workflow | Descrição            |
-| -------- | -------------------- |
-| WF001    | Receber WhatsApp     |
-| WF002    | IA Atendimento       |
-| WF003    | Identificar Intenção |
+| Código | Workflow             |
+| ------ | -------------------- |
+| WF001  | Receber WhatsApp     |
+| WF002  | IA Atendimento       |
+| WF003  | Identificar Intenção |
 
 ---
 
 ## Agenda
 
-| Workflow | Descrição                 |
-| -------- | ------------------------- |
-| WF004    | Consultar Disponibilidade |
-| WF005    | Criar Agendamento         |
-| WF006    | Reagendar                 |
-| WF007    | Cancelar                  |
+| Código | Workflow                  |
+| ------ | ------------------------- |
+| WF004  | Consultar Disponibilidade |
+| WF005  | Criar Agendamento         |
+| WF006  | Reagendar                 |
+| WF007  | Cancelar                  |
 
 ---
 
 ## Clientes
 
-| Workflow | Descrição          |
-| -------- | ------------------ |
-| WF008    | Cadastrar Cliente  |
-| WF009    | Atualizar Cadastro |
+| Código | Workflow           |
+| ------ | ------------------ |
+| WF008  | Cadastrar Cliente  |
+| WF009  | Atualizar Cadastro |
 
 ---
 
 ## Financeiro
 
-| Workflow | Descrição           |
-| -------- | ------------------- |
-| WF010    | Registrar Pagamento |
-| WF011    | Cobrança            |
+| Código | Workflow            |
+| ------ | ------------------- |
+| WF010  | Registrar Pagamento |
+| WF011  | Cobrança            |
 
 ---
 
 ## Comunicação
 
-| Workflow | Descrição   |
-| -------- | ----------- |
-| WF012    | Confirmação |
-| WF013    | Lembrete    |
-| WF014    | Pesquisa    |
-| WF015    | Follow-up   |
+| Código | Workflow    |
+| ------ | ----------- |
+| WF012  | Confirmação |
+| WF013  | Lembrete    |
+| WF014  | Pesquisa    |
+| WF015  | Follow-up   |
 
 ---
 
 ## Administração
 
-| Workflow | Descrição |
-| -------- | --------- |
-| WF016    | Backup    |
-| WF017    | Logs      |
-| WF018    | Limpeza   |
+| Código | Workflow |
+| ------ | -------- |
+| WF016  | Backup   |
+| WF017  | Logs     |
+| WF018  | Limpeza  |
 
 ---
 
-# Fluxo do Atendimento
+# Modelo de Dados
+
+A arquitetura de dados prevê suporte multiempresa.
+
+## Principais Entidades
 
 ```text
-Mensagem WhatsApp
-
-        │
-
-        ▼
-
-Receber Mensagem
-
-        │
-
-        ▼
-
-Identificar Cliente
-
-        │
-
-        ▼
-
-Gemini
-
-        │
-
-        ▼
-
-Identificar Intenção
-
-        │
-
-        ▼
-
-Executar Workflow
-
-        │
-
-        ▼
-
-Atualizar Banco
-
-        │
-
-        ▼
-
-Responder Cliente
+EMPRESA
+  │
+  ├── PROFISSIONAIS
+  ├── SERVICOS
+  ├── CLIENTES
+  │
+  └── AGENDAMENTOS
+          │
+          ├── PAGAMENTOS
+          ├── AVALIACOES
+          └── NOTIFICACOES
 ```
-
----
-
-# Banco de Dados
 
 Principais entidades:
 
@@ -312,13 +394,14 @@ Principais entidades:
 * Usuários
 * Profissionais
 * Clientes
+* Categorias de Serviço
 * Serviços
-* Categorias
 * Agenda
 * Agendamentos
 * Lista de Espera
 * Pagamentos
 * Avaliações
+* Notificações
 * Configurações
 * Planos
 * Assinaturas
@@ -326,142 +409,686 @@ Principais entidades:
 
 ---
 
-# Documentação
+# Integrações
 
-A documentação está organizada em:
+## WhatsApp Cloud API
 
-* Visão do Produto
-* Requisitos Funcionais
-* Requisitos Não Funcionais
-* Regras de Negócio
-* Jornada da Cliente
-* Casos de Uso
-* User Stories
-* Product Backlog
-* Arquitetura
-* Modelo de Dados
-* Plano de Testes
+Responsável pelo recebimento e envio de mensagens.
+
+Fluxo:
+
+```text
+Cliente
+   ↓
+WhatsApp
+   ↓
+Meta
+   ↓
+Webhook
+   ↓
+n8n
+```
 
 ---
 
-# Ambiente de Desenvolvimento
+## Google Gemini
+
+Utilizado para:
+
+* interpretação de mensagens;
+* respostas inteligentes;
+* análise de intenção;
+* suporte ao atendimento automatizado.
+
+---
+
+## Google Calendar
+
+Utilizado para:
+
+* consulta de horários;
+* criação de eventos;
+* reagendamento;
+* cancelamento;
+* controle de conflitos.
+
+---
+
+## Google Sheets
+
+Utilizado atualmente como persistência de dados do MVP.
+
+Principais abas:
+
+* EMPRESA
+* PROFISSIONAIS
+* CLIENTES
+* SERVICOS
+* AGENDAMENTOS
+* MENSAGENS
+* LOGS
+
+A arquitetura prevê migração gradual para PostgreSQL.
+
+---
+
+# Configuração do Ambiente
 
 ## Pré-requisitos
 
+Antes de executar o projeto, são necessários:
+
 * Git
-* Node.js (quando aplicável)
-* Docker (opcional)
-* n8n
-* PostgreSQL
+* Conta GitHub
+* Conta n8n
 * Conta Google
-* Google Calendar API
-* Google Sheets API
-* Meta Developer
+* Conta Google Cloud
+* Conta Meta Developer
 * WhatsApp Cloud API
-* Chave da API Google Gemini
+* API Google Gemini
+* PostgreSQL para ambiente futuro
+
+---
+
+# Variáveis e Credenciais
+
+Credenciais nunca devem ser armazenadas diretamente no repositório.
+
+Exemplos de configurações necessárias:
+
+```text
+WHATSAPP_ACCESS_TOKEN
+WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_VERIFY_TOKEN
+
+GOOGLE_CALENDAR_ID
+GOOGLE_CREDENTIALS
+
+GOOGLE_SHEETS_DOCUMENT_ID
+
+GEMINI_API_KEY
+
+DATABASE_URL
+```
+
+> Os nomes acima são exemplos conceituais. Credenciais do n8n devem preferencialmente ser configuradas no próprio sistema de Credentials.
 
 ---
 
 # Como Executar
 
-1. Clone o repositório.
+## 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/Kelencs/beautyflow-ai.git
 ```
 
-2. Acesse a pasta do projeto.
+---
+
+## 2. Entrar no projeto
 
 ```bash
 cd beautyflow-ai
 ```
 
-3. Configure as credenciais necessárias.
+---
 
-4. Importe os workflows para o n8n.
+## 3. Configurar o n8n
 
-5. Configure o Google Calendar.
+Configure as credenciais necessárias para:
 
-6. Configure o Google Sheets.
-
-7. Configure o WhatsApp Cloud API.
-
-8. Configure o Gemini.
-
-9. Execute os testes.
+* WhatsApp Cloud API
+* Google Sheets
+* Google Calendar
+* Google Gemini
+* PostgreSQL, quando aplicável
 
 ---
 
-# Roadmap
+## 4. Importar os Workflows
 
-## MVP
+No n8n:
 
-* Atendimento via WhatsApp
-* Cadastro de clientes
-* Agendamento
-* Cancelamento
-* Reagendamento
-* Google Calendar
-* Google Sheets
+```text
+Workflows
+→ Import from File
+```
 
-## Próxima Versão
+Importe os arquivos JSON disponíveis em:
 
-* PostgreSQL
-* Dashboard Web
-* Painel Administrativo
-* Multiempresa
-* Multiusuário
-* Financeiro Completo
+```text
+n8n/workflows/
+```
 
-## Futuro
+---
 
-* Aplicativo Mobile
-* Pix Automático
-* CRM
-* Relatórios Inteligentes
-* BI
-* IA Preditiva
+## 5. Configurar o WhatsApp
+
+Configure na Meta:
+
+* número do WhatsApp;
+* Phone Number ID;
+* Access Token;
+* Webhook;
+* Verify Token;
+* assinatura dos eventos necessários.
+
+---
+
+## 6. Configurar o Google Calendar
+
+Configure:
+
+* credencial OAuth;
+* calendário utilizado;
+* timezone;
+* permissões;
+* formato de datas.
+
+---
+
+## 7. Configurar o Google Sheets
+
+Configure o documento utilizado pelo MVP e valide as abas necessárias.
+
+---
+
+## 8. Configurar o Gemini
+
+Configure a credencial utilizada pelo workflow de IA.
+
+---
+
+## 9. Executar os Testes
+
+Valide inicialmente:
+
+```text
+WF001
+  ↓
+WF002
+  ↓
+WF003
+```
+
+Depois valide individualmente os demais fluxos.
+
+---
+
+# Testes
+
+O projeto possui estrutura dedicada a QA.
+
+```text
+tests/
+├── Casos-de-Teste/
+├── Evidencias/
+├── Testes-de-API/
+├── Testes-de-Aceitacao/
+├── Testes-de-Carga/
+└── Testes-de-Seguranca/
+```
+
+## Tipos de Testes
+
+### Funcionais
+
+Validam regras de negócio e funcionalidades.
+
+### Integração
+
+Validam:
+
+* n8n ↔ WhatsApp
+* n8n ↔ Gemini
+* n8n ↔ Google Sheets
+* n8n ↔ Google Calendar
+* n8n ↔ PostgreSQL
+
+### Aceitação
+
+Validam os fluxos do ponto de vista da cliente e do negócio.
+
+### Segurança
+
+Validam exposição de dados, credenciais e acessos.
+
+### Carga
+
+Planejados para validar escalabilidade.
 
 ---
 
 # Segurança
 
-* Tokens nunca devem ser versionados.
-* Credenciais devem ser armazenadas em ambiente seguro.
-* Dados sensíveis não devem ser registrados em logs.
-* Utilizar HTTPS em todas as integrações.
-* Aplicar o princípio do menor privilégio para acessos.
+## Regras Gerais
+
+Nunca versionar:
+
+* tokens;
+* senhas;
+* API Keys;
+* credenciais OAuth;
+* arquivos de credenciais;
+* dados pessoais reais.
+
+---
+
+## Princípios
+
+O projeto deve seguir:
+
+* menor privilégio;
+* separação de credenciais;
+* comunicação HTTPS;
+* controle de acesso;
+* rastreabilidade;
+* validação de entrada;
+* proteção de dados;
+* segregação multiempresa.
+
+---
+
+## LGPD
+
+A arquitetura deve considerar a Lei Geral de Proteção de Dados.
+
+Pontos importantes:
+
+* coleta mínima de informações;
+* finalidade de tratamento;
+* segurança;
+* exclusão quando aplicável;
+* controle de acesso;
+* rastreabilidade;
+* proteção de dados pessoais.
+
+---
+
+# Logs e Observabilidade
+
+O projeto possui um workflow administrativo dedicado a logs:
+
+```text
+ADM - WF017 - Logs
+```
+
+Informações recomendadas:
+
+```text
+ID_LOG
+ID_EMPRESA
+WORKFLOW
+NODE
+TIPO
+MENSAGEM
+DATA_HORA
+EXECUTION_ID
+```
+
+Nunca registrar:
+
+* API Keys;
+* senhas;
+* tokens;
+* informações sensíveis desnecessárias.
+
+---
+
+# Padrões de Desenvolvimento
+
+## Workflows
+
+Utilizar:
+
+```text
+DOMINIO - WFXXX - Nome
+```
+
+Exemplos:
+
+```text
+ATD - WF001 - Receber WhatsApp
+AGE - WF005 - Criar Agendamento
+CLI - WF008 - Cadastro Cliente
+```
+
+---
+
+## Nodes
+
+Utilizar nomes descritivos.
+
+Evitar:
+
+```text
+IF1
+HTTP1
+Set1
+Code2
+```
+
+Preferir:
+
+```text
+IF - Cliente Existe
+GS - Buscar Cliente
+GC - Buscar Eventos
+CODE - Normalizar Mensagem
+```
+
+---
+
+## Arquivos
+
+Utilizar nomes em minúsculo quando aplicável.
+
+Exemplo:
+
+```text
+ATD-WF001-receber-whatsapp.json
+```
+
+---
+
+# Git e Commits
+
+## Branches
+
+Sugestão:
+
+```text
+main
+develop
+feature/*
+fix/*
+docs/*
+```
+
+Exemplos:
+
+```text
+feature/wf005-agendamento
+fix/wf002-gemini
+docs/readme-principal
+```
+
+---
+
+## Conventional Commits
+
+Preferir o padrão:
+
+```text
+tipo: descrição
+```
+
+Tipos recomendados:
+
+```text
+feat
+fix
+docs
+refactor
+test
+chore
+```
+
+Exemplos:
+
+```text
+feat: adiciona workflow de cancelamento
+
+fix: corrige busca de cliente no WF002
+
+docs: atualiza documentação do WF008
+
+refactor: simplifica validação de disponibilidade
+
+test: adiciona cenários de reagendamento
+```
+
+---
+
+# Roadmap
+
+## Fase 1 — MVP
+
+* [x] Estrutura inicial do projeto
+* [x] Documentação funcional
+* [x] Estrutura de workflows
+* [x] Integração inicial WhatsApp
+* [x] Google Sheets
+* [x] Google Calendar
+* [x] Gemini
+* [ ] Finalizar WF001–WF018
+* [ ] Executar testes integrados
+* [ ] Validar MVP completo
+
+---
+
+## Fase 2 — Banco de Dados
+
+* [ ] Finalizar PostgreSQL
+* [ ] Criar índices
+* [ ] Criar constraints
+* [ ] Criar triggers
+* [ ] Criar seeds
+* [ ] Migrar Google Sheets
+* [ ] Validar compatibilidade
+
+---
+
+## Fase 3 — Plataforma SaaS
+
+* [ ] Backend
+* [ ] Autenticação
+* [ ] Multiempresa
+* [ ] Multiusuário
+* [ ] Controle de planos
+* [ ] Assinaturas
+* [ ] API REST
+* [ ] Dashboard administrativo
+
+---
+
+## Fase 4 — Evolução
+
+* [ ] Dashboard financeiro
+* [ ] CRM
+* [ ] Relatórios
+* [ ] BI
+* [ ] Métricas operacionais
+* [ ] IA para recomendações
+* [ ] IA preditiva
+* [ ] Lista de espera inteligente
+* [ ] Aplicativo mobile
+* [ ] Pagamentos Pix
+
+---
+
+# Documentação
+
+Toda a documentação técnica e funcional encontra-se em:
+
+```text
+docs/
+```
+
+Principais documentos:
+
+```text
+01-visao-do-produto
+02-requisitos-funcionais
+03-requisitos-nao-funcionais
+04-regras-de-negocio
+05-jornada-do-cliente
+06-casos-de-uso
+07-user-stories
+08-product-backlog
+09-arquitetura
+10-modelo-de-dados
+```
+
+Para regras específicas destinadas a ferramentas de desenvolvimento assistido por IA, consultar:
+
+```text
+CLAUDE.md
+```
+
+---
+
+# Arquitetura Futura
+
+```mermaid
+flowchart LR
+
+    CLIENTE[Cliente]
+    WA[WhatsApp]
+
+    API[Backend API]
+    N8N[n8n]
+    AI[Gemini]
+
+    DB[(PostgreSQL)]
+    REDIS[(Cache)]
+    CAL[Google Calendar]
+
+    WEB[Dashboard Web]
+    MOBILE[App Mobile]
+
+    CLIENTE --> WA
+    WA --> N8N
+
+    N8N --> AI
+    N8N --> API
+    N8N --> CAL
+
+    API --> DB
+    API --> REDIS
+
+    WEB --> API
+    MOBILE --> API
+```
+
+---
+
+# Visão SaaS
+
+O BeautyFlow AI foi projetado para evoluir para uma arquitetura multiempresa.
+
+Cada empresa deverá possuir seus próprios:
+
+* profissionais;
+* clientes;
+* serviços;
+* agendas;
+* configurações;
+* planos;
+* mensagens;
+* pagamentos;
+* relatórios.
+
+A segregação deverá ocorrer principalmente através de:
+
+```text
+ID_EMPRESA
+```
+
+---
+
+# Métricas Futuras
+
+Indicadores planejados:
+
+* quantidade de atendimentos;
+* taxa de conversão;
+* novos clientes;
+* clientes recorrentes;
+* cancelamentos;
+* no-show;
+* faturamento;
+* ticket médio;
+* horários mais procurados;
+* serviços mais vendidos;
+* profissionais mais demandados;
+* taxa de resposta automática;
+* satisfação das clientes.
 
 ---
 
 # Contribuição
 
-1. Crie uma branch.
+Fluxo recomendado:
+
+1. Crie uma nova branch.
 2. Faça as alterações.
-3. Execute os testes.
-4. Atualize a documentação.
-5. Abra um Pull Request.
+3. Valide dependências.
+4. Execute os testes.
+5. Atualize documentação quando necessário.
+6. Faça commit.
+7. Faça push.
+8. Abra um Pull Request.
+
+---
+
+# Pull Request
+
+Todo PR deve informar:
+
+* objetivo;
+* arquivos alterados;
+* workflows impactados;
+* integrações afetadas;
+* testes realizados;
+* riscos;
+* evidências quando necessário.
+
+---
+
+# Princípios do Projeto
+
+O BeautyFlow AI prioriza:
+
+> Automação com simplicidade.
+
+> Experiência da cliente.
+
+> Segurança por padrão.
+
+> Arquitetura escalável.
+
+> Documentação como parte do produto.
+
+> Workflows desacoplados.
+
+> Integrações rastreáveis.
+
+> Evolução incremental.
 
 ---
 
 # Licença
 
-Este projeto é de propriedade de seus mantenedores.
+Este projeto é proprietário.
 
-Todos os direitos reservados.
+Todos os direitos são reservados aos mantenedores do **BeautyFlow AI**.
 
----
-
-# Autor
-
-**BeautyFlow AI**
-
-Plataforma SaaS de Atendimento Inteligente para Profissionais da Beleza.
+Não é permitida distribuição, utilização comercial ou reprodução sem autorização.
 
 ---
 
-# Status do Projeto
+# BeautyFlow AI
 
-> 🚧 **Em desenvolvimento ativo**
+**Plataforma SaaS de Atendimento Inteligente para Profissionais da Beleza**
 
-O projeto está evoluindo continuamente, com foco na automação inteligente de atendimento, agendamentos e gestão para profissionais da beleza. Novas funcionalidades e melhorias são adicionadas de forma incremental conforme o roadmap definido.
+```text
+WhatsApp + IA + Automação + Agenda + Gestão
+```
+
+---
+
+<p align="center">
+  <strong>BeautyFlow AI</strong><br>
+  Transformando atendimento em automação inteligente.
+</p>
