@@ -1,1 +1,296 @@
-
+{
+  "name": "ATD - WF001 - Receber WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "beautyflow-whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "70078e74-d980-48cb-b1f6-ba892367fc76",
+      "name": "Webhook - Validar Meta",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        512,
+        1312
+      ],
+      "webhookId": "197d8835-5d6f-46d0-bcd8-9d0f8f29c82f"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query?.['hub.challenge'] || '' }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a79782cc-32f4-46e6-89e7-12787547ccf0",
+      "name": "RESP - Challenge Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        752,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "beautyflow-whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "6da1267e-3466-4562-b54c-879b9ee41fa2",
+      "name": "Webhook - Receber WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        512,
+        1520
+      ],
+      "webhookId": "01ad760e-25d1-45e7-9f07-d12bbfb73b2b"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"EVENT_RECEIVED\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "c0cc3680-97cb-425a-ab1f-4ce8e54ae010",
+      "name": "RESP - Evento Recebido",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        752,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body=$json.body||$json;\nconst value=body?.entry?.[0]?.changes?.[0]?.value||{};\nconst msg=value?.messages?.[0]||null;\nconst contact=value?.contacts?.[0]||{};\nconst meta=value?.metadata||{};\nif(!msg) return [{json:{evento_valido:false,origem:'WHATSAPP'}}];\nreturn [{json:{\n evento_valido:true,\n id_empresa:'EMP001',\n mensagem_id:msg.id||'',\n telefone_cliente:String(msg.from||'').replace(/\\D/g,''),\n nome_cliente:contact?.profile?.name||'Cliente',\n tipo_mensagem:msg.type||'text',\n mensagem_texto:msg?.text?.body||'',\n timestamp:new Date(Number(msg.timestamp||0)*1000).toISOString(),\n phone_number_id:meta.phone_number_id||'',\n origem:'WHATSAPP'\n}}];"
+      },
+      "id": "6db5b0d6-91e4-4387-9def-c50380557ee5",
+      "name": "CODE - Normalizar Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "0RXgjnAy45XbZl5v",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/0RXgjnAy45XbZl5v",
+          "cachedResultName": "My project — ATD - WF002 - IA Atendimento"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "mensagem_id": "{{ $json.mensagem_id }}",
+            "id_empresa": "{{ $json.id_empresa }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "tipo_mensagem": "={{ $json.tipo_mensagem }}",
+            "mensagem_texto": "={{ $json.mensagem_texto }}",
+            "timestamp": "={{ $json.timestamp }}",
+            "phone_number_id": " {{ $json.phone_number_id }}",
+            "origem": "={{ $json.origem }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_id",
+              "displayName": "mensagem_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo_mensagem",
+              "displayName": "tipo_mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "35316c95-1d5b-4ab9-9b26-64326fbaba66",
+      "name": "EXEC - WF002 - IA Atendimento",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1248,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF001 v5.0\n\nSem Google Sheets. Apenas recebe, responde, normaliza e chama o WF002.",
+        "height": 280,
+        "width": 520
+      },
+      "id": "807b2729-6c6d-4335-94a8-83736da050d8",
+      "name": "NOTA - WF001 v5.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        1040
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Validar Meta": {
+      "main": [
+        [
+          {
+            "node": "RESP - Challenge Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Receber WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "RESP - Evento Recebido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RESP - Evento Recebido": {
+      "main": [
+        [
+          {
+            "node": "CODE - Normalizar Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Payload": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF002 - IA Atendimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "86d80a08-6395-4737-b708-3667e963d85e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "to0otdCMaF91CTQN",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T14:40:57.075Z",
+      "createdAt": "2026-08-04T14:40:57.075Z",
+      "id": "0o92UmYfNOkktUNj",
+      "name": "Atendimento"
+    },
+    {
+      "updatedAt": "2026-08-04T15:39:27.064Z",
+      "createdAt": "2026-08-04T15:39:27.064Z",
+      "id": "d0gotpD6aug9VhAP",
+      "name": "WhatsApp"
+    }
+  ]
+}
