@@ -1,1 +1,378 @@
-
+{
+  "name": "ADM - WF017 - Logs",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "workflow"
+            },
+            {
+              "name": "node"
+            },
+            {
+              "name": "tipo"
+            },
+            {
+              "name": "evento"
+            },
+            {
+              "name": "status"
+            },
+            {
+              "name": "mensagem"
+            },
+            {
+              "name": "dados"
+            },
+            {
+              "name": "execution_id"
+            }
+          ]
+        }
+      },
+      "id": "4507f72c-aca5-4eb0-bf84-e9d6e663fc8f",
+      "name": "TRG - Receber Evento de Log",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1568,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "ID_LOG",
+              "value": "={{ 'LOG'+Date.now().toString().slice(-6) }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "DATA_HORA",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "ID_EMPRESA",
+              "value": "={{ $json.id_empresa || 'EMP001' }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "WORKFLOW",
+              "value": "={{ $json.workflow || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "NODE",
+              "value": "={{ $json.node || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
+              "name": "TIPO",
+              "value": "={{ String($json.tipo || 'INFO').toUpperCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "a7",
+              "name": "EVENTO",
+              "value": "={{ $json.evento || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "STATUS",
+              "value": "={{ String($json.status || 'PROCESSADO').toUpperCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "a9",
+              "name": "MENSAGEM",
+              "value": "={{ $json.mensagem || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a10",
+              "name": "DADOS",
+              "value": "={{ JSON.stringify($json.dados || {}) }}",
+              "type": "string"
+            },
+            {
+              "id": "a11",
+              "name": "EXECUTION_ID",
+              "value": "={{ $json.execution_id || $execution.id || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ada85148-7fb9-4180-a96b-dff619b578f8",
+      "name": "SET - Preparar Log",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1296,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1780172632,
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_LOG": "={{ $json.ID_LOG }}",
+            "DATA_HORA": "={{ $json.DATA_HORA }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "WORKFLOW": "={{ $json.WORKFLOW }}",
+            "NODE": "={{ $json.NODE }}",
+            "TIPO": "={{ $json.TIPO }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "EVENTO": "={{ $json.EVENTO }}",
+            "MENSAGEM": "={{ $json.MENSAGEM }}",
+            "DADOS": "={{ $json.DADOS }}",
+            "EXECUTION_ID": "={{ $json.EXECUTION_ID }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_LOG",
+              "displayName": "ID_LOG",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WORKFLOW",
+              "displayName": "WORKFLOW",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NODE",
+              "displayName": "NODE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TIPO",
+              "displayName": "TIPO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EVENTO",
+              "displayName": "EVENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MENSAGEM",
+              "displayName": "MENSAGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DADOS",
+              "displayName": "DADOS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EXECUTION_ID",
+              "displayName": "EXECUTION_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ee9d07ac-5485-4b32-b403-fa0e5ff815d4",
+      "name": "GS - Registrar Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -1056,
+        976
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "df22c6eb-06c3-4f8c-9f74-70db74d63b36",
+      "name": "OUT - Log Registrado",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF017 v5.0\n\nGrava exclusivamente na aba LOGS.",
+        "height": 280,
+        "width": 520
+      },
+      "id": "3623e7f2-ba1c-4002-9240-b60979feaab3",
+      "name": "NOTA - WF017 v5.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        576
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Evento de Log": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Preparar Log": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Log": {
+      "main": [
+        [
+          {
+            "node": "OUT - Log Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ce846acf-a8d4-47d4-818c-7e426fdc11e9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "9ExZcr3lVgCtMqO0",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:31:46.885Z",
+      "createdAt": "2026-08-05T15:31:46.885Z",
+      "id": "mOSdbjaHHUnyV2Wz",
+      "name": "Administração"
+    },
+    {
+      "updatedAt": "2026-08-05T15:32:03.425Z",
+      "createdAt": "2026-08-05T15:32:03.425Z",
+      "id": "wOHASqEFw5v66HVH",
+      "name": "Logs"
+    }
+  ]
+}
