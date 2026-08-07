@@ -1,1 +1,566 @@
-
+{
+  "name": "AGE - WF004 - Consultar Disponibilidade",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "id_cliente"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "hora_inicio"
+            },
+            {
+              "name": "periodo"
+            },
+            {
+              "name": "id_profissional"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "id_agendamento"
+            },
+            {
+              "name": "google_event_id"
+            },
+            {
+              "name": "origem"
+            },
+            {
+              "name": "resposta_cliente"
+            },
+            {
+              "name": "motivo_cancelamento"
+            }
+          ]
+        }
+      },
+      "id": "855f9c82-d750-4104-99ca-f2d437572dfd",
+      "name": "TRG - Receber Dados WF004",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1181056974,
+          "mode": "list",
+          "cachedResultName": "SERVICOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1181056974"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "NOME",
+              "lookupValue": "={{ $json.servico }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "ATIVO"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a4e58f12-c802-43b3-9fa9-5335b28a9182",
+      "name": "GS - Buscar Serviço",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        96,
+        1264
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1890272312,
+          "mode": "list",
+          "cachedResultName": "PROFISSIONAIS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1890272312"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('TRG - Receber Dados WF004').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "ATIVO"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7dbba411-d866-4ce7-bc0b-abd091979398",
+      "name": "GS - Buscar Profissional",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        304,
+        1264
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1692873768,
+          "mode": "list",
+          "cachedResultName": "DISPONIBILIDADES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1692873768"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('TRG - Receber Dados WF004').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "ID_PROFISSIONAL",
+              "lookupValue": "={{ $('GS - Buscar Profissional').first().json.ID_PROFISSIONAL }}"
+            },
+            {
+              "lookupColumn": "ATIVO",
+              "lookupValue": "SIM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "08df9b3c-1e19-479d-9f97-f4e45c85f29b",
+      "name": "GS - Buscar Disponibilidade",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        528,
+        1264
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('TRG - Receber Dados WF004').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "ID_PROFISSIONAL",
+              "lookupValue": "={{ $('GS - Buscar Profissional').first().json.ID_PROFISSIONAL }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fe2a75f2-38e1-481d-a581-8b4cb41096d9",
+      "name": "GS - Buscar Agendamentos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        752,
+        1264
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$('TRG - Receber Dados WF004').first().json;\nconst s=$('GS - Buscar Serviço').first().json;\nconst p=$('GS - Buscar Profissional').first().json;\nconst ds=$items('GS - Buscar Disponibilidade').map(i=>i.json);\nconst ag=$items('GS - Buscar Agendamentos').map(i=>i.json);\nconst dur=Number(s.DURACAO_MIN||60), intervalo=Number(s.TEMPO_INTERVALO_MIN||0);\nconst tm=t=>{const [h,m]=String(t||'00:00').slice(0,5).split(':').map(Number);return h*60+m};\nconst hs=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');\nconst dia=new Date(`${e.data}T12:00:00`).getDay();\nconst d=ds.find(x=>Number(x.DIA_SEMANA_NUM)===dia)||ds[0];\nif(!d)return [{json:{status:'SEM_DISPONIBILIDADE',horarios:[],resposta_cliente:'Não encontrei disponibilidade cadastrada.'}}];\nconst occ=ag.filter(a=>!['CANCELADO'].includes(String(a.STATUS||'').toUpperCase())).map(a=>[tm(a.HORA_INICIO),tm(a.HORA_FIM)]);\nconst ini=tm(d.HORA_INICIO), fim=tm(d.HORA_FIM), pi=d.INTERVALO_INICIO?tm(d.INTERVALO_INICIO):null, pf=d.INTERVALO_FIM?tm(d.INTERVALO_FIM):null;\nconst horarios=[]; for(let x=ini;x+dur<=fim;x+=30){const y=x+dur+intervalo; if(!(pi!==null&&x<pf&&y>pi)&&!occ.some(([a,b])=>x<b&&y>a)) horarios.push(hs(x));}\nreturn [{json:{...e,id_servico:s.ID_SERVICO,servico:s.NOME,duracao_min:dur,valor:Number(s.VALOR||0),id_profissional:p.ID_PROFISSIONAL,profissional:p.NOME,horarios,resposta_cliente:horarios.length?`Horários disponíveis: ${horarios.slice(0,6).join(', ')}`:'Não encontrei horários livres.'}}];"
+      },
+      "id": "659e1b81-2c87-4021-86c0-fa5d5f2def2b",
+      "name": "CODE - Calcular Horários Livres",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        1264
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "17767a92-b5cd-419b-b787-61dbfd08c9f4",
+      "name": "OUT - Horários Disponíveis",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "=WF004",
+            "node": "=",
+            "tipo": "=",
+            "evento": "CONSULTA_DISPONIBILIDADE",
+            "status": "={{ $json.status }}",
+            "mensagem": "={{ $json.resposta_cliente }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "a1b86930-a96a-448b-947d-7f85bb5b9a6c",
+      "name": "EXEC - WF017 - Logs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF004 v5.1\n\nConfigure filtros nas buscas, Google Calendar Get Many e Always Output Data quando necessário.",
+        "height": 260,
+        "width": 520
+      },
+      "id": "91762650-6d21-4c61-bca8-81a906da4415",
+      "name": "NOTA - WF004 v5.1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "44662433ff0adfe4158dd7e155b55ac73bba692d3762c95df79403cb4b5d575f@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "BeautyFlow - Studio Bella"
+        },
+        "limit": 100,
+        "timeMin": "={{ DateTime.fromFormat($('TRG - Receber Dados WF004').first().json.data, 'dd/MM/yyyy').startOf('day').toISO() }}",
+        "timeMax": "={{ DateTime.fromFormat($('TRG - Receber Dados WF004').first().json.data, 'dd/MM/yyyy').endOf('day').toISO() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        1264
+      ],
+      "id": "af41baea-89ff-4c38-835f-0de6688a613d",
+      "name": "Get many events",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "D5hP4f39WlayBYFI",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF004": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Serviço",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Serviço": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Profissional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Profissional": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Disponibilidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Disponibilidade": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "Get many events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Calcular Horários Livres": {
+      "main": [
+        [
+          {
+            "node": "OUT - Horários Disponíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OUT - Horários Disponíveis": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 - Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events": {
+      "main": [
+        [
+          {
+            "node": "CODE - Calcular Horários Livres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "af8648f9-168c-4c02-8781-4949523f099f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "v21QzUiS7NVGnyio",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.484Z",
+      "createdAt": "2026-08-05T15:27:49.484Z",
+      "id": "IJyLtWJdJ6zSxyOb",
+      "name": "Google Calendar"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.519Z",
+      "createdAt": "2026-08-05T15:27:49.519Z",
+      "id": "kBpyDFlwbrEc6QP9",
+      "name": "Agenda"
+    }
+  ]
+}
