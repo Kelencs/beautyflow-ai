@@ -1,1 +1,360 @@
-
+{
+  "name": "COM - WF014 - Pesquisa",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "id_cliente"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "mensagem_texto"
+            },
+            {
+              "name": "intencao"
+            },
+            {
+              "name": "confianca"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "hora_inicio"
+            },
+            {
+              "name": "periodo"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "resposta_cliente"
+            },
+            {
+              "name": "phone_number_id"
+            },
+            {
+              "name": "origem"
+            }
+          ]
+        }
+      },
+      "id": "9925a08d-23ea-4c79-896d-7dcdc9022b69",
+      "name": "TRG - Receber Dados WF014",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        1008
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "010098bd-b153-4c16-a7db-489a6eb500ef",
+      "name": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "options": {}
+      },
+      "id": "da6d7334-61f3-4949-ac71-7c992038b941",
+      "name": "GS - Buscar Agendamentos Concluídos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        96,
+        1008
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "K6eEf2xTWr0Ke4Hs",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/K6eEf2xTWr0Ke4Hs",
+          "cachedResultName": "My project — COM - WF012 - Confirmação"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "865d5a58-4191-4c01-a336-5f297938b125",
+      "name": "EXEC - WF012 Comunicação",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        336,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## COM - WF014 - Pesquisa v5.0\n\nEnvia pesquisa após atendimento.",
+        "height": 280,
+        "width": 520
+      },
+      "id": "3ff21e78-2b30-4216-9dfe-1f37529383ba",
+      "name": "NOTA - COM - WF014 - Pesquisa v5.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        512,
+        608
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF014": {
+      "main": [
+        [
+          {
+            "node": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SCHEDULE - Configurar recorrência [CONFIGURAR]": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamentos Concluídos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamentos Concluídos": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF012 Comunicação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "bfa3a89f-7a01-4a70-a90f-1877f1319700",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "Et01bo2WISs7Ersi",
+  "tags": [
+    {
+      "updatedAt": "2026-08-05T15:31:17.429Z",
+      "createdAt": "2026-08-05T15:31:17.429Z",
+      "id": "PUJ0MXFwyWWtTsE0",
+      "name": "Avaliações"
+    },
+    {
+      "updatedAt": "2026-08-04T15:39:27.064Z",
+      "createdAt": "2026-08-04T15:39:27.064Z",
+      "id": "d0gotpD6aug9VhAP",
+      "name": "WhatsApp"
+    },
+    {
+      "updatedAt": "2026-08-05T15:30:16.361Z",
+      "createdAt": "2026-08-05T15:30:16.361Z",
+      "id": "pohFpMRv1IlV3O4l",
+      "name": "Comunicação"
+    }
+  ]
+}
