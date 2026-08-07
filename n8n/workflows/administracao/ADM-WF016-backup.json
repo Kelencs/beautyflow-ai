@@ -1,1 +1,329 @@
-
+{
+  "name": "ADM - WF016 - Backup",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "id_cliente"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "mensagem_texto"
+            },
+            {
+              "name": "intencao"
+            },
+            {
+              "name": "confianca"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "hora_inicio"
+            },
+            {
+              "name": "periodo"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "resposta_cliente"
+            },
+            {
+              "name": "phone_number_id"
+            },
+            {
+              "name": "origem"
+            }
+          ]
+        }
+      },
+      "id": "ec0dc0ca-a824-46c1-877a-1da41ec3561c",
+      "name": "TRG - Receber Dados WF016",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        624
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "823ce84d-1ff4-42bc-a492-90cabdee62d3",
+      "name": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        624
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "292cd9ae-c88f-48db-bd36-9a4c97432160",
+      "name": "GS - Ler tabelas [CONFIGURAR]",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        96,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "id": "62094a81-7d95-4204-8e20-3842a1d9fd72",
+      "name": "CODE - Gerar Backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        624
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "05e51459-185e-42ec-915d-de0c3abd9589",
+      "name": "DRIVE - Salvar Backup [CONFIGURAR]",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        576,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "3bb05b23-7761-433b-b5bb-1d2f3c6b014e",
+      "name": "EXEC - WF017 Logs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ADM - WF016 - Backup v5.0\n\nBackup periódico.",
+        "height": 280,
+        "width": 520
+      },
+      "id": "c5aa9a4a-481b-4560-ae60-36a5f9de5312",
+      "name": "NOTA - ADM - WF016 - Backup v5.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        512,
+        224
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF016": {
+      "main": [
+        [
+          {
+            "node": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SCHEDULE - Configurar recorrência [CONFIGURAR]": {
+      "main": [
+        [
+          {
+            "node": "GS - Ler tabelas [CONFIGURAR]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Ler tabelas [CONFIGURAR]": {
+      "main": [
+        [
+          {
+            "node": "CODE - Gerar Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Gerar Backup": {
+      "main": [
+        [
+          {
+            "node": "DRIVE - Salvar Backup [CONFIGURAR]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DRIVE - Salvar Backup [CONFIGURAR]": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "bd028809-4ab9-4273-b157-6ca328afd898",
+  "meta": {
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "UkLrUvmXPq0ba9IA",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:31:46.885Z",
+      "createdAt": "2026-08-05T15:31:46.885Z",
+      "id": "mOSdbjaHHUnyV2Wz",
+      "name": "Administração"
+    },
+    {
+      "updatedAt": "2026-08-05T15:31:46.854Z",
+      "createdAt": "2026-08-05T15:31:46.854Z",
+      "id": "pET0V6VS0vjd3UrW",
+      "name": "Backup"
+    }
+  ]
+}
