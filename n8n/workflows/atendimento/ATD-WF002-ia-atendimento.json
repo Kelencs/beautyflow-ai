@@ -1,1 +1,1240 @@
-
+{
+  "name": "ATD - WF002 - IA Atendimento",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "mensagem_id"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "tipo_mensagem"
+            },
+            {
+              "name": "mensagem_texto"
+            },
+            {
+              "name": "timestamp"
+            },
+            {
+              "name": "phone_number_id"
+            },
+            {
+              "name": "origem"
+            }
+          ]
+        }
+      },
+      "id": "6bf673fc-02d6-4235-b2d2-6e1d4e2a692e",
+      "name": "TRG - Receber do WF001",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "501ca1d8-a667-4980-8b32-bf659b6650b9",
+              "name": "id_empresa",
+              "value": "={{ $json.id_empresa || 'EMP001' }}",
+              "type": "string"
+            },
+            {
+              "id": "5346bbf1-3fcc-4b58-b6a5-711151bc733b",
+              "name": "mensagem_id",
+              "value": "={{ $json.mensagem_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8b88f4bc-2d47-4cd1-bf14-ccc0c1ed744b",
+              "name": "telefone_cliente",
+              "value": "={{ String($json.telefone_cliente || '').replace(/\\D/g,'') }}",
+              "type": "string"
+            },
+            {
+              "id": "c6d07bc0-d9fe-4cd4-bbc3-c74583567ba5",
+              "name": "nome_cliente",
+              "value": "={{ $json.nome_cliente || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "1ab22e11-6144-4922-a532-61f0b5864abd",
+              "name": "tipo_mensagem",
+              "value": "={{ $json.tipo_mensagem || 'text' }}",
+              "type": "string"
+            },
+            {
+              "id": "35f80b2d-303e-4655-907a-483a30d6a7c7",
+              "name": "mensagem_texto",
+              "value": "={{ $json.mensagem_texto || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "f87de2f0-3a38-42e3-9f96-7a11475578bb",
+              "name": "timestamp",
+              "value": "={{ $json.timestamp || $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "af890746-9855-47b7-abfa-d01258d87ad1",
+              "name": "phone_number_id",
+              "value": "={{ $json.phone_number_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "df681ebb-2bd5-4962-a94c-96abb6f9c324",
+              "name": "origem",
+              "value": "={{ $json.origem || 'WHATSAPP' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ac438744-4718-40f9-851e-fbe40a3ba73c",
+      "name": "SET - Preparar Dados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -400,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('SET - Preparar Dados').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "TELEFONE",
+              "lookupValue": "={{ $('SET - Preparar Dados').first().json.telefone_cliente }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "65705713-8578-4af5-8f3b-01f7d27237bc",
+      "name": "GS - Buscar Cliente",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -176,
+        2320
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "57c62ef3-143b-4b2f-ba09-dbc8b80fded4",
+              "leftValue": "={{ $json.ID_CLIENTE || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cb97c229-c9bf-496f-a1ad-f1ea2af72de6",
+      "name": "IF - Cliente Existe",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        2320
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b7fba761-13ad-42e0-bb23-47611efa7d45",
+              "name": "id_cliente",
+              "value": "={{ $json.ID_CLIENTE }}",
+              "type": "string"
+            },
+            {
+              "id": "39e9c72e-cd70-4234-b5c2-2cff1ce5c5e7",
+              "name": "id_empresa",
+              "value": "={{ $('SET - Preparar Dados').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "46a38333-dcd4-4749-a625-c46b12bea1f5",
+              "name": "telefone_cliente",
+              "value": "={{ $('SET - Preparar Dados').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "d2c56993-b535-459c-bac7-18c625bb7b90",
+              "name": "nome_cliente",
+              "value": "={{ $json.NOME || $('SET - Preparar Dados').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "0fb552a2-322a-4d4d-a17d-282669a1a42c",
+              "name": "mensagem_id",
+              "value": "={{ $('SET - Preparar Dados').first().json.mensagem_id }}",
+              "type": "string"
+            },
+            {
+              "id": "af4cee7f-14f9-435e-8c99-6c41f1e874c5",
+              "name": "tipo_mensagem",
+              "value": "={{ $('SET - Preparar Dados').first().json.tipo_mensagem }}",
+              "type": "string"
+            },
+            {
+              "id": "db755b64-7a31-45d7-b7e7-5a8110127fa8",
+              "name": "mensagem_texto",
+              "value": "={{ $('SET - Preparar Dados').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "aedd9c4e-8dfc-41f8-ae9d-610757707771",
+              "name": "timestamp",
+              "value": "={{ $('SET - Preparar Dados').first().json.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "5586fa23-6e72-4d14-969f-2645a577d51c",
+              "name": "phone_number_id",
+              "value": "={{ $('SET - Preparar Dados').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "45d4533f-960b-4711-9075-681ec084d104",
+              "name": "origem",
+              "value": "={{ $('SET - Preparar Dados').first().json.origem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ad786688-9863-4fbd-808d-9109893ae9fd",
+      "name": "SET - Cliente Existente",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        2224
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aK7c4sZgz7yLyuaM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/aK7c4sZgz7yLyuaM",
+          "cachedResultName": "My project — CLI - WF008 - Cadastrar Cliente"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $('SET - Preparar Dados').first().json.id_empresa || 'EMP001' }}",
+            "telefone_cliente": "={{ $('SET - Preparar Dados').first().json.telefone_cliente }}",
+            "nome_cliente": "={{ $('SET - Preparar Dados').first().json.nome_cliente || 'Cliente' }}",
+            "origem": "={{ $('SET - Preparar Dados').first().json.origem || 'WHATSAPP' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "23bb5dfb-2ae8-4408-924a-b2347df3fd4f",
+      "name": "EXEC - WF008 - Cadastrar Cliente",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        2416
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d7270cb0-9131-467d-ab15-7efd2854bec0",
+              "name": "id_cliente",
+              "value": "={{ $json.ID_CLIENTE || $json.id_cliente || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "42d1cb3e-ca8b-4ac1-ae7d-bb4a8f123a1a",
+              "name": "id_empresa",
+              "value": "={{ $('SET - Preparar Dados').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "387406e4-c112-42bd-87ab-e981dbe4a300",
+              "name": "telefone_cliente",
+              "value": "={{ $('SET - Preparar Dados').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "d8032d58-f1a2-468d-a659-9afc4081b1aa",
+              "name": "nome_cliente",
+              "value": "={{ $('SET - Preparar Dados').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "b8505977-4b77-43cb-806d-46b781feae81",
+              "name": "mensagem_id",
+              "value": "={{ $('SET - Preparar Dados').first().json.mensagem_id }}",
+              "type": "string"
+            },
+            {
+              "id": "e20c595f-b648-4258-8ae9-c7c7118dc1c9",
+              "name": "tipo_mensagem",
+              "value": "={{ $('SET - Preparar Dados').first().json.tipo_mensagem }}",
+              "type": "string"
+            },
+            {
+              "id": "a493f522-08e8-49a6-b707-d7df1a0ddca0",
+              "name": "mensagem_texto",
+              "value": "={{ $('SET - Preparar Dados').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "fd56141d-1ea8-4810-8afb-38c33837c7f4",
+              "name": "timestamp",
+              "value": "={{ $('SET - Preparar Dados').first().json.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "979f28df-dc91-4620-990c-8a27e943df79",
+              "name": "phone_number_id",
+              "value": "={{ $('SET - Preparar Dados').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "9b7aa61e-e9c9-4fef-826f-472533102ef3",
+              "name": "origem",
+              "value": "={{ $('SET - Preparar Dados').first().json.origem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c5678e0b-4d58-4624-bf5a-20f9ac78e924",
+      "name": "SET - Cliente Criado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        2416
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1077990700,
+          "mode": "list",
+          "cachedResultName": "IA_MEMORIA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1077990700"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('MERGE - Cliente').first().json.id_empresa || 'EMP001' }}"
+            },
+            {
+              "lookupColumn": "ID_CLIENTE",
+              "lookupValue": "={{ $('MERGE - Cliente').first().json.id_cliente }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "={{ 'ATIVO' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f43d5ce-f911-46e6-a703-f09084c258ed",
+      "name": "GS - Buscar Memória",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        944,
+        2304
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aa15544d-36cf-4b7b-80e7-0804f05c052a",
+              "name": "prompt_beautyflow",
+              "value": "={{ `Você é o assistente virtual do BeautyFlow. Analise a mensagem do cliente e retorne somente JSON válido.\\n\\nCliente: ${$('MERGE - Cliente').first().json.nome_cliente}\\nTelefone: ${$('MERGE - Cliente').first().json.telefone_cliente}\\nMensagem: ${$('MERGE - Cliente').first().json.mensagem_texto}\\n\\nFormato obrigatório:\\n{\"intencao\":\"AGENDAR|CONSULTAR_DISPONIBILIDADE|REAGENDAR|CANCELAR|OUTRO\",\"confianca\":0.0,\"servico\":\"\",\"dados\":{},\"data\":\"\",\"hora_inicio\":\"\",\"periodo\":\"\",\"profissional\":\"\",\"resposta_cliente\":\"\",\"proximo_fluxo\":\"\"}` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "a27ab2c7-029d-49c5-8903-eded84c0c6df",
+      "name": "SET - Montar Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1168,
+        2304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw=$json;let p=raw?.intencao?raw:null;\nif(!p){const t=raw?.content?.parts?.[0]?.text??raw?.text??raw?.output??raw?.response??'';try{p=typeof t==='string'?JSON.parse(t.replace(/```json|```/g,'').trim()):t}catch{p={intencao:'OUTRO',confianca:0,servico:'',dados:{},data:'',hora_inicio:'',periodo:'',profissional:'',resposta_cliente:'Desculpe, não consegui compreender. Você deseja agendar, consultar, reagendar ou cancelar?',proximo_fluxo:'RESPOSTA_GERAL'}}}\nconst c=$('MERGE - Cliente').first().json;\nreturn [{json:{id_empresa:c.id_empresa||'EMP001',id_cliente:c.id_cliente||'',telefone_cliente:c.telefone_cliente||'',nome_cliente:c.nome_cliente||'Cliente',mensagem_id:c.mensagem_id||'',tipo_mensagem:c.tipo_mensagem||'text',mensagem_texto:c.mensagem_texto||'',timestamp:c.timestamp||new Date().toISOString(),phone_number_id:c.phone_number_id||'',origem:c.origem||'WHATSAPP',intencao:String(p.intencao||'OUTRO').toUpperCase(),confianca:Number(p.confianca||0),servico:p.servico||'',dados:p.dados||{},data:p.data||'',hora_inicio:p.hora_inicio||p.hora||'',periodo:p.periodo||'',profissional:p.profissional||'',resposta_cliente:p.resposta_cliente||'',proximo_fluxo:p.proximo_fluxo||''}}];"
+      },
+      "id": "c6ca62fa-02f4-4a4f-a39f-556c2b54a8e2",
+      "name": "CODE - Interpretar IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        2304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1680743471,
+          "mode": "list",
+          "cachedResultName": "MENSAGENS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1680743471"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_MENSAGEM": "={{ 'MSG' + Date.now() }}",
+            "ID_EMPRESA": "={{ $json.id_empresa }}",
+            "ID_CLIENTE": "={{ $json.id_cliente }}",
+            "WHATSAPP_MESSAGE_ID": "={{ $json.mensagem_id }}",
+            "ID_AGENDAMENTO": "={{ $json.id_agendamento }}",
+            "DATA_HORA": "={{ $json.timestamp_iso }}",
+            "TELEFONE": "={{ $json.telefone_cliente }}",
+            "DIRECAO": "RECEBIDA",
+            "TIPO_MENSAGEM": "={{ $json.tipo_mensagem }}",
+            "MENSAGEM": "={{ $json.mensagem_texto }}",
+            "INTENCAO": "={{ $json.intencao }}",
+            "CONFIANCA": "={{ $json.confianca }}",
+            "STATUS_PROCESSAMENTO": "OK",
+            "ERRO": "={{ $json.erro }}",
+            "PROCESSADO": "SIM"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_MENSAGEM",
+              "displayName": "ID_MENSAGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WHATSAPP_MESSAGE_ID",
+              "displayName": "WHATSAPP_MESSAGE_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TELEFONE",
+              "displayName": "TELEFONE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DIRECAO",
+              "displayName": "DIRECAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TIPO_MENSAGEM",
+              "displayName": "TIPO_MENSAGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MENSAGEM",
+              "displayName": "MENSAGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "INTENCAO",
+              "displayName": "INTENCAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CONFIANCA",
+              "displayName": "CONFIANCA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS_PROCESSAMENTO",
+              "displayName": "STATUS_PROCESSAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ERRO",
+              "displayName": "ERRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PROCESSADO",
+              "displayName": "PROCESSADO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "fd0b1565-8f30-4ce5-b5ab-aa0649d2c356",
+      "name": "GS - Registrar Mensagem Recebida",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1824,
+        2304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "36cd2afc-97ac-484b-97c7-7d770bebe98d",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Interpretar IA').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "411a2db9-972a-4529-b06d-fefb5642b52e",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Interpretar IA').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "b8e248a1-fcad-49c5-afcf-0faa113cf3c8",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Interpretar IA').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "53605289-afc4-40f7-b85d-e1f1785ecdf3",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Interpretar IA').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "f5df8cf8-6a0e-4b1d-9022-6f3d0a1d600c",
+              "name": "mensagem_texto",
+              "value": "={{ $('CODE - Interpretar IA').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "1dbff062-744c-4a04-b942-a3325d91b30d",
+              "name": "intencao",
+              "value": "={{ $('CODE - Interpretar IA').first().json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "5752b802-85ad-4ba8-bca9-4e2577d9201f",
+              "name": "confianca",
+              "value": "={{ $('CODE - Interpretar IA').first().json.confianca }}",
+              "type": "number"
+            },
+            {
+              "id": "e2cb2839-4e82-49cf-b76d-494019c26bef",
+              "name": "servico",
+              "value": "={{ $('CODE - Interpretar IA').first().json.servico }}",
+              "type": "string"
+            },
+            {
+              "id": "3cada7a7-ef4d-44e3-9f76-3fe253234f96",
+              "name": "dados",
+              "value": "={{ $('CODE - Interpretar IA').first().json.dados }}",
+              "type": "object"
+            },
+            {
+              "id": "19aac41f-e6b0-4950-b5b4-ffe80c84ad69",
+              "name": "data",
+              "value": "={{ $('CODE - Interpretar IA').first().json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "56a0535d-773f-4787-a032-6d158e96b720",
+              "name": "hora_inicio",
+              "value": "={{ $('CODE - Interpretar IA').first().json.hora_inicio }}",
+              "type": "string"
+            },
+            {
+              "id": "384a3907-626e-45ce-8ff4-c8c17a5442d3",
+              "name": "periodo",
+              "value": "={{ $('CODE - Interpretar IA').first().json.periodo }}",
+              "type": "string"
+            },
+            {
+              "id": "eedafa5e-7f08-4524-bd47-e89ed7663260",
+              "name": "profissional",
+              "value": "={{ $('CODE - Interpretar IA').first().json.profissional }}",
+              "type": "string"
+            },
+            {
+              "id": "f68322a4-63fe-494f-8eec-e779bc47a88d",
+              "name": "resposta_cliente",
+              "value": "={{ $('CODE - Interpretar IA').first().json.resposta_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "2434a34a-0266-466f-8250-3d0dc270899d",
+              "name": "proximo_fluxo",
+              "value": "={{ $('CODE - Interpretar IA').first().json.proximo_fluxo }}",
+              "type": "string"
+            },
+            {
+              "id": "5009fc0b-2fd9-4a49-811f-01c6a2de44ef",
+              "name": "phone_number_id",
+              "value": "={{ $('CODE - Interpretar IA').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "034772ea-7449-42fc-82b1-d9b3f49b6de6",
+              "name": "origem",
+              "value": "={{ $('CODE - Interpretar IA').first().json.origem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a6afbd5f-2edd-477b-b103-9df4cfadeb15",
+      "name": "SET - Preparar WF003",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        2304
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "F91Q9Fgsu9jxU0ue",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/F91Q9Fgsu9jxU0ue",
+          "cachedResultName": "My project — ATD - WF003 - Identificar Intenção"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "mensagem_texto": "={{ $json.mensagem_texto }}",
+            "intencao": "={{ $json.intencao }}",
+            "confianca": "={{ $json.confianca }}",
+            "servico": "={{ $json.servico }}",
+            "data": "={{ $json.data }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
+            "periodo": "={{ $json.periodo }}",
+            "profissional": "={{ $json.profissional }}",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "phone_number_id": "={{ $json.phone_number_id }}",
+            "origem": "={{ $json.origem }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "3b197dff-b862-48a0-9905-ec90dcb9099c",
+      "name": "EXEC - WF003 - Identificar Intenção",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2272,
+        2304
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF002 v5.1\n\nA mensagem é interpretada, registrada em MENSAGENS e depois reconstruída no SET - Preparar WF003. Assim os dados da IA não são perdidos após o Google Sheets.",
+        "height": 260,
+        "width": 520
+      },
+      "id": "f00ed73d-8b29-4b2b-a1bd-d41e38829938",
+      "name": "NOTA - WF002 v5.1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        1936
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.prompt_beautyflow }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1328,
+        2304
+      ],
+      "id": "1412d761-9439-4b6c-9646-1969e4b9defa",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Dg1wI9oAb39E6PsU",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber do WF001": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Preparar Dados": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Cliente": {
+      "main": [
+        [
+          {
+            "node": "IF - Cliente Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Cliente Existe": {
+      "main": [
+        [
+          {
+            "node": "SET - Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EXEC - WF008 - Cadastrar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Cliente Existente": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF008 - Cadastrar Cliente": {
+      "main": [
+        [
+          {
+            "node": "SET - Cliente Criado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Cliente Criado": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Memória": {
+      "main": [
+        [
+          {
+            "node": "SET - Montar Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Interpretar IA": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Mensagem Recebida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Mensagem Recebida": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar WF003",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Preparar WF003": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF003 - Identificar Intenção",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Montar Prompt": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "CODE - Interpretar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0a6fb3cf-c409-437b-b09a-7151deaa21f0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "0RXgjnAy45XbZl5v",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T14:40:57.075Z",
+      "createdAt": "2026-08-04T14:40:57.075Z",
+      "id": "0o92UmYfNOkktUNj",
+      "name": "Atendimento"
+    },
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-04T16:34:13.129Z",
+      "createdAt": "2026-08-04T16:34:13.129Z",
+      "id": "LsfK75pAYJCnyvri",
+      "name": "IA"
+    }
+  ]
+}
