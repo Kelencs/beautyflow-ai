@@ -1,1 +1,883 @@
-
+{
+  "name": "CLI - WF008 - Cadastrar Cliente",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "origem"
+            }
+          ]
+        }
+      },
+      "id": "8de1af9b-79d0-4d13-b528-952d7c484899",
+      "name": "TRG - Receber Dados WF008",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -496,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11f4c2d2-c72c-4584-a3fb-43be5b2806e1",
+              "name": "id_empresa",
+              "value": "={{ $json.id_empresa || 'EMP001' }}",
+              "type": "string"
+            },
+            {
+              "id": "ff9f49f6-2a10-4c08-ba48-7d7bf15b489b",
+              "name": "telefone_cliente",
+              "value": "={{ String($json.telefone_cliente || '').replace(/\\D/g, '') }}",
+              "type": "string"
+            },
+            {
+              "id": "c768e473-122e-4a92-88cc-c552d4eae439",
+              "name": "nome_cliente",
+              "value": "={{ $json.nome_cliente || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "a6797e65-7fbf-44ba-a754-a5780e05b7cf",
+              "name": "origem",
+              "value": "={{ $json.origem || 'WHATSAPP' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "322996f4-2b00-43e6-9fbb-619fd2fce8d1",
+      "name": "SET - Preparar Cadastro",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('SET - Preparar Cadastro').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "TELEFONE",
+              "lookupValue": "={{ $('SET - Preparar Cadastro').first().json.telefone_cliente }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a292cb80-f136-4949-a4c0-a6966674dd0b",
+      "name": "GS - Verificar Duplicidade",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -48,
+        1648
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "98755a8f-601e-4d8c-9c6b-d5b8b0c908fd",
+              "leftValue": "={{ $json.ID_CLIENTE || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9262a95a-9694-4a84-896d-0d2f17d69890",
+      "name": "IF - Cliente Existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        176,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a6d4976a-3745-4e9a-98b4-35aea2abed66",
+              "name": "ID_CLIENTE",
+              "value": "={{ $json.ID_CLIENTE }}",
+              "type": "string"
+            },
+            {
+              "id": "36cbefee-a1d0-430a-b298-0ec14d9ac164",
+              "name": "id_cliente",
+              "value": "={{ $json.ID_CLIENTE }}",
+              "type": "string"
+            },
+            {
+              "id": "d9ae85f6-9b79-48c8-8586-ad38478bdc5f",
+              "name": "id_empresa",
+              "value": "={{ $json.ID_EMPRESA }}",
+              "type": "string"
+            },
+            {
+              "id": "ff937d0b-fdb6-45fb-a7cc-87ce7e9a705e",
+              "name": "nome_cliente",
+              "value": "={{ $json.NOME }}",
+              "type": "string"
+            },
+            {
+              "id": "b1c56b58-008e-4429-8b26-a501dc2b7e09",
+              "name": "telefone_cliente",
+              "value": "={{ $json.TELEFONE }}",
+              "type": "string"
+            },
+            {
+              "id": "8bcfb2a2-80be-48b7-9481-474ec6ade755",
+              "name": "cliente_novo",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "f94688c5-f062-41ae-ad83-3f4a3bb1bcf3",
+              "name": "status_cadastro",
+              "value": "CLIENTE_EXISTENTE",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b99664d1-3014-4729-910c-2f24970c665e",
+      "name": "SET - Cliente Existente",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa || 'EMP001' }}",
+            "workflow": "={{ 'WF008' }}",
+            "node": "={{ 'GS - Criar Cliente' }}",
+            "tipo": "={{ 'SUCESSO' }}",
+            "evento": "={{ 'CADASTRO_CLIENTE' }}",
+            "status": "={{ 'PROCESSADO' }}",
+            "mensagem": "={{ 'Cliente cadastrado com sucesso.' }}",
+            "dados": "={{ JSON.stringify($json) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "e501490e-0557-4ac2-b129-9f7067c5c564",
+      "name": "EXEC - WF017 - Log Cliente Existente",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        1536
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "71c15ac5-c9a4-4127-8d10-41381de53d08",
+      "name": "OUT - Cliente Existente",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        896,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ID_CLIENTE: 'CLI-' + Date.now(),\n\n    ID_EMPRESA: $('TRG - Receber Dados WF008').first().json.id_empresa,\n\n    NOME: $('TRG - Receber Dados WF008').first().json.nome_cliente,\n\n    TELEFONE: $('TRG - Receber Dados WF008').first().json.telefone_cliente,\n\n    EMAIL: '',\n\n    DATA_NASCIMENTO: '',\n\n    OBSERVACOES: '',\n\n    PRIMEIRO_ATENDIMENTO: new Date().toISOString(),\n\n    ULTIMO_ATENDIMENTO: new Date().toISOString(),\n\n    ACEITA_MARKETING: 'SIM',\n\n    STATUS: 'ATIVO',\n\n    DATA_CADASTRO: new Date().toISOString(),\n\n    ORIGEM: $('TRG - Receber Dados WF008').first().json.origem\n  }\n}];"
+      },
+      "id": "5b83dbe9-2914-43f8-8d10-b058bbf21dd1",
+      "name": "CODE - Gerar ID Cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "NOME": "={{ $json.NOME }}",
+            "TELEFONE": "={{ $json.TELEFONE }}",
+            "EMAIL": "={{ $json.EMAIL }}",
+            "DATA_NASCIMENTO": "={{ $json.DATA_NASCIMENTO }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}",
+            "PRIMEIRO_ATENDIMENTO": "={{ $json.PRIMEIRO_ATENDIMENTO }}",
+            "ACEITA_MARKETING": "={{ $json.ACEITA_MARKETING }}",
+            "ULTIMO_ATENDIMENTO": "={{ $json.ULTIMO_ATENDIMENTO }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "DATA_CADASTRO": "={{ $json.DATA_CADASTRO }}",
+            "ULTIMA_ATUALIZACAO": "={{ $json.ULTIMA_ATUALIZACAO }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NOME",
+              "displayName": "NOME",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TELEFONE",
+              "displayName": "TELEFONE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EMAIL",
+              "displayName": "EMAIL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_NASCIMENTO",
+              "displayName": "DATA_NASCIMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "PRIMEIRO_ATENDIMENTO",
+              "displayName": "PRIMEIRO_ATENDIMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ULTIMO_ATENDIMENTO",
+              "displayName": "ULTIMO_ATENDIMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ACEITA_MARKETING",
+              "displayName": "ACEITA_MARKETING",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CADASTRO",
+              "displayName": "DATA_CADASTRO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ULTIMA_ATUALIZACAO",
+              "displayName": "ULTIMA_ATUALIZACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "1f7e5eb8-0c4a-421a-8ad9-8c6480b35842",
+      "name": "GS - Criar Cliente",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        656,
+        1744
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d7aa89fa-7bb1-40e8-8d44-fe2f520adfd3",
+              "name": "ID_CLIENTE",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.ID_CLIENTE }}",
+              "type": "string"
+            },
+            {
+              "id": "c42c69ae-0d82-4c9a-8505-cd3e64f4e7c2",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "02f36e3d-f791-4cb9-ab84-94661fbf6d32",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "72fd8882-a5cc-41d8-9c2e-22f70194d996",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "55f37877-db04-4c3f-95a4-fde78780fc55",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "7420acd4-f702-463a-841c-e68e11e52778",
+              "name": "cliente_novo",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "ba52c386-87db-44be-b802-1c2048d91945",
+              "name": "status_cadastro",
+              "value": "CLIENTE_CRIADO",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fa439717-781a-412c-bc33-f9ffc4d39860",
+      "name": "SET - Retornar Cliente Criado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "9d5018c3-f05c-4a19-890d-32af29ecfff4",
+      "name": "EXEC - WF017 - Log Cliente Criado",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        1744
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b19819a0-3414-4b44-ab7c-d91cbd22b7f8",
+      "name": "OUT - Cliente Criado",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF008 v5.1 — Cadastrar Cliente\n\nVerifica duplicidade por ID_EMPRESA + TELEFONE, cria somente quando necessário e registra logs no WF017.\n\nApós importar, selecione a planilha BEAUTYFLOW3.1 e o WF017.",
+        "height": 280,
+        "width": 600
+      },
+      "id": "d7a4316e-6168-4d2a-8a2b-4d69d1bf48eb",
+      "name": "NOTA - WF008 v5.1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        672,
+        1216
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF008": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Cadastro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Preparar Cadastro": {
+      "main": [
+        [
+          {
+            "node": "GS - Verificar Duplicidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Verificar Duplicidade": {
+      "main": [
+        [
+          {
+            "node": "IF - Cliente Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Cliente Existe?": {
+      "main": [
+        [
+          {
+            "node": "SET - Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Gerar ID Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Cliente Existente": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 - Log Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 - Log Cliente Existente": {
+      "main": [
+        [
+          {
+            "node": "OUT - Cliente Existente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Gerar ID Cliente": {
+      "main": [
+        [
+          {
+            "node": "GS - Criar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Criar Cliente": {
+      "main": [
+        [
+          {
+            "node": "SET - Retornar Cliente Criado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Retornar Cliente Criado": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 - Log Cliente Criado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 - Log Cliente Criado": {
+      "main": [
+        [
+          {
+            "node": "OUT - Cliente Criado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ad8d7c22-7984-4ced-b92c-b0386973a154",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "aK7c4sZgz7yLyuaM",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:28:49.781Z",
+      "createdAt": "2026-08-05T15:28:49.781Z",
+      "id": "TQEdEFTJDGutyaLM",
+      "name": "Cliente"
+    },
+    {
+      "updatedAt": "2026-08-05T15:32:03.425Z",
+      "createdAt": "2026-08-05T15:32:03.425Z",
+      "id": "wOHASqEFw5v66HVH",
+      "name": "Logs"
+    }
+  ]
+}
