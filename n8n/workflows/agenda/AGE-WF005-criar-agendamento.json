@@ -1,1 +1,971 @@
-
+{
+  "name": "AGE - WF005 - Criar Agendamento",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "id_cliente"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "hora_inicio"
+            },
+            {
+              "name": "periodo"
+            },
+            {
+              "name": "id_profissional"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "id_agendamento"
+            },
+            {
+              "name": "google_event_id"
+            },
+            {
+              "name": "origem"
+            },
+            {
+              "name": "resposta_cliente"
+            },
+            {
+              "name": "motivo_cancelamento"
+            }
+          ]
+        }
+      },
+      "id": "b7c71e66-d458-486b-9081-35e45c173900",
+      "name": "TRG - Receber Dados WF005",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -304,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "v21QzUiS7NVGnyio",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/v21QzUiS7NVGnyio",
+          "cachedResultName": "My project — AGE - WF004 - Consultar Disponibilidade"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "=id_empresa {{ $json.id_empresa }}",
+            "id_cliente": "=id_cliente {{ $json.id_cliente }}",
+            "telefone_cliente": "=telefone_cliente {{ $json.telefone_cliente }}",
+            "nome_cliente": "=nome_cliente {{ $json.nome_cliente }}",
+            "servico": "=servico {{ $json.servico }}",
+            "data": "=data {{ $json.data }}",
+            "hora_inicio": "=hora_inicio {{ $json.hora_inicio }}",
+            "profissional": "=profissional {{ $json.profissional }}",
+            "periodo": "=periodo {{ $json.periodo }}",
+            "id_profissional": "=id_profissional {{ $json.id_profissional }}",
+            "id_agendamento": "=id_agendamento {{ $json.id_agendamento }}",
+            "google_event_id": "=google_event_id {{ $json.google_event_id }}",
+            "origem": "=origem {{ $json.origem }}",
+            "resposta_cliente": "=resposta_cliente {{ $json.resposta_cliente }}",
+            "motivo_cancelamento": "=motivo_cancelamento {{ $json.motivo_cancelamento }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_profissional",
+              "displayName": "id_profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "google_event_id",
+              "displayName": "google_event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "motivo_cancelamento",
+              "displayName": "motivo_cancelamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "d3219960-77e0-4523-a2ec-11c7f77c98a4",
+      "name": "EXEC - WF004 - Consultar Disponibilidade",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const entrada = $('TRG - Receber Dados WF005').first().json;\nconst disponibilidade = $('EXEC - WF004 - Consultar Disponibilidade').first().json;\n\nconst idAgendamento = `AGE${Date.now().toString().slice(-9)}`;\n\nconst duracaoMin = Number(\n  disponibilidade.duracao_min ||\n  entrada.duracao_min ||\n  entrada.duracao ||\n  60\n);\n\nconst valor = Number(\n  disponibilidade.valor ||\n  entrada.valor ||\n  0\n);\n\nconst data = entrada.data || disponibilidade.data;\nconst horaInicio = entrada.hora_inicio;\n\nif (!data) {\n  throw new Error('A data do agendamento está vazia.');\n}\n\nif (!horaInicio) {\n  throw new Error('A hora inicial do agendamento está vazia.');\n}\n\nfunction adicionarMinutos(horario, minutos) {\n  const [hora, minuto] = horario.split(':').map(Number);\n\n  const total = hora * 60 + minuto + minutos;\n\n  const horaFinal = Math.floor(total / 60) % 24;\n  const minutoFinal = total % 60;\n\n  return `${String(horaFinal).padStart(2, '0')}:${String(minutoFinal).padStart(2, '0')}`;\n}\n\nconst horaFim = adicionarMinutos(horaInicio, duracaoMin);\nconst agora = new Date().toISOString();\n\nreturn [\n  {\n    json: {\n      ID_AGENDAMENTO: idAgendamento,\n\n      ID_EMPRESA: entrada.id_empresa || 'EMP001',\n      ID_CLIENTE: entrada.id_cliente || '',\n      ID_PROFISSIONAL:\n        entrada.id_profissional ||\n        disponibilidade.id_profissional ||\n        '',\n      ID_SERVICO:\n        entrada.id_servico ||\n        disponibilidade.id_servico ||\n        '',\n\n      DATA: data,\n      HORA_INICIO: horaInicio,\n      DURACAO_MIN: duracaoMin,\n      HORA_FIM: horaFim,\n      VALOR: valor,\n\n      STATUS: 'AGENDADO',\n      ORIGEM: entrada.origem || 'WHATSAPP',\n      OBSERVACOES: entrada.observacoes || '',\n\n      GOOGLE_EVENT_ID: '',\n\n      DATA_CRIACAO: agora,\n      ULTIMA_ATUALIZACAO: agora,\n\n      DATA_CANCELAMENTO: '',\n      MOTIVO_CANCELAMENTO: '',\n\n      nome_cliente: entrada.nome_cliente || 'Cliente',\n      telefone_cliente: entrada.telefone_cliente || '',\n      servico:\n        entrada.servico ||\n        disponibilidade.servico ||\n        '',\n      profissional:\n        entrada.profissional ||\n        disponibilidade.profissional ||\n        ''\n    }\n  }\n];"
+      },
+      "id": "6b1c6da3-c2a0-420a-8727-16e5b8f7df03",
+      "name": "CODE - Gerar Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_AGENDAMENTO": "={{ $('CODE - Gerar Agendamento').first().json.ID_AGENDAMENTO }}",
+            "ID_EMPRESA": "={{ $('CODE - Gerar Agendamento').first().json.ID_EMPRESA }}",
+            "ID_CLIENTE": "={{ $('CODE - Gerar Agendamento').first().json.ID_CLIENTE }}",
+            "ID_PROFISSIONAL": "={{ $('CODE - Gerar Agendamento').first().json.ID_PROFISSIONAL }}",
+            "ID_SERVICO": "={{ $('CODE - Gerar Agendamento').first().json.ID_SERVICO }}",
+            "DATA": "={{ $('CODE - Gerar Agendamento').first().json.DATA }}",
+            "HORA_INICIO": "={{ $('CODE - Gerar Agendamento').first().json.HORA_INICIO }}",
+            "DURACAO_MIN": "={{ $('CODE - Gerar Agendamento').first().json.DURACAO_MIN }}",
+            "HORA_FIM": "={{ $('CODE - Gerar Agendamento').first().json.HORA_FIM }}",
+            "VALOR": "={{ $('CODE - Gerar Agendamento').first().json.VALOR }}",
+            "STATUS": "={{ $('CODE - Gerar Agendamento').first().json.STATUS }}",
+            "ORIGEM": "={{ $('CODE - Gerar Agendamento').first().json.ORIGEM }}",
+            "OBSERVACOES": "={{ $('CODE - Gerar Agendamento').first().json.OBSERVACOES }}",
+            "GOOGLE_EVENT_ID": "={{ $('GC - Criar Evento').first().json.id }}",
+            "DATA_CRIACAO": "={{ $('CODE - Gerar Agendamento').first().json.DATA_CRIACAO }}",
+            "ULTIMA_ATUALIZACAO": "={{ $('CODE - Gerar Agendamento').first().json.ULTIMA_ATUALIZACAO }}",
+            "DATA_CANCELAMENTO": "={{ '' }}",
+            "MOTIVO_CANCELAMENTO": "={{ '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_PROFISSIONAL",
+              "displayName": "ID_PROFISSIONAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_SERVICO",
+              "displayName": "ID_SERVICO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA",
+              "displayName": "DATA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORA_INICIO",
+              "displayName": "HORA_INICIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DURACAO_MIN",
+              "displayName": "DURACAO_MIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORA_FIM",
+              "displayName": "HORA_FIM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR",
+              "displayName": "VALOR",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ORIGEM",
+              "displayName": "ORIGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GOOGLE_EVENT_ID",
+              "displayName": "GOOGLE_EVENT_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CRIACAO",
+              "displayName": "DATA_CRIACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ULTIMA_ATUALIZACAO",
+              "displayName": "ULTIMA_ATUALIZACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CANCELAMENTO",
+              "displayName": "DATA_CANCELAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MOTIVO_CANCELAMENTO",
+              "displayName": "MOTIVO_CANCELAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "54b091a6-9d7e-4017-961d-3edc6f5aafe3",
+      "name": "GS - Registrar Agendamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        128,
+        1552
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "K6eEf2xTWr0Ke4Hs",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/K6eEf2xTWr0Ke4Hs",
+          "cachedResultName": "My project — COM - WF012 - Confirmação"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $('GS - Registrar Agendamento').item.json.id_empresa }}",
+            "id_cliente": "={{ $('GS - Registrar Agendamento').item.json.id_cliente }}",
+            "telefone_cliente": "={{ $('GS - Registrar Agendamento').item.json.telefone_cliente }}",
+            "nome_cliente": "={{ $('GS - Registrar Agendamento').item.json.nome_cliente }}",
+            "mensagem_texto": "={{ $('AI Agent').item.json.mensagem_texto }}",
+            "intencao": "={{ $('AI Agent').item.json.intencao }}",
+            "confianca": "={{ $('AI Agent').item.json.confianca }}",
+            "servico": "={{ $('GS - Registrar Agendamento').item.json.servico }}",
+            "data": "={{ $('GS - Registrar Agendamento').item.json.data }}",
+            "hora_inicio": "={{ $('GS - Registrar Agendamento').item.json.hora_inicio }}",
+            "periodo": "=\t{{ $('GS - Registrar Agendamento').item.json.periodo }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "5abd175a-333c-4844-86f4-e77cb0ec286a",
+      "name": "EXEC - WF012 - Confirmação",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "889ce957-4dfe-4011-8bf7-7777bed1c974",
+      "name": "EXEC - WF017 - Logs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF005 v5.1\n\nConfigure IF, Google Calendar Create Event e mapeamento Append Row em AGENDAMENTOS.",
+        "height": 260,
+        "width": 520
+      },
+      "id": "be387d8f-8788-41ed-b532-81e1758cc7ba",
+      "name": "NOTA - WF005 v5.1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8919cfd4-56ea-4de8-b883-42b5c4e88e17",
+              "leftValue": "={{ $json.disponivel }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        1248
+      ],
+      "id": "b2fa2fc8-20e4-4a45-b087-050a5e1787aa",
+      "name": "IF-Horário Livre"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "44662433ff0adfe4158dd7e155b55ac73bba692d3762c95df79403cb4b5d575f@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "BeautyFlow - Studio Bella"
+        },
+        "start": "={{ DateTime.fromISO(\n  $('CODE - Gerar Agendamento').first().json.DATA +\n  'T' +\n  $('CODE - Gerar Agendamento').first().json.HORA_INICIO +\n  ':00',\n  { zone: 'America/Sao_Paulo' }\n).toISO() }}",
+        "end": "={{ DateTime.fromISO(\n  $('CODE - Gerar Agendamento').first().json.DATA +\n  'T' +\n  $('CODE - Gerar Agendamento').first().json.HORA_FIM +\n  ':00',\n  { zone: 'America/Sao_Paulo' }\n).toISO() }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        1728
+      ],
+      "id": "9e01233a-7b12-4ad9-b32b-761c42450495",
+      "name": "GC- Criar Evento",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "D5hP4f39WlayBYFI",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF005": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF004 - Consultar Disponibilidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF004 - Consultar Disponibilidade": {
+      "main": [
+        [
+          {
+            "node": "IF-Horário Livre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Gerar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "GC- Criar Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF012 - Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF012 - Confirmação": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 - Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF-Horário Livre": {
+      "main": [
+        [
+          {
+            "node": "CODE - Gerar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EXEC - WF012 - Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GC- Criar Evento": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "71a2de59-ef50-485b-803b-846114bc0366",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "oZ5Ky1HM9jrvkThn",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.484Z",
+      "createdAt": "2026-08-05T15:27:49.484Z",
+      "id": "IJyLtWJdJ6zSxyOb",
+      "name": "Google Calendar"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.519Z",
+      "createdAt": "2026-08-05T15:27:49.519Z",
+      "id": "kBpyDFlwbrEc6QP9",
+      "name": "Agenda"
+    }
+  ]
+}
