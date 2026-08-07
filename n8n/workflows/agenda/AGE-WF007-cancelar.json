@@ -1,1 +1,802 @@
-
+{
+  "name": "AGE - WF007 - Cancelar",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "id_cliente"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "hora_inicio"
+            },
+            {
+              "name": "periodo"
+            },
+            {
+              "name": "id_profissional"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "id_agendamento"
+            },
+            {
+              "name": "google_event_id"
+            },
+            {
+              "name": "origem"
+            },
+            {
+              "name": "resposta_cliente"
+            },
+            {
+              "name": "motivo_cancelamento"
+            }
+          ]
+        }
+      },
+      "id": "21571167-fe70-47f6-8f00-e679a0ef06e3",
+      "name": "TRG - Receber Dados WF007",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_AGENDAMENTO",
+              "lookupValue": "={{ $json.ID_AGENDAMENTO }}"
+            },
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.ID_EMPRESA }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "AGENDADO"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0899d04a-7e1a-4c4e-b3dd-46e5aba1bbf2",
+      "name": "GS - Buscar Agendamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        112,
+        1648
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('GS - Buscar Agendamento').item.json.ID_EMPRESA }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "22f1e72d-f331-44ad-ae5e-e7fec057d7e2",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        320,
+        1648
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$('GS - Buscar Agendamento').first().json,e=$('GS - Buscar Empresa').first().json;const ini=new Date(`${a.DATA}T${String(a.HORA_INICIO).slice(0,5)}:00`);const faltam=(ini-Date.now())/60000;return [{json:{...$('TRG - Receber Dados WF007').first().json,id_agendamento:a.ID_AGENDAMENTO,google_event_id:a.GOOGLE_EVENT_ID||'',cancelamento_no_prazo:faltam>=Number(e.TEMPO_CANCELAMENTO_MIN||0),minutos_ate_agendamento:Math.round(faltam)}}];"
+      },
+      "id": "39c5fcf1-5ba3-414a-bfb3-16fb3e3c5747",
+      "name": "CODE - Validar Prazo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        1648
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9ff0cafe-eafb-4d81-b174-9bc39f65c8ce",
+      "name": "GC - Cancelar Evento [CONFIGURAR]",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        768,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_PROFISSIONAL",
+              "displayName": "ID_PROFISSIONAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_SERVICO",
+              "displayName": "ID_SERVICO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA",
+              "displayName": "DATA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORA_INICIO",
+              "displayName": "HORA_INICIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DURACAO_MIN",
+              "displayName": "DURACAO_MIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORA_FIM",
+              "displayName": "HORA_FIM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR",
+              "displayName": "VALOR",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ORIGEM",
+              "displayName": "ORIGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GOOGLE_EVENT_ID",
+              "displayName": "GOOGLE_EVENT_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CRIACAO",
+              "displayName": "DATA_CRIACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ULTIMA_ATUALIZACAO",
+              "displayName": "ULTIMA_ATUALIZACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CANCELAMENTO",
+              "displayName": "DATA_CANCELAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MOTIVO_CANCELAMENTO",
+              "displayName": "MOTIVO_CANCELAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "c3b694c8-df12-4d95-8b0c-ab45a6f220f3",
+      "name": "GS - Cancelar Agendamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        992,
+        1648
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "K6eEf2xTWr0Ke4Hs",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/K6eEf2xTWr0Ke4Hs",
+          "cachedResultName": "My project — COM - WF012 - Confirmação"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "5222ac04-3e5d-458b-8b18-49c36ed47c29",
+      "name": "EXEC - WF012 - Confirmação",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "0e9e4baf-87a6-42b5-997d-8fec2246ba60",
+      "name": "EXEC - WF017 - Logs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1424,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF007 v5.1\n\nConfigure filtros, Google Calendar Delete/Update Event e matching column ID_AGENDAMENTO.",
+        "height": 260,
+        "width": 520
+      },
+      "id": "7b7839f5-8cad-4b2a-9cfe-a22143b2e974",
+      "name": "NOTA - WF007 v5.1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        1280
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF007": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Validar Prazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Validar Prazo": {
+      "main": [
+        [
+          {
+            "node": "GC - Cancelar Evento [CONFIGURAR]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GC - Cancelar Evento [CONFIGURAR]": {
+      "main": [
+        [
+          {
+            "node": "GS - Cancelar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Cancelar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF012 - Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF012 - Confirmação": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 - Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d85167ae-469c-4dc2-b0fd-a1c6115e1fd9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "a7OeWAu3A5pYoOoH",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.484Z",
+      "createdAt": "2026-08-05T15:27:49.484Z",
+      "id": "IJyLtWJdJ6zSxyOb",
+      "name": "Google Calendar"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.519Z",
+      "createdAt": "2026-08-05T15:27:49.519Z",
+      "id": "kBpyDFlwbrEc6QP9",
+      "name": "Agenda"
+    }
+  ]
+}
