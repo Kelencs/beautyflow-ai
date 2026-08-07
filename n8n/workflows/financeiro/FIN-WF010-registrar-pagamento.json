@@ -1,1 +1,420 @@
-
+{
+  "name": "FIN - WF010 - Registrar Pagamento",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "id_empresa"
+            },
+            {
+              "name": "id_cliente"
+            },
+            {
+              "name": "telefone_cliente"
+            },
+            {
+              "name": "nome_cliente"
+            },
+            {
+              "name": "mensagem_texto"
+            },
+            {
+              "name": "intencao"
+            },
+            {
+              "name": "confianca"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "hora_inicio"
+            },
+            {
+              "name": "periodo"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "resposta_cliente"
+            },
+            {
+              "name": "phone_number_id"
+            },
+            {
+              "name": "origem"
+            }
+          ]
+        }
+      },
+      "id": "600d1791-191c-4fd2-83c5-446efa8968f7",
+      "name": "TRG - Receber Dados WF010",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(i=>({json:{...i.json,ID_PAGAMENTO:'PAG'+Date.now().toString().slice(-6)}}));"
+      },
+      "id": "6bc13986-1bb9-4135-89fa-38f6a042df88",
+      "name": "CODE - Gerar ID Pagamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2103767306,
+          "mode": "list",
+          "cachedResultName": "PAGAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=2103767306"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_PAGAMENTO",
+              "displayName": "ID_PAGAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR_TOTAL",
+              "displayName": "VALOR_TOTAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR_PAGO",
+              "displayName": "VALOR_PAGO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR_PENDENTE",
+              "displayName": "VALOR_PENDENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "FORMA_PAGAMENTO",
+              "displayName": "FORMA_PAGAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TRANSACAO_ID",
+              "displayName": "TRANSACAO_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "607094d1-2b83-4d86-a436-3d7952241429",
+      "name": "GS - Registrar Pagamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        208,
+        1040
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "0112c717-9bf7-418e-817a-3f571fddb313",
+      "name": "EXEC - WF017 Logs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## FIN - WF010 - Registrar Pagamento v5.0\n\nRegistra pagamento total ou parcial.",
+        "height": 280,
+        "width": 520
+      },
+      "id": "ab929e1e-1b8d-4076-9400-96a41bf1d39b",
+      "name": "NOTA - FIN - WF010 - Registrar Pagamento v5.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        624,
+        640
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "TRG - Receber Dados WF010": {
+      "main": [
+        [
+          {
+            "node": "CODE - Gerar ID Pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Gerar ID Pagamento": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Pagamento": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6364e45f-318b-4cc4-80e0-9f4d9e503f7c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "QHKxFhwjASHwEPwq",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:29:39.460Z",
+      "createdAt": "2026-08-05T15:29:39.460Z",
+      "id": "d44uHBttFdql88Wa",
+      "name": "Financeiro"
+    }
+  ]
+}
