@@ -262,6 +262,9 @@ beautyflow-ai/
 │
 ├── frontend/
 │
+├── libs/
+│   └── shared-types/
+│
 ├── n8n/
 │   ├── workflows/
 │   │   ├── atendimento/
@@ -469,6 +472,24 @@ Principais abas:
 * LOGS
 
 A arquitetura prevê migração gradual para PostgreSQL.
+
+---
+
+# BeautyFlow App (Frontend + Backend)
+
+Além da automação n8n descrita acima, o projeto inclui um monorepo npm workspaces (`frontend/` Next.js + `backend/` NestJS + `libs/shared-types/`) para a interface web dos profissionais de beleza (agenda, clientes, financeiro etc.), complementando o WhatsApp/IA sem alterar nenhum dos workflows `WF001`-`WF018`.
+
+Arquitetura completa (modelo de dados, autenticação, fluxo de onboarding, integração com o gateway n8n e fases de entrega): [docs/arquitetura/beautyflow-app-arquitetura.md](docs/arquitetura/beautyflow-app-arquitetura.md).
+
+**Status**: Fase 0A (fundação do monorepo) concluída — sem Supabase, autenticação ou novos workflows (`APP-WF019`/`EMP-WF021`) ainda, conforme escopo aprovado.
+
+```bash
+npm install        # instala as dependências de todos os workspaces
+npm run dev         # roda frontend (:3000) e backend (:3001) em paralelo
+npm run build        # build de todos os workspaces
+npm run lint          # lint de todos os workspaces
+npm run test            # testes de todos os workspaces
+```
 
 ---
 

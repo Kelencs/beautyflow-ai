@@ -1,0 +1,34 @@
+# --- Dependências (workspaces do npm hospedam a maior parte em node_modules/ na raiz) ---
+node_modules/
+
+# --- Builds ---
+frontend/.next/
+frontend/out/
+backend/dist/
+libs/*/dist/
+*.tsbuildinfo
+
+# --- Testes ---
+coverage/
+
+# --- Variáveis de ambiente (nunca commitar segredos reais; .env.example é a exceção) ---
+.env
+.env.local
+.env.*.local
+!.env.example
+!**/.env.example
+
+# --- Logs ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Sistema operacional / editor ---
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# --- Vercel (deploy futuro do frontend) ---
+frontend/.vercel

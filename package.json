@@ -1,0 +1,29 @@
+{
+  "name": "beautyflow-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo do BeautyFlow App (frontend Next.js + backend NestJS + tipos compartilhados). Não inclui os workflows n8n em n8n/, que permanecem fora deste workspace.",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "libs/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n frontend,backend -c blue,green \"npm run dev --workspace=@beautyflow/frontend\" \"npm run start:dev --workspace=@beautyflow/backend\"",
+    "dev:frontend": "npm run dev --workspace=@beautyflow/frontend",
+    "dev:backend": "npm run start:dev --workspace=@beautyflow/backend",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
