@@ -1,92 +1,64 @@
-# CLI-WF008 — Cadastrar Cliente
+# WF008 — CLI - WF008 - Cadastrar Cliente
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`CLI-WF008-cadastrar-cliente.json`](../../workflows/clientes/CLI-WF008-cadastrar-cliente.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `CLI-WF008` |
-| Workflow | Cadastrar Cliente |
-| Arquivo n8n | `CLI-WF008-cadastrar-cliente.json` |
-| Status | Versionado e validado em testes |
-| Trigger | Subworkflow chamado quando o atendimento precisa resolver/cadastrar um cliente. |
-| Última revisão desta documentação | 18/08/2026 |
+Cadastrar clientes com prevenção de duplicidade por empresa/telefone, validação de telefone e registro centralizado de log.
 
-## Objetivo
+## 2. Identificação técnica
 
-Localizar um cliente pelo telefone dentro da empresa e, se não existir, criar um novo cadastro sem gerar duplicidade.
+- **Workflow:** `CLI - WF008 - Cadastrar Cliente`
+- **ID funcional:** `WF008`
+- **Arquivo JSON:** `CLI-WF008-cadastrar-cliente.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** `Execute Workflow Trigger`; é utilizado pelo WF002 quando o telefone ainda não está cadastrado.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa`.
-- `telefone_cliente`.
-- `nome_cliente`.
-- `origem`.
+## 3. Entradas
 
-## Fluxo principal
+- `id_empresa`, `telefone_cliente`, `nome_cliente`, `origem` e dados recebidos pelo contrato do subworkflow.
 
-1. Normaliza empresa, telefone, nome e origem.
-2. Busca em `CLIENTES` usando `ID_EMPRESA` + telefone.
-3. Avalia explicitamente três situações: encontrado, vazio legítimo e erro técnico.
-4. Se já existe, retorna o cliente sem criar nova linha.
-5. Se não existe, gera um identificador único `CLI-...`.
-6. Monta o cadastro com status ativo e timestamps.
-7. Registra o novo cliente em `CLIENTES`.
-8. Retorna o identificador e o status da operação.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. `SET - Preparar Cadastro` normaliza empresa, telefone, nome e origem; `id_empresa` usa fallback `EMP001`.
+2. Valida telefone; números fora da faixa de 10 a 15 dígitos geram `ERRO_CADASTRO`.
+3. Busca duplicidade em `CLIENTES` e avalia explicitamente: encontrado, vazio legítimo ou erro técnico.
+4. Cliente existente retorna `CLIENTE_EXISTENTE`; se houver múltiplos registros do mesmo telefone, utiliza o mais antigo e sinaliza aviso.
+5. Cliente novo recebe ID `CLI-...`, timestamps, `STATUS=ATIVO`, `ACEITA_MARKETING=SIM`, `PRIMEIRO_ATENDIMENTO` e `ULTIMO_ATENDIMENTO` com o instante atual.
+6. `GS - Criar Cliente` adiciona a linha em `CLIENTES`.
+7. Os resultados convergem, WF017 registra log e o SET final devolve o contrato de cadastro.
 
-```text
-CLI-WF008 → Google Sheets: CLIENTES → ADM-WF017 para logs
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Telefone deve conter entre 10 e 15 dígitos numéricos.
+- Duplicidade é tratada antes da criação.
+- Erro técnico de Sheets não é interpretado como “cliente inexistente”.
+- O JSON atual define `ACEITA_MARKETING=SIM` automaticamente para novos clientes.
+- O JSON atual define `id_empresa=EMP001` quando a entrada não informa empresa.
 
-- Google Sheets: `CLIENTES`
-- ADM-WF017 para logs
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `CLIENTES`.
+- WF017 — Logs.
 
-- A chave prática de duplicidade é empresa + telefone normalizado.
-- Busca vazia legítima não pode ser confundida com erro do Google Sheets.
-- Erro técnico na verificação bloqueia a criação.
-- Cadastro existente deve retornar `CLIENTE_EXISTENTE`.
-- Novo cadastro deve retornar identificador próprio e status ativo.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- `CLIENTE_CRIADO`, `CLIENTE_EXISTENTE` ou `ERRO_CADASTRO`, com identificador do cliente quando disponível, flag `cliente_novo`, indicador de múltiplos registros e mensagem de erro.
 
-- `id_cliente` e dados normalizados.
-- Status como `CLIENTE_EXISTENTE` ou cliente cadastrado com sucesso.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Telefone inválido é erro de validação.
+- Falha técnica na consulta ou criação do cliente resulta em `ERRO_CADASTRO`.
 
-- Erro na busca deve sair por ramo técnico e não criar cliente.
-- Erro no append deve retornar erro de cadastro.
-- Registrar contexto no WF017 sem mascarar a causa.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- No arquivo versionado, `active` está `false`; como subworkflow, ele ainda pode ser referenciado por Execute Workflow conforme ambiente/importação.
+- O opt-in de marketing não é coletado pelo WF008 atual; o campo é gravado como `SIM`.
 
-- Pode ser chamado por: `ATD-WF002` e outros fluxos de cliente.
-- Logs: `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Cliente novo.
-- [ ] Cliente duplicado.
-- [ ] Cliente existente com telefone formatado de outra forma.
-- [ ] Erro técnico forçado na busca de CLIENTES.
-- [ ] Erro técnico no registro do novo cliente.
-
-## Cuidados na manutenção
-
-Ponto de atenção do projeto: o fluxo atual trabalha com `ACEITA_MARKETING` como padrão. Antes de produção comercial, implemente consentimento real/opt-in e ajuste o WF015.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `CLI-WF008-cadastrar-cliente.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
