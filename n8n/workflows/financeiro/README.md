@@ -1,81 +1,90 @@
-# Financeiro
+# Financeiro — WF010–WF011
 
-## Visão Geral
+> **Sincronização:** 18/08/2026  
+> **Fonte de verdade:** JSONs desta pasta.
 
-Esta pasta contém os workflows responsáveis pelo gerenciamento financeiro do BeautyFlow AI.
+## Objetivo
 
----
+Registrar pagamentos como histórico transacional e executar cobrança controlada de saldos pendentes.
 
-# Objetivos
+## Workflows
 
-- Registrar pagamentos
-- Controlar cobranças
-- Atualizar status financeiro
-- Gerar histórico
+| ID | Função |
+|---|---|
+| WF010 | Registrar Pagamento |
+| WF011 | Cobrança |
 
----
-
-# Workflows
-
-| Código | Workflow |
-|---------|----------|
-| FIN-WF010 | Registrar Pagamento |
-| FIN-WF011 | Cobrança |
-
----
-
-# Fluxo
+## Dependências
 
 ```text
-Agendamento
+WF010 ───────────────────────────────► WF017
 
-↓
-
-Pagamento
-
-↓
-
-Registrar
-
-↓
-
-Atualizar Status
-
-↓
-
-Cobrança (quando necessário)
+WF011 ──► WF012 — envio da cobrança
+      └──► WF017 — logging
 ```
 
----
+## Integrações diretas
 
-# Integrações
+- Google Sheets;
+- n8n Execute Workflow.
 
-- Google Sheets
-- WhatsApp Cloud API
-- Gemini
+WF011 usa WhatsApp **indiretamente** pelo WF012.
 
----
+**Gemini não é integração direta deste módulo.**
 
-# Regras
+## WF010 — Pagamento
 
-- Registrar todos os pagamentos.
-- Atualizar status do agendamento.
-- Controlar inadimplência.
-- Registrar data e valor.
+Regras atuais:
 
----
+- `valor_pago` deve ser numérico e maior que zero;
+- agendamento cancelado não recebe pagamento;
+- pagamentos são transações históricas;
+- pagamento acumulado não pode exceder o total devido;
+- saldo maior que zero resulta em estado parcial;
+- saldo zerado resulta em pago;
+- agendamento já quitado não recebe nova transação indevida.
 
-# Estrutura
+Regras globais relacionadas: RN041–RN045.
 
-```
-financeiro/
+## WF011 — Cobrança
 
-├── README.md
-├── FIN-WF010.json
-└── FIN-WF011.json
-```
+Regras atuais:
 
----
+- consolidar PAGAMENTOS por `ID_AGENDAMENTO`;
+- considerar o estado financeiro mais recente;
+- cobrar somente saldo pendente;
+- nunca cobrar item já quitado;
+- usar `VALOR_PENDENTE`, não o valor total original;
+- respeitar intervalo mínimo de 24h;
+- máximo de 3 tentativas;
+- envio automático somente na janela técnica atual de 09h–18h;
+- preservar correlação quando houver múltiplos agendamentos.
 
-Versão: 5.0
-Projeto: BeautyFlow AI
+Regras globais relacionadas: RN046–RN051.
+
+## Dados operacionais
+
+Conforme o fluxo:
+
+- `AGENDAMENTOS`
+- `PAGAMENTOS`
+- `COBRANCAS`
+- `CLIENTES`
+- `EMPRESAS`
+- `LOGS`
+
+## Tratamento de erro
+
+Erro técnico de busca/registro não pode ser interpretado como:
+
+- agendamento inexistente;
+- pagamento já quitado;
+- cobrança recente;
+- limite de tentativas;
+- nenhuma pendência.
+
+## Documentação
+
+- `n8n/documentacao/financeiro/`
+- `docs/04-regras-de-negocio/`
+- `tests/Casos-de-Teste/CT010...CT011`
