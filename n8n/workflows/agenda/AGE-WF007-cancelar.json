@@ -49,17 +49,33 @@
             },
             {
               "name": "motivo_cancelamento"
+            },
+            {
+              "name": "dados",
+              "type": "object"
+            },
+            {
+              "name": "intencao"
+            },
+            {
+              "name": "confianca"
+            },
+            {
+              "name": "mensagem_texto"
+            },
+            {
+              "name": "phone_number_id"
             }
           ]
         }
       },
-      "id": "21571167-fe70-47f6-8f00-e679a0ef06e3",
+      "id": "daaf1636-aea3-4930-8641-d34bb5527a34",
       "name": "TRG - Receber Dados WF007",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -128,
-        1648
+        -384,
+        2576
       ]
     },
     {
@@ -81,12 +97,8 @@
         "filtersUI": {
           "values": [
             {
-              "lookupColumn": "ID_AGENDAMENTO",
-              "lookupValue": "={{ $json.ID_AGENDAMENTO }}"
-            },
-            {
               "lookupColumn": "ID_EMPRESA",
-              "lookupValue": "={{ $json.ID_EMPRESA }}"
+              "lookupValue": "={{ $json.id_empresa }}"
             },
             {
               "lookupColumn": "STATUS",
@@ -96,14 +108,15 @@
         },
         "options": {}
       },
-      "id": "0899d04a-7e1a-4c4e-b3dd-46e5aba1bbf2",
-      "name": "GS - Buscar Agendamento",
+      "id": "9a2837f2-9488-4851-b83a-ac3dabb00921",
+      "name": "GS - Buscar Agendamentos Ativos",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        112,
-        1648
+        -144,
+        2352
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
@@ -131,19 +144,19 @@
           "values": [
             {
               "lookupColumn": "ID_EMPRESA",
-              "lookupValue": "={{ $('GS - Buscar Agendamento').item.json.ID_EMPRESA }}"
+              "lookupValue": "={{ $('CODE - Localizar Agendamento').first().json.id_empresa }}"
             }
           ]
         },
         "options": {}
       },
-      "id": "22f1e72d-f331-44ad-ae5e-e7fec057d7e2",
+      "id": "5c44b84b-1203-4598-87df-45c0f42eca71",
       "name": "GS - Buscar Empresa",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        320,
-        1648
+        752,
+        2192
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -154,27 +167,42 @@
     },
     {
       "parameters": {
-        "jsCode": "const a=$('GS - Buscar Agendamento').first().json,e=$('GS - Buscar Empresa').first().json;const ini=new Date(`${a.DATA}T${String(a.HORA_INICIO).slice(0,5)}:00`);const faltam=(ini-Date.now())/60000;return [{json:{...$('TRG - Receber Dados WF007').first().json,id_agendamento:a.ID_AGENDAMENTO,google_event_id:a.GOOGLE_EVENT_ID||'',cancelamento_no_prazo:faltam>=Number(e.TEMPO_CANCELAMENTO_MIN||0),minutos_ate_agendamento:Math.round(faltam)}}];"
+        "jsCode": "const a=$('CODE - Localizar Agendamento').first().json;\nconst emp=$('GS - Buscar Empresa').first().json;\n\nfunction parseDataHora(dataStr,horaStr){\n  let dt=DateTime.fromFormat(`${dataStr} ${horaStr}`,'dd/MM/yyyy HH:mm');\n  if(!dt.isValid) dt=DateTime.fromFormat(`${dataStr} ${horaStr}`,'yyyy-MM-dd HH:mm');\n  if(!dt.isValid) dt=DateTime.fromISO(`${dataStr}T${horaStr}`);\n  return dt;\n}\n\nconst inicio=parseDataHora(a.data,String(a.hora_inicio||'00:00').slice(0,5));\nconst agora=DateTime.now();\nconst minutosAte=inicio.isValid?inicio.diff(agora,'minutes').minutes:null;\nconst prazoMin=Number((emp&&emp.TEMPO_CANCELAMENTO_MIN)||0);\n\nconst dentroDoPrazo=minutosAte!==null&&minutosAte>=prazoMin;\n\nif(!dentroDoPrazo){\n  return [{json:{...a,dentro_do_prazo:false,status:'FORA_PRAZO_CANCELAMENTO',minutos_ate_agendamento:minutosAte,resposta_cliente:`Infelizmente não é possível cancelar automaticamente esse agendamento porque estamos fora do prazo de ${prazoMin} minutos de antecedência. Entre em contato com a equipe para verificar a possibilidade de cancelamento.`}}];\n}\n\nreturn [{json:{...a,dentro_do_prazo:true,status:'DENTRO_DO_PRAZO',minutos_ate_agendamento:minutosAte}}];"
       },
-      "id": "39c5fcf1-5ba3-414a-bfb3-16fb3e3c5747",
+      "id": "91673d24-40db-414c-a702-9c12b944cdf3",
       "name": "CODE - Validar Prazo",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        544,
-        1648
+        976,
+        2192
       ]
     },
     {
-      "parameters": {},
-      "id": "9ff0cafe-eafb-4d81-b174-9bc39f65c8ce",
-      "name": "GC - Cancelar Evento [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "operation": "deleteEvent",
+        "calendar": {
+          "__rl": true,
+          "value": "44662433ff0adfe4158dd7e155b55ac73bba692d3762c95df79403cb4b5d575f@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "BeautyFlow - Studio Bella"
+        }
+      },
+      "id": "de022742-e57e-491f-bbee-f22620bebede",
+      "name": "GC - Cancelar Evento",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
       "position": [
-        768,
-        1648
-      ]
+        1648,
+        2096
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "D5hP4f39WlayBYFI",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -195,8 +223,16 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
+          "value": {
+            "ID_AGENDAMENTO": "={{ $('CODE - Localizar Agendamento').first().json.id_agendamento }}",
+            "STATUS": "={{ 'CANCELADO' }}",
+            "DATA_CANCELAMENTO": "={{ new Date().toISOString() }}",
+            "MOTIVO_CANCELAMENTO": "={{ $('CODE - Localizar Agendamento').first().json.motivo_cancelamento }}",
+            "ULTIMA_ATUALIZACAO": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "ID_AGENDAMENTO"
+          ],
           "schema": [
             {
               "id": "ID_AGENDAMENTO",
@@ -377,20 +413,21 @@
         },
         "options": {}
       },
-      "id": "c3b694c8-df12-4d95-8b0c-ab45a6f220f3",
+      "id": "db7b0bde-2412-4314-98b4-6f7dd45ecd06",
       "name": "GS - Cancelar Agendamento",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        992,
-        1648
+        1872,
+        2192
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -403,7 +440,18 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('MERGE - Confirmação').first().json.id_empresa }}",
+            "id_cliente": "={{ $('MERGE - Confirmação').first().json.id_cliente }}",
+            "telefone_cliente": "={{ $('MERGE - Confirmação').first().json.telefone_cliente }}",
+            "nome_cliente": "={{ $('MERGE - Confirmação').first().json.nome_cliente }}",
+            "mensagem_texto": "={{ $('MERGE - Confirmação').first().json.mensagem_texto }}",
+            "intencao": "={{ $('MERGE - Confirmação').first().json.intencao }}",
+            "confianca": "={{ $('MERGE - Confirmação').first().json.confianca }}",
+            "resposta_cliente": "={{ $('MERGE - Confirmação').first().json.resposta_cliente }}",
+            "phone_number_id": "={{ $('MERGE - Confirmação').first().json.phone_number_id }}",
+            "origem": "={{ $('MERGE - Confirmação').first().json.origem }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -549,13 +597,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "5222ac04-3e5d-458b-8b18-49c36ed47c29",
+      "id": "a7ca297a-b313-4ec3-995c-74a9188b16b0",
       "name": "EXEC - WF012 - Confirmação",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1200,
-        1648
+        2544,
+        2352
       ]
     },
     {
@@ -569,7 +617,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('MERGE - Confirmação').first().json.id_empresa }}",
+            "workflow": "={{ 'WF007' }}",
+            "node": "={{ ({CANCELADO:'GS - Cancelar Agendamento', ERRO_TECNICO:'CODE - Preparar Erro Técnico', NAO_ENCONTRADO:'CODE - Localizar Agendamento', MULTIPLOS_AGENDAMENTOS:'CODE - Localizar Agendamento', FORA_PRAZO_CANCELAMENTO:'CODE - Validar Prazo'})[$('MERGE - Confirmação').first().json.status] || 'WF007' }}",
+            "tipo": "={{ $('MERGE - Confirmação').first().json.status === 'CANCELADO' ? 'SUCESSO' : ($('MERGE - Confirmação').first().json.status === 'ERRO_TECNICO' ? 'ERRO' : 'AVISO') }}",
+            "evento": "={{ 'CANCELAR_AGENDAMENTO' }}",
+            "status": "={{ $('MERGE - Confirmação').first().json.status }}",
+            "mensagem": "={{ $('MERGE - Confirmação').first().json.resposta_cliente }}",
+            "dados": "={{ JSON.stringify($('MERGE - Confirmação').first().json) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -661,28 +719,449 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "0e9e4baf-87a6-42b5-997d-8fec2246ba60",
+      "id": "797c8227-dbb1-460f-a688-780873129418",
       "name": "EXEC - WF017 - Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1424,
-        1648
+        2768,
+        2352
       ]
     },
     {
       "parameters": {
-        "content": "## WF007 v5.1\n\nConfigure filtros, Google Calendar Delete/Update Event e matching column ID_AGENDAMENTO.",
+        "content": "## WF007 v5.2\n\nCODE - Localizar Agendamento prioriza id_agendamento; sem ele, resolve por id_cliente/telefone (+ data). Nunca escolhe arbitrariamente: 0 encontrados = NAO_ENCONTRADO, >1 = MULTIPLOS_AGENDAMENTOS (pede para o cliente especificar). IF - Dentro do Prazo bloqueia cancelamento fora do TEMPO_CANCELAMENTO_MIN da empresa. GC - Cancelar Evento so roda se houver google_event_id; erros de Calendar/Sheets sao capturados (onError: continueErrorOutput) e tratados de forma amigavel. MERGE - Confirmacao padroniza os 4 desfechos possiveis antes do WF012 e do log; SET - Preparar Saida WF007 garante que o retorno do WF017 nao substitua a saida real do cancelamento.",
         "height": 260,
         "width": 520
       },
-      "id": "7b7839f5-8cad-4b2a-9cfe-a22143b2e974",
+      "id": "7a1e5966-84c7-47a7-bc05-8ab3d39887a1",
       "name": "NOTA - WF007 v5.1",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1280,
-        1280
+        -144,
+        1952
+      ],
+      "width": 760,
+      "height": 220
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('TRG - Receber Dados WF007').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "TELEFONE",
+              "lookupValue": "={{ $('TRG - Receber Dados WF007').first().json.telefone_cliente }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "56e1b4d4-6a26-4a45-b605-6a4139809fe6",
+      "name": "GS - Buscar Cliente por Telefone",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        80,
+        2352
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$('TRG - Receber Dados WF007').first().json;\nconst lista=$items('GS - Buscar Agendamentos Ativos').map(i=>i.json).filter(x=>x&&x.ID_AGENDAMENTO);\nconst clientePorTelefone=$('GS - Buscar Cliente por Telefone').first().json;\n\nfunction mesmoDia(raw,alvo){\n  if(!raw||!alvo) return true;\n  const parse=v=>{\n    let dt=DateTime.fromFormat(String(v),'dd/MM/yyyy');\n    if(!dt.isValid) dt=DateTime.fromFormat(String(v),'yyyy-MM-dd');\n    if(!dt.isValid) dt=DateTime.fromISO(String(v));\n    return dt;\n  };\n  const a=parse(raw), b=parse(alvo);\n  return a.isValid&&b.isValid&&a.hasSame(b,'day');\n}\n\nconst base={\n  id_empresa:e.id_empresa||'EMP001',\n  id_cliente:e.id_cliente||'',\n  telefone_cliente:e.telefone_cliente||'',\n  nome_cliente:e.nome_cliente||'Cliente',\n  origem:e.origem||'WHATSAPP',\n  phone_number_id:e.phone_number_id||'',\n  mensagem_texto:e.mensagem_texto||'',\n  intencao:e.intencao||'',\n  confianca:e.confianca,\n  dados:e.dados||{},\n  motivo_cancelamento:e.motivo_cancelamento||'Cancelado a pedido do cliente'\n};\n\nlet candidatos=[];\n\nif(e.id_agendamento){\n  // prioridade absoluta: id_agendamento informado\n  candidatos=lista.filter(a=>String(a.ID_AGENDAMENTO)===String(e.id_agendamento));\n}else{\n  const idClienteResolvido=e.id_cliente||(clientePorTelefone&&clientePorTelefone.ID_CLIENTE)||'';\n  if(!idClienteResolvido){\n    return [{json:{...base,encontrado:false,status:'NAO_ENCONTRADO',resposta_cliente:'Não encontrei nenhum agendamento ativo para cancelar. Pode confirmar os dados do agendamento?'}}];\n  }\n  candidatos=lista.filter(a=>String(a.ID_CLIENTE)===String(idClienteResolvido));\n  if(e.data){\n    candidatos=candidatos.filter(a=>mesmoDia(a.DATA,e.data));\n  }\n}\n\nif(candidatos.length===0){\n  return [{json:{...base,encontrado:false,status:'NAO_ENCONTRADO',resposta_cliente:'Não encontrei nenhum agendamento ativo para cancelar. Pode confirmar os dados do agendamento?'}}];\n}\n\nif(candidatos.length>1){\n  const opcoes=candidatos.slice(0,6).map(a=>`${a.DATA} às ${String(a.HORA_INICIO||'').slice(0,5)}`).join('; ');\n  return [{json:{...base,encontrado:false,status:'MULTIPLOS_AGENDAMENTOS',resposta_cliente:`Encontrei mais de um agendamento ativo: ${opcoes}. Pode me dizer qual deles você quer cancelar (data e horário)?`}}];\n}\n\nconst a=candidatos[0];\nreturn [{json:{...base,encontrado:true,status:'ENCONTRADO',\n  id_agendamento:a.ID_AGENDAMENTO,\n  id_cliente:a.ID_CLIENTE||base.id_cliente,\n  id_profissional:a.ID_PROFISSIONAL||'',\n  servico:a.ID_SERVICO||'',\n  data:a.DATA,\n  hora_inicio:String(a.HORA_INICIO||'').slice(0,5),\n  google_event_id:a.GOOGLE_EVENT_ID||'',\n  resposta_cliente:''\n}}];"
+      },
+      "id": "a66d2cdf-c3fc-4122-bd7e-6a9e2cd8476a",
+      "name": "CODE - Localizar Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1",
+              "leftValue": "={{ $json.encontrado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        2352
+      ],
+      "id": "2a9ae4b5-8caa-44a0-9ef3-1b56ee8ddca0",
+      "name": "IF - Agendamento Encontrado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a2",
+              "leftValue": "={{ $json.dentro_do_prazo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1200,
+        2192
+      ],
+      "id": "ebe35532-550a-4130-99a7-d28dd2626d49",
+      "name": "IF - Dentro do Prazo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a3",
+              "leftValue": "={{ $json.google_event_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1424,
+        2192
+      ],
+      "id": "7a49f983-e7bb-4889-b15c-4fb438e7a1db",
+      "name": "IF - Possui Google Event ID"
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$('CODE - Localizar Agendamento').first().json;\nconst err=$json.error||{};\n\nreturn [{json:{\n  id_empresa:a.id_empresa,\n  id_cliente:a.id_cliente,\n  telefone_cliente:a.telefone_cliente,\n  nome_cliente:a.nome_cliente,\n  id_agendamento:a.id_agendamento,\n  data:a.data,\n  hora_inicio:a.hora_inicio,\n  origem:a.origem,\n  phone_number_id:a.phone_number_id,\n  mensagem_texto:a.mensagem_texto,\n  intencao:a.intencao,\n  confianca:a.confianca,\n  dados:a.dados,\n  google_event_id:a.google_event_id,\n  status:'ERRO_TECNICO',\n  erro:String((err&&err.message)||err||'Falha técnica ao cancelar o agendamento.'),\n  resposta_cliente:'Tivemos um problema técnico ao cancelar seu agendamento. Por favor, tente novamente em alguns instantes ou fale com a nossa equipe.'\n}}];"
+      },
+      "id": "eb2090d2-f181-4828-bda2-45892c017923",
+      "name": "CODE - Preparar Erro Técnico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s4",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s5",
+              "name": "id_agendamento",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.id_agendamento }}",
+              "type": "string"
+            },
+            {
+              "id": "s6",
+              "name": "data",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "s7",
+              "name": "hora_inicio",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.hora_inicio }}",
+              "type": "string"
+            },
+            {
+              "id": "s8",
+              "name": "origem",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "s9",
+              "name": "phone_number_id",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "s10",
+              "name": "mensagem_texto",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "s11",
+              "name": "intencao",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.intencao }}",
+              "type": "string"
+            },
+            {
+              "id": "s12",
+              "name": "confianca",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.confianca }}",
+              "type": "number"
+            },
+            {
+              "id": "s13",
+              "name": "dados",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "s14",
+              "name": "google_event_id",
+              "value": "={{ $('CODE - Localizar Agendamento').first().json.google_event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "s15",
+              "name": "status",
+              "value": "={{ 'CANCELADO' }}",
+              "type": "string"
+            },
+            {
+              "id": "s16",
+              "name": "resposta_cliente",
+              "value": "={{ 'Seu agendamento do dia ' + $('CODE - Localizar Agendamento').first().json.data + ' às ' + $('CODE - Localizar Agendamento').first().json.hora_inicio + ' foi cancelado com sucesso.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "81754755-a76a-4c59-bf68-56b1dac99224",
+      "name": "SET - Preparar Confirmação Sucesso",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2096,
+        2192
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "aa38d495-d700-4518-b372-cb0c108fd461",
+      "name": "MERGE - Confirmação",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2320,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "status",
+              "value": "={{ $('MERGE - Confirmação').first().json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "id_empresa",
+              "value": "={{ $('MERGE - Confirmação').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "o3",
+              "name": "id_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "telefone_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "nome_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o6",
+              "name": "id_agendamento",
+              "value": "={{ $('MERGE - Confirmação').first().json.id_agendamento }}",
+              "type": "string"
+            },
+            {
+              "id": "o7",
+              "name": "data",
+              "value": "={{ $('MERGE - Confirmação').first().json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "o8",
+              "name": "hora_inicio",
+              "value": "={{ $('MERGE - Confirmação').first().json.hora_inicio }}",
+              "type": "string"
+            },
+            {
+              "id": "o9",
+              "name": "google_event_id",
+              "value": "={{ $('MERGE - Confirmação').first().json.google_event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "o10",
+              "name": "origem",
+              "value": "={{ $('MERGE - Confirmação').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "o11",
+              "name": "phone_number_id",
+              "value": "={{ $('MERGE - Confirmação').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "o12",
+              "name": "mensagem_texto",
+              "value": "={{ $('MERGE - Confirmação').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "o13",
+              "name": "intencao",
+              "value": "={{ $('MERGE - Confirmação').first().json.intencao }}",
+              "type": "string"
+            },
+            {
+              "id": "o14",
+              "name": "confianca",
+              "value": "={{ $('MERGE - Confirmação').first().json.confianca }}",
+              "type": "number"
+            },
+            {
+              "id": "o15",
+              "name": "dados",
+              "value": "={{ $('MERGE - Confirmação').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "o16",
+              "name": "resposta_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.resposta_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o17",
+              "name": "minutos_ate_agendamento",
+              "value": "={{ $('MERGE - Confirmação').first().json.minutos_ate_agendamento }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f3e3387c-e214-470e-97ac-22d544e766e5",
+      "name": "SET - Preparar Saída WF007",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2992,
+        2352
       ]
     }
   ],
@@ -692,20 +1171,60 @@
       "main": [
         [
           {
-            "node": "GS - Buscar Agendamento",
+            "node": "GS - Buscar Agendamentos Ativos",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Buscar Agendamento": {
+    "GS - Buscar Agendamentos Ativos": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Cliente por Telefone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Cliente por Telefone": {
+      "main": [
+        [
+          {
+            "node": "CODE - Localizar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Localizar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Agendamento Encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Agendamento Encontrado": {
       "main": [
         [
           {
             "node": "GS - Buscar Empresa",
             "type": "main",
             "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -725,15 +1244,40 @@
       "main": [
         [
           {
-            "node": "GC - Cancelar Evento [CONFIGURAR]",
+            "node": "IF - Dentro do Prazo",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GC - Cancelar Evento [CONFIGURAR]": {
+    "IF - Dentro do Prazo": {
       "main": [
+        [
+          {
+            "node": "IF - Possui Google Event ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "IF - Possui Google Event ID": {
+      "main": [
+        [
+          {
+            "node": "GC - Cancelar Evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "GS - Cancelar Agendamento",
@@ -743,7 +1287,65 @@
         ]
       ]
     },
+    "GC - Cancelar Evento": {
+      "main": [
+        [
+          {
+            "node": "GS - Cancelar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Técnico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "GS - Cancelar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Confirmação Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Técnico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Preparar Confirmação Sucesso": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Erro Técnico": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "MERGE - Confirmação": {
       "main": [
         [
           {
@@ -764,15 +1366,26 @@
           }
         ]
       ]
+    },
+    "EXEC - WF017 - Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF007",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d85167ae-469c-4dc2-b0fd-a1c6115e1fd9",
+  "versionId": "f88a5eb0-ff3d-4f51-8605-9394aee38560",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
