@@ -1,99 +1,73 @@
+# WF015 — COM - WF015 - Follow-up
 
-# COM-WF015 — Follow-up / Reativação
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`COM-WF015-follow-up.json`](../../workflows/comunicacao/COM-WF015-follow-up.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-> Documentação técnica do BeautyFlow AI — n8n
+## 1. Objetivo
 
-## Identificação
+Reengajar clientes inativos em janelas de aproximadamente 30 e 45 dias, respeitando marketing, agendamentos futuros, ciclo de inatividade e idempotência.
 
-| Campo | Valor |
-|---|---|
-| Código | `COM-WF015` |
-| Workflow | Follow-up / Reativação |
-| Arquivo n8n | `COM-WF015-follow-up.json` |
-| Status | Versionado e validado em testes |
-| Trigger | Subworkflow executado periodicamente por mecanismo externo para uma empresa. |
-| Última revisão desta documentação | 18/08/2026 |
+## 2. Identificação técnica
 
-## Objetivo
+- **Workflow:** `COM - WF015 - Follow-up`
+- **ID funcional:** `WF015`
+- **Arquivo JSON:** `COM-WF015-follow-up.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** `Execute Workflow Trigger`; não existe Schedule/Cron no JSON atual.
 
-Reengajar clientes inativos com consentimento de marketing, sem abordar quem já possui agendamento futuro e sem repetir a mesma tentativa dentro do mesmo ciclo de inatividade.
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-## Entradas principais
+## 3. Entradas
 
 - `id_empresa` obrigatório.
 
-## Fluxo principal
+## 4. Fluxo real do workflow
 
-1. Valida empresa e carrega configuração de WhatsApp/fuso.
-2. Busca clientes ativos e dados necessários da empresa.
-3. Deriva o último atendimento real pelos `AGENDAMENTOS`, ignorando cancelados.
-4. Exclui cliente com agendamento futuro não cancelado.
-5. Verifica `ACEITA_MARKETING`.
-6. Calcula a faixa de inatividade e determina tentativa 1 ou 2.
-7. Consulta `FOLLOWUPS` para garantir idempotência do ciclo.
-8. Monta mensagem de reativação.
-9. Envia exclusivamente pelo WF012.
-10. Registra o follow-up e o resultado.
-11. Registra logs pelo WF017.
+1. Valida `id_empresa`, busca a empresa e verifica configuração de WhatsApp/timezone.
+2. Consulta `CLIENTES`, `AGENDAMENTOS` e `FOLLOWUPS` da empresa.
+3. Para cada cliente apto, deriva o último atendimento **real** a partir de `AGENDAMENTOS`, ignorando cancelados e usando atendimentos já encerrados.
+4. Bloqueia cliente que possua agendamento futuro não cancelado.
+5. Calcula a tentativa de reengajamento conforme dias desde o último atendimento real.
+6. Aplica idempotência por ciclo de inatividade e tentativa.
+7. Envia cada follow-up elegível pelo WF012.
+8. Registra o resultado em `FOLLOWUPS`; os ramos de erro/sucesso preservam correlação multi-item.
+9. Consolida resultados, registra logs no WF017 e prepara a saída final.
 
-## Fluxo resumido
+## 5. Regras e decisões implementadas
 
-```text
-COM-WF015 → Google Sheets: EMPRESAS, CLIENTES, AGENDAMENTOS, FOLLOWUPS → COM-WF012 → ADM-WF017
-```
+- `id_empresa` é obrigatório.
+- Somente clientes com `STATUS=ATIVO` e `ACEITA_MARKETING=SIM` são elegíveis.
+- O último atendimento é derivado de `AGENDAMENTOS`; `CLIENTES.ULTIMO_ATENDIMENTO` não é usado como fonte da decisão.
+- Agendamento futuro com status diferente de `CANCELADO` bloqueia follow-up.
+- Tentativa 1: entre 30 e 33 dias após o último atendimento real.
+- Tentativa 2: entre 45 e 48 dias.
+- Máximo de 2 tentativas por ciclo de inatividade.
+- Um novo atendimento real altera a chave do ciclo e permite um novo ciclo futuro.
+- Idempotência usa empresa + cliente + último atendimento + tentativa; somente follow-up efetivamente enviado bloqueia repetição correspondente.
+- Envio é sempre via WF012.
 
-## Integrações
+## 6. Integrações e dependências
 
-- Google Sheets: `EMPRESAS`, `CLIENTES`, `AGENDAMENTOS`, `FOLLOWUPS`
-- COM-WF012
-- ADM-WF017
+- Google Sheets: `EMPRESAS`, `CLIENTES`, `AGENDAMENTOS`, `FOLLOWUPS`.
+- WF012 — Comunicação.
+- WF017 — Logs.
 
-## Regras de negócio e proteções
+## 7. Saídas e estados
 
-- Somente cliente `ATIVO` e com `ACEITA_MARKETING=SIM`.
-- Último atendimento deve ser derivado de agendamentos reais; não confiar cegamente em campo desatualizado do cadastro.
-- Cliente com agendamento futuro não deve receber reativação.
-- Tentativa 1: aproximadamente 30–33 dias após último atendimento.
-- Tentativa 2: aproximadamente 45–48 dias após último atendimento.
-- Máximo de 2 tentativas por ciclo de inatividade (RN008).
-- Novo atendimento real inicia novo ciclo.
-- Idempotência deve considerar empresa + cliente + último atendimento + número da tentativa.
-- Envio deve passar pelo WF012; não duplicar HTTP da Meta neste workflow.
+- Resultados cobrem follow-up enviado, já enviado, cliente não elegível, cliente com agendamento futuro e `ERRO_FOLLOWUP`, além de bloqueios de empresa/WhatsApp.
 
-## Saídas esperadas
+## 8. Tratamento de erros e bloqueios
 
-- Resultado por cliente: follow-up enviado, bloqueado, não elegível ou erro técnico.
+- Falhas técnicas de busca são separadas de “nenhum cliente elegível”.
+- Falha global ao registrar follow-up é expandida/correlacionada para os candidatos correspondentes antes da consolidação.
 
-## Tratamento de erros e logs
+## 9. Observações do JSON atual
 
-- Falha de consulta deve gerar `ERRO_FOLLOWUP`/resultado técnico equivalente, sem virar simples não elegível.
-- Falha no envio não pode marcar tentativa como enviada com sucesso.
-- É esperado haver múltiplos itens finais quando vários candidatos são avaliados.
+- No arquivo versionado, `active` está `false`.
+- Existe dependência funcional do campo `ACEITA_MARKETING`; o WF008 atual cria novos clientes com esse campo em `SIM`.
+- O JSON não possui Schedule/Cron e depende de acionamento externo periódico.
 
-## Dependências entre workflows
+## 10. Critério de manutenção desta documentação
 
-- Chama: `COM-WF012` e `ADM-WF017`.
-- Necessita acionamento periódico externo; o workflow atual não deve ser presumido como cron autônomo.
-
-## Checklist mínimo de teste
-
-- [ ] Cliente com 30–33 dias sem atendimento.
-- [ ] Cliente com 45–48 dias e uma tentativa anterior.
-- [ ] Terceira tentativa bloqueada.
-- [ ] Cliente com agendamento futuro.
-- [ ] `ACEITA_MARKETING` diferente de SIM.
-- [ ] Follow-up já enviado no mesmo ciclo.
-- [ ] Novo atendimento cria novo ciclo.
-- [ ] Erro técnico forçado em AGENDAMENTOS/CLIENTES/FOLLOWUPS.
-
-## Cuidados na manutenção
-
-Débito importante antes de produção: garanta que `ACEITA_MARKETING=SIM` represente consentimento real. O cadastro automático não deve conceder opt-in sem autorização do cliente.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
+Sempre que `COM-WF015-follow-up.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
