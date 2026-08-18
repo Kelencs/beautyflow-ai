@@ -1,0 +1,56 @@
+# Auditoria da Pasta `tests/` — BeautyFlow AI
+
+**Data:** 18/08/2026  
+**Escopo:** documentação de testes do repositório comparada à estrutura atual dos WF001–WF018.
+
+## Resumo executivo
+
+A estrutura existente era útil como esqueleto, mas estava desatualizada em relação ao projeto atual.
+
+### Divergências encontradas
+
+- `tests/README.md` descrevia a pasta como `10-Testes/`, embora o diretório real seja `tests/`.
+- A documentação citava **OpenAI**, enquanto o workflow de IA atual utiliza **Google Gemini**.
+- A matriz de rastreabilidade cobria apenas WF001–WF010.
+- Vários nomes da matriz não correspondiam aos workflows atuais.
+- CT002–CT010 existentes estavam vazios no repositório.
+- CT001 estava preenchido, mas misturava recebimento do webhook com comportamento que pertence a workflows posteriores.
+- Não havia CT principal para WF011–WF018.
+- `Evidencias/readme.md` estava vazio.
+- O relatório de 14/08 é histórico e não deve ser reescrito para apagar o estado daquela data.
+- Testes de API, UAT, carga e segurança existiam majoritariamente como arquivos vazios.
+- Google Drive, necessário ao WF016, não estava representado em `Testes-de-API`.
+
+## Decisões adotadas
+
+1. Criar rastreabilidade 1:1 entre WF001–WF018 e CT001–CT018.
+2. Manter evidências históricas imutáveis e criar novos consolidados por data.
+3. Não inventar aprovação de WF001–WF007 quando a evidência consolidada não está disponível.
+4. Separar:
+   - comportamento implementado;
+   - caso de teste;
+   - evidência executada;
+   - pendência externa.
+5. Registrar gaps de requisitos em vez de associar artificialmente RF/UC/US inexistentes.
+
+## Arquivos antigos a substituir/remover
+
+Ao aplicar este pacote no Git:
+
+- substituir os documentos principais de `tests/`;
+- substituir os casos de teste antigos pelos CT001–CT018 deste pacote;
+- remover `tests/Testes-de-API/OpenAI.md`;
+- adicionar `Google-Gemini.md` e `Google-Drive.md`;
+- manter `tests/Evidencias/BeautyFlow-Documentacao-Testes-Workflows-2026-08-14.md` como histórico;
+- substituir `tests/Evidencias/readme.md` pelo novo `README.md`.
+
+## Gaps documentais que permanecem fora da pasta `tests/`
+
+A rastreabilidade mostrou requisitos implementados sem artefato funcional equivalente nos documentos atuais:
+
+- pagamento;
+- cobrança;
+- política de retenção de logs por 90 dias;
+- follow-up/reengajamento completo.
+
+Esses gaps devem futuramente gerar novos RF/UC/US ou uma decisão formal de que são requisitos técnicos/operacionais.
