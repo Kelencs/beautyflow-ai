@@ -3,109 +3,283 @@
   "nodes": [
     {
       "parameters": {
-        "workflowInputs": {
-          "values": [
-            {
-              "name": "id_empresa"
-            },
-            {
-              "name": "id_cliente"
-            },
-            {
-              "name": "telefone_cliente"
-            },
-            {
-              "name": "nome_cliente"
-            },
-            {
-              "name": "mensagem_texto"
-            },
-            {
-              "name": "intencao"
-            },
-            {
-              "name": "confianca"
-            },
-            {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
-            },
-            {
-              "name": "origem"
-            }
-          ]
-        }
+        "inputSource": "passthrough"
       },
-      "id": "ec0dc0ca-a824-46c1-877a-1da41ec3561c",
+      "id": "5ff3ccdd-da16-4ba3-b023-11fffd469a29",
       "name": "TRG - Receber Dados WF016",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -384,
-        624
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "823ce84d-1ff4-42bc-a492-90cabdee62d3",
-      "name": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        -144,
-        624
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "292cd9ae-c88f-48db-bd36-9a4c97432160",
-      "name": "GS - Ler tabelas [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        96,
-        624
+        3008,
+        2864
       ]
     },
     {
       "parameters": {
-        "jsCode": "return items;"
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
       },
-      "id": "62094a81-7d95-4204-8e20-3842a1d9fd72",
-      "name": "CODE - Gerar Backup",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "5e91f501-f705-467f-a95f-4b7baed04dd2",
+      "name": "SCHEDULE - Backup Diário 02h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
-        336,
-        624
+        3008,
+        3056
       ]
     },
     {
-      "parameters": {},
-      "id": "05e51459-185e-42ec-915d-de0c3abd9589",
-      "name": "DRIVE - Salvar Backup [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "jsCode": "const agora = DateTime.now().setZone('America/Sao_Paulo');\nconst nomeArquivo = `BEAUTYFLOW3.1-backup-${agora.toFormat('yyyy-MM-dd-HHmm')}`;\n\nreturn [{ json: {\n  // WF016 é um workflow de escopo GLOBAL (não recebe id_empresa): 'GLOBAL' é um valor\n  // explícito e documentado, nunca uma string vazia silenciosa, para deixar isso claro\n  // na aba LOGS em vez de parecer um campo esquecido.\n  id_empresa: 'GLOBAL',\n  nome_arquivo: nomeArquivo,\n  agora_iso: agora.toISO()\n} }];\n"
+      },
+      "id": "18426528-1c1f-4a1d-ac49-d97aeb41b331",
+      "name": "CODE - Preparar Backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        576,
-        624
+        3248,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "id"
+        },
+        "name": "={{ $json.nome_arquivo }}",
+        "options": {}
+      },
+      "id": "978936fc-62e7-4668-86cf-d713e81bbf6e",
+      "name": "DRIVE - Copiar Planilha",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3440,
+        2960
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "z6FTIWjEsedaFXLJ",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resultado = $json;\nconst prep = $('CODE - Preparar Backup').first().json;\n\nconst arquivoId = resultado.id || '';\nconst arquivoNome = resultado.name || prep.nome_arquivo;\nconst criadoComSucesso = !!arquivoId;\n\nif (!criadoComSucesso) {\n  return [{ json: {\n    ...prep, criado: false, arquivo_id: '', arquivo: arquivoNome,\n    evento_resultado: 'ERRO_BACKUP',\n    node_origem: 'DRIVE - Copiar Planilha',\n    erro: 'A cópia da planilha foi executada mas não retornou um ID de arquivo válido.'\n  } }];\n}\n\nreturn [{ json: {\n  ...prep, criado: true, arquivo_id: arquivoId, arquivo: arquivoNome,\n  evento_resultado: 'BACKUP_CONCLUIDO', node_origem: 'DRIVE - Copiar Planilha', erro: ''\n} }];\n"
+      },
+      "id": "4d382c28-f582-44b0-b4ab-7bbc8fc8d912",
+      "name": "CODE - Avaliar Backup Criado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3648,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prep = $('CODE - Preparar Backup').first().json;\nconst err = $json.error || {};\n\nreturn [{ json: {\n  ...prep, criado: false, arquivo_id: '', arquivo: prep.nome_arquivo,\n  evento_resultado: 'ERRO_BACKUP',\n  node_origem: 'DRIVE - Copiar Planilha',\n  erro: String((err && err.message) || err || 'Falha técnica ao copiar a planilha para o Google Drive.')\n} }];\n"
+      },
+      "id": "9aa66467-a28c-4cc8-a0bf-27a893bb9484",
+      "name": "CODE - Erro Backup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3648,
+        3056
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.criado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5fe1c92e-0852-46c6-b407-8017f691eab0",
+      "name": "IF - Backup Criado Com Sucesso",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4064,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "BEAUTYFLOW3.1-backup-",
+        "filter": {},
+        "options": {}
+      },
+      "id": "48c8f88c-2991-4f21-acb4-ea9268e2eca9",
+      "name": "DRIVE - Listar Backups Existentes",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4288,
+        2832
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "z6FTIWjEsedaFXLJ",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Avaliar Backup Criado').first().json;\n\n// Este node agora só recebe o output de SUCESSO de \"DRIVE - Listar Backups Existentes\"\n// (o output de erro técnico foi separado para \"CODE - Erro Listagem Backups\", que tem seu\n// próprio node_origem correto). Isso corrige uma falha real: antes, \"items.length === 0\" era\n// usado como proxy para \"a busca falhou tecnicamente\", mas o output de erro do Google Drive\n// (onError: continueErrorOutput) normalmente entrega 1 item (o objeto de erro), não 0 - ou\n// seja, uma falha técnica real nunca era detectada e acabava tratada como \"nenhum backup\n// expirado encontrado\", mascarando o erro silenciosamente.\nconst PREFIXO = 'BEAUTYFLOW3.1-backup-';\n// Proteção extra e explícita: nunca considerar a planilha original do BeautyFlow como candidata\n// à exclusão, mesmo que por algum motivo ela apareça nos resultados da busca.\nconst ID_PLANILHA_ORIGINAL = '1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E';\nconst agora = ctx.agora_iso ? DateTime.fromISO(ctx.agora_iso, { zone: 'America/Sao_Paulo' }) : DateTime.now().setZone('America/Sao_Paulo');\n\nconst arquivos = items.map(i => i.json).filter(f => f && f.id && f.name);\n\nconst expirados = arquivos.filter(f => {\n  // Nunca excluir a planilha original, sob nenhuma circunstância.\n  if (f.id === ID_PLANILHA_ORIGINAL) return false;\n  // Nunca mexer em arquivo que não pertença exatamente ao padrão de nomenclatura do BeautyFlow.\n  if (!String(f.name).startsWith(PREFIXO)) return false;\n  const criado = f.createdTime ? DateTime.fromISO(f.createdTime, { zone: 'America/Sao_Paulo' }) : null;\n  // Sem metadado de data confiável, não arrisca excluir.\n  if (!criado || !criado.isValid) return false;\n  const idadeDias = agora.diff(criado, 'days').days;\n  return idadeDias > 30;\n});\n\nif (expirados.length === 0) {\n  return [{ json: { ...ctx, limpeza_realizada: true, tem_expirados: false, limpeza_erro: '' } }];\n}\n\nreturn expirados.map(f => ({ json: {\n  ...ctx, limpeza_realizada: true, tem_expirados: true, limpeza_erro: '',\n  arquivo_id_excluir: f.id, arquivo_nome_excluir: f.name\n} }));\n"
+      },
+      "id": "69cd9f8f-fe84-4f3e-8bae-1e83fb567d82",
+      "name": "CODE - Selecionar Backups Expirados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4480,
+        2832
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.tem_expirados }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d2bfeb05-8a50-47a9-85d6-36bcc5bf8bf1",
+      "name": "IF - Tem Backups Expirados",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4672,
+        2848
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.arquivo_id_excluir }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "03d97f2f-c213-41b2-9d7b-69326d0146b0",
+      "name": "DRIVE - Excluir Backup Expirado",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        4880,
+        2752
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "z6FTIWjEsedaFXLJ",
+          "name": "Google Drive account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(() => ({ json: { deletado: true } }));\n"
+      },
+      "id": "d666d20a-f22b-4e34-a6e9-1be50d3df808",
+      "name": "CODE - Marcar Exclusão OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5088,
+        2704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(() => ({ json: { deletado: false } }));\n"
+      },
+      "id": "9cd06a31-ed15-4c70-ae79-7ece6160d8ec",
+      "name": "CODE - Marcar Exclusão Falhou",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5088,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Avaliar Backup Criado').first().json;\n\nlet excluidos = 0, falhas = 0;\nfor (const it of items) {\n  const j = it.json;\n  if (j.deletado === true) excluidos++;\n  else if (j.deletado === false) falhas++;\n  // \"deletado\" ausente => ramo \"nada a excluir\" ou \"erro de listagem\", não conta.\n}\n\n// Preserva o node_origem herdado (ex.: 'DRIVE - Listar Backups Existentes' se a listagem\n// falhou), mas se a falha ocorreu na exclusão em si, reatribui o node_origem para o node\n// correto (a listagem, nesse caso, funcionou normalmente).\nconst nodeOrigem = falhas > 0 ? 'DRIVE - Excluir Backup Expirado' : (ctx.node_origem || 'DRIVE - Copiar Planilha');\n\nreturn [{ json: {\n  ...ctx,\n  node_origem: nodeOrigem,\n  limpeza_backups_excluidos: excluidos,\n  limpeza_backups_com_falha: falhas\n} }];\n"
+      },
+      "id": "8820bb10-7835-4d14-8284-781f4f189ea9",
+      "name": "CODE - Consolidar Limpeza",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5280,
+        2832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const dados = item.json;\n\n  const criado = dados.criado === true;\n  const limpezaErro = String(dados.limpeza_erro || '').trim();\n  const erroBackup = String(dados.erro || '').trim();\n\n  let eventoResultado;\n\n  // 1. O próprio backup falhou\n  if (!criado) {\n    eventoResultado = 'ERRO_BACKUP';\n  }\n\n  // 2. Backup criado, mas houve falha na etapa de retenção/limpeza\n  else if (limpezaErro !== '') {\n    eventoResultado = 'SUCESSO_PARCIAL';\n  }\n\n  // 3. Backup criado e retenção processada sem erro\n  else {\n    eventoResultado = 'BACKUP_CONCLUIDO';\n  }\n\n  return {\n    json: {\n      ...dados,\n      evento_resultado: eventoResultado,\n      erro: erroBackup,\n      limpeza_erro: limpezaErro\n    }\n  };\n});"
+      },
+      "id": "f815f070-4fb5-4e0f-a613-e8b7e6542f30",
+      "name": "CODE - Consolidar Resultado Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5504,
+        2960
       ]
     },
     {
@@ -119,7 +293,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "ADM-WF016",
+            "node": "={{ $json.node_origem || 'ORIGEM_NAO_IDENTIFICADA' }}",
+            "tipo": "={{ ($json.evento_resultado === 'BACKUP_CONCLUIDO' && !$json.limpeza_erro) ? 'INFO' : 'ERRO' }}",
+            "evento": "={{ $json.evento_resultado }}",
+            "status": "={{ $json.evento_resultado === 'BACKUP_CONCLUIDO' ? ($json.limpeza_erro ? 'SUCESSO_PARCIAL' : 'SUCESSO') : 'FALHA' }}",
+            "mensagem": "={{ $json.evento_resultado === 'BACKUP_CONCLUIDO' ? ('Backup criado: ' + $json.arquivo + '. Backups antigos excluídos: ' + ($json.limpeza_backups_excluidos || 0) + '. Falhas na limpeza: ' + ($json.limpeza_backups_com_falha || 0) + '.' + ($json.limpeza_erro ? (' ATENÇÃO: ' + $json.limpeza_erro) : '')) : $json.erro }}",
+            "dados": "={{ JSON.stringify({ arquivo: $json.arquivo, arquivo_id: $json.arquivo_id, limpeza_backups_excluidos: $json.limpeza_backups_excluidos, limpeza_backups_com_falha: $json.limpeza_backups_com_falha, limpeza_erro: $json.limpeza_erro || '' }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -211,28 +395,118 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "3bb05b23-7761-433b-b5bb-1d2f3c6b014e",
+      "id": "8f4c3081-d21a-428c-ad7c-b88f916dd5d4",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        816,
-        624
+        5728,
+        2960
       ]
     },
     {
       "parameters": {
-        "content": "## ADM - WF016 - Backup v5.0\n\nBackup periódico.",
-        "height": 280,
-        "width": 520
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o0",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_empresa || '' }}"
+            },
+            {
+              "id": "o1",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.evento_resultado || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "data_hora",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.agora_iso || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "arquivo",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.arquivo || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "arquivo_id",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.arquivo_id || '' }}"
+            },
+            {
+              "id": "o5",
+              "name": "destino",
+              "type": "string",
+              "value": "Google Drive"
+            },
+            {
+              "id": "o6",
+              "name": "registros_processados",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.criado ? 'Todas as 14 abas (cópia integral nativa da planilha)' : '' }}"
+            },
+            {
+              "id": "o7",
+              "name": "erros",
+              "type": "string",
+              "value": "={{ ($('CODE - Consolidar Resultado Final').first().json.limpeza_backups_com_falha || 0) > 0 ? ('Falha ao excluir ' + $('CODE - Consolidar Resultado Final').first().json.limpeza_backups_com_falha + ' backup(s) expirado(s) durante a limpeza de retenção.') : ($('CODE - Consolidar Resultado Final').first().json.erro || '') }}"
+            },
+            {
+              "id": "o8",
+              "name": "execution_id",
+              "type": "string",
+              "value": "={{ $execution.id }}"
+            },
+            {
+              "id": "o9",
+              "name": "limpeza_erro",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.limpeza_erro || '' }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "c5aa9a4a-481b-4560-ae60-36a5f9de5312",
-      "name": "NOTA - ADM - WF016 - Backup v5.0",
+      "id": "36f78b7c-dbe4-4b0b-b7ab-5cbd6ff6460c",
+      "name": "SET - Preparar Saída WF016",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5936,
+        2960
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ADM - WF016 - Backup v7.0\n\nBackup diário (02:00 America/Sao_Paulo) via cópia integral nativa da planilha BEAUTYFLOW3.1 no Google Drive.\n\nMétodo: Google Drive \"Copy File\" (operação nativa da API do Drive) - preserva TODAS as 14 abas, dados, validações e formatação, porque duplica o arquivo inteiro em vez de ler linha por linha. CONFIRMADO EM TESTE REAL NO N8N.\n\nEscopo: GLOBAL (não recebe id_empresa) - protege toda a estrutura física de dados, preservando ID_EMPRESA dentro dos próprios dados copiados. Loga id_empresa='GLOBAL' explicitamente (nunca vazio/silencioso).\n\nRetenção: 30 dias. Busca arquivos com prefixo exato \"BEAUTYFLOW3.1-backup-\" e CreatedTime > 30 dias, exclui somente esses (nunca toca arquivo fora do padrão). Limpeza só roda se o backup do dia atual foi criado com sucesso.\n\nSegurança: como o método copia apenas o arquivo da planilha via Drive API, nunca toca no cofre de credenciais do n8n - tokens/API keys/secrets nunca passam por este workflow.\n\nCorreções v7.0 (revisão administrativa WF016/17/18):\n- \"node\" enviado ao WF017 agora é dinâmico (node_origem), refletindo o ponto real de sucesso/falha em vez de sempre \"DRIVE - Copiar Planilha\".\n- Falha técnica ao LISTAR backups existentes (retenção) agora é detectada e reportada explicitamente (CODE - Erro Listagem Backups) - antes, um erro técnico nessa etapa podia ser mascarado como \"nenhum backup expirado encontrado\", porque a saída de erro do node Drive normalmente entrega 1 item (não 0), e a checagem antiga usava \"items.length === 0\" como proxy de erro.\n- Quando o backup do dia é criado com sucesso mas a limpeza de retenção falha, o log agora usa status SUCESSO_PARCIAL/ERRO em vez de aparentar sucesso total.\n\nAÇÃO MANUAL NECESSÁRIA ANTES DO TESTE REAL:\n1. Criar credencial Google Drive OAuth2 no n8n e associá-la aos 3 nodes marcados [CONFIGURAR].\n2. Verificar os parâmetros exatos dos nodes DRIVE (resource/operation/queryString) na UI do n8n após configurar a credencial - construídos com base no schema documentado do node Google Drive; \"DRIVE - Copiar Planilha\" já confirmado em teste real, os demais (Listar/Excluir) ainda não.\n3. Opcional: definir uma pasta de destino específica para os backups (por padrão, a cópia fica na mesma pasta do arquivo original).\n\nNÃO implementado nesta etapa (fora de escopo, por decisão): restore, backup dos workflows n8n (já cobertos pelo Git).",
+        "height": 760,
+        "width": 760
+      },
+      "id": "3a996e3c-f7fd-4adb-be89-2e9f223e04dd",
+      "name": "NOTA - ADM - WF016 - Backup v7.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        512,
-        224
+        3024,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Avaliar Backup Criado').first().json;\nconst err = $json.error || {};\n\n// O backup do dia (arquivo) já foi criado com sucesso neste ponto - este erro é apenas na\n// ETAPA de retenção (listar backups para decidir o que expirou). Por isso não alteramos\n// evento_resultado/criado (que seguem refletindo o resultado real do backup), mas\n// registramos explicitamente essa falha em limpeza_erro para que o log final da WF017\n// não pareça um sucesso completo silenciosamente.\nreturn [{ json: {\n  ...ctx, limpeza_realizada: false, tem_expirados: false,\n  node_origem: 'DRIVE - Listar Backups Existentes',\n  limpeza_erro: String((err && err.message) || err || 'Falha técnica ao listar backups existentes no Google Drive para aplicar a retenção de 30 dias.')\n} }];\n"
+      },
+      "id": "bafb3a58-047b-47a5-b425-2a624bc01352",
+      "name": "CODE - Erro Listagem Backups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4480,
+        2976
       ]
     }
   ],
@@ -242,51 +516,218 @@
       "main": [
         [
           {
-            "node": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+            "node": "CODE - Preparar Backup",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SCHEDULE - Configurar recorrência [CONFIGURAR]": {
+    "SCHEDULE - Backup Diário 02h": {
       "main": [
         [
           {
-            "node": "GS - Ler tabelas [CONFIGURAR]",
+            "node": "CODE - Preparar Backup",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Ler tabelas [CONFIGURAR]": {
+    "CODE - Preparar Backup": {
       "main": [
         [
           {
-            "node": "CODE - Gerar Backup",
+            "node": "DRIVE - Copiar Planilha",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "CODE - Gerar Backup": {
+    "DRIVE - Copiar Planilha": {
       "main": [
         [
           {
-            "node": "DRIVE - Salvar Backup [CONFIGURAR]",
+            "node": "CODE - Avaliar Backup Criado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Backup",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "DRIVE - Salvar Backup [CONFIGURAR]": {
+    "CODE - Avaliar Backup Criado": {
+      "main": [
+        [
+          {
+            "node": "IF - Backup Criado Com Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Backup": {
+      "main": [
+        [
+          {
+            "node": "IF - Backup Criado Com Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Backup Criado Com Sucesso": {
+      "main": [
+        [
+          {
+            "node": "DRIVE - Listar Backups Existentes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DRIVE - Listar Backups Existentes": {
+      "main": [
+        [
+          {
+            "node": "CODE - Selecionar Backups Expirados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Listagem Backups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Selecionar Backups Expirados": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem Backups Expirados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem Backups Expirados": {
+      "main": [
+        [
+          {
+            "node": "DRIVE - Excluir Backup Expirado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Limpeza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DRIVE - Excluir Backup Expirado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Marcar Exclusão OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Marcar Exclusão Falhou",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Marcar Exclusão OK": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Limpeza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Marcar Exclusão Falhou": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Limpeza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Limpeza": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Final": {
       "main": [
         [
           {
             "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF016",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Listagem Backups": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
@@ -300,8 +741,9 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "bd028809-4ab9-4273-b157-6ca328afd898",
+  "versionId": "8de9c6ad-cef7-4724-800c-07f4cb3b9b6b",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
   },
   "nodeGroups": [],
