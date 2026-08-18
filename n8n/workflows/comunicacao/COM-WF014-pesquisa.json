@@ -7,70 +7,154 @@
           "values": [
             {
               "name": "id_empresa"
-            },
-            {
-              "name": "id_cliente"
-            },
-            {
-              "name": "telefone_cliente"
-            },
-            {
-              "name": "nome_cliente"
-            },
-            {
-              "name": "mensagem_texto"
-            },
-            {
-              "name": "intencao"
-            },
-            {
-              "name": "confianca"
-            },
-            {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
-            },
-            {
-              "name": "origem"
             }
           ]
         }
       },
-      "id": "9925a08d-23ea-4c79-896d-7dcdc9022b69",
+      "id": "cd85302b-2f40-43fd-840e-8d93eb8bab59",
       "name": "TRG - Receber Dados WF014",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -384,
-        1008
+        -496,
+        1504
       ]
     },
     {
-      "parameters": {},
-      "id": "010098bd-b153-4c16-a7db-489a6eb500ef",
-      "name": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "jsCode": "const d = $json;\nconst idEmpresa = String(d.id_empresa || '').trim();\nconst empresaValida = idEmpresa.length > 0;\n\nreturn [{ json: {\n  id_empresa: idEmpresa,\n  empresa_valida: empresaValida,\n  evento_resultado: empresaValida ? '' : 'ERRO_PESQUISA',\n  erro: empresaValida ? '' : 'id_empresa é obrigatório e não pode ser vazio para executar o envio de pesquisas (nunca fazer busca multi-tenant sem ID_EMPRESA).'\n} }];\n"
+      },
+      "id": "3199d323-6fb0-4cff-8c3f-dd677f822f8f",
+      "name": "CODE - Validar Empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -144,
-        1008
+        -288,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.empresa_valida }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e41d7500-fe02-4153-ac85-a540cc475921",
+      "name": "IF - Empresa Válida",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6f009270-3134-4657-8350-7c0e8293a967",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        112,
+        1504
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Validar Empresa').first().json;\n\nconst buscaOk = $items('GS - Buscar Empresa').length > 0;\nif (!buscaOk) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone: 'America/Sao_Paulo',\n    evento_resultado: 'ERRO_PESQUISA',\n    erro: 'Falha técnica ao consultar EMPRESAS no Google Sheets.'\n  } }];\n}\n\nconst rows = $items('GS - Buscar Empresa').map(i => i.json).filter(r => r && r.ID_EMPRESA);\n\nif (rows.length === 0) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone: 'America/Sao_Paulo',\n    evento_resultado: 'EMPRESA_NAO_ENCONTRADA',\n    erro: 'Empresa não encontrada na aba EMPRESAS para o id_empresa informado.'\n  } }];\n}\n\nconst empresa = rows[0];\nconst phoneNumberId = String(empresa.WHATSAPP_PHONE_NUMBER_ID || '').trim();\nconst timezone = String(empresa.TIMEZONE || '').trim() || 'America/Sao_Paulo';\n\nif (!phoneNumberId) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone,\n    evento_resultado: 'WHATSAPP_NAO_CONFIGURADO',\n    erro: 'WHATSAPP_PHONE_NUMBER_ID não está configurado para esta empresa em EMPRESAS.'\n  } }];\n}\n\nconst agoraIso = DateTime.now().setZone(timezone).toISO();\n\nreturn [{ json: {\n  ...ctx, pode_prosseguir: true, phone_number_id: phoneNumberId, timezone, agora_iso: agoraIso, evento_resultado: ''\n} }];\n"
+      },
+      "id": "17efd795-e310-4f0f-b480-b387795efb40",
+      "name": "CODE - Avaliar Empresa WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_prosseguir }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f9cebe51-ca3c-425d-9709-d204ec08819f",
+      "name": "IF - Empresa E WhatsApp OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        1504
       ]
     },
     {
@@ -89,22 +173,266 @@
           "cachedResultName": "AGENDAMENTOS",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
         },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "AGENDADO"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "da6d7334-61f3-4949-ac71-7c992038b941",
-      "name": "GS - Buscar Agendamentos Concluídos",
+      "id": "6a5eea4f-e207-4735-a067-718de7463635",
+      "name": "GS - Buscar Agendamentos",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        96,
-        1008
+        720,
+        1232
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "PESQUISA_TESTE_ERRO_WF014",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7224938e-9a90-413b-88f4-8f774b3b83e4",
+      "name": "GS - Buscar Pesquisas Existentes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        720,
+        1376
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "01f44321-afc0-4358-9421-45f8f547b51a",
+      "name": "GS - Buscar Clientes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        720,
+        1520
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1890272312,
+          "mode": "list",
+          "cachedResultName": "PROFISSIONAIS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1890272312"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a331710d-a421-4f4f-bf48-7664a923c297",
+      "name": "GS - Buscar Profissionais",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        720,
+        1648
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1181056974,
+          "mode": "list",
+          "cachedResultName": "SERVICOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1181056974"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb096677-93a4-4edb-930e-1cbb81b19c57",
+      "name": "GS - Buscar Servicos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        720,
+        1792
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "id": "69fe38e6-70cb-405e-9e39-e558c8c4b3a0",
+      "name": "MERGE - Dados Coletados",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        976,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Avaliar Empresa WhatsApp').first().json;\nconst idEmpresa = ctx.id_empresa;\nconst phoneNumberId = ctx.phone_number_id || '';\nconst timezone = ctx.timezone || 'America/Sao_Paulo';\n\nconst agRaw = $items('GS - Buscar Agendamentos').map(i => i.json);\nconst pesRaw = $items('GS - Buscar Pesquisas Existentes').map(i => i.json);\nconst cliRaw = $items('GS - Buscar Clientes').map(i => i.json);\nconst profRaw = $items('GS - Buscar Profissionais').map(i => i.json);\nconst servRaw = $items('GS - Buscar Servicos').map(i => i.json);\n\n// alwaysOutputData garante >=1 item quando a busca teve sucesso (mesmo com 0 resultados reais).\n// 0 itens só acontece quando o node seguiu o caminho de erro (onError: continueErrorOutput).\nif (agRaw.length === 0 || pesRaw.length === 0 || cliRaw.length === 0 || profRaw.length === 0 || servRaw.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_agendamento: '', id_cliente: '', id_pesquisa: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'ERRO_PESQUISA',\n    erro: 'Falha técnica ao consultar AGENDAMENTOS, PESQUISAS, CLIENTES, PROFISSIONAIS ou SERVICOS no Google Sheets.'\n  } }];\n}\n\nconst agendamentos = agRaw.filter(r => r && r.ID_AGENDAMENTO);\nconst pesquisas = pesRaw.filter(r => r && r.ID_PESQUISA);\nconst clientes = cliRaw.filter(r => r && r.ID_CLIENTE);\nconst profissionais = profRaw.filter(r => r && r.ID_PROFISSIONAL);\nconst servicos = servRaw.filter(r => r && r.ID_SERVICO);\n\nconst agora = ctx.agora_iso ? DateTime.fromISO(ctx.agora_iso, { zone: timezone }) : DateTime.now().setZone(timezone);\n\nfunction parseDataHora(dataStr, horaStr) {\n  const hora = String(horaStr || '00:00').slice(0, 5);\n  let dt = DateTime.fromFormat(`${dataStr} ${hora}`, 'dd/MM/yyyy HH:mm', { zone: timezone });\n  if (!dt.isValid) dt = DateTime.fromFormat(`${dataStr} ${hora}`, 'yyyy-MM-dd HH:mm', { zone: timezone });\n  if (!dt.isValid) dt = DateTime.fromISO(`${dataStr}T${hora}`, { zone: timezone });\n  return dt;\n}\n\n// Janela de detecção (decisão técnica conservadora, documentada no relatório: não há\n// tolerância de execução periódica definida no projeto). Alvo: ~2h após o término do\n// atendimento (HORA_FIM). Usamos uma janela de 1h a 4h depois do término, larga o\n// suficiente para tolerar execuções não perfeitamente pontuais.\nconst MIN_HORAS_APOS = 1;\nconst MAX_HORAS_APOS = 4;\n\nif (agendamentos.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_agendamento: '', id_cliente: '', id_pesquisa: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL',\n    erro: 'Nenhum agendamento com STATUS=AGENDADO encontrado para esta empresa.'\n  } }];\n}\n\nconst candidatos = [];\n\nfor (const ag of agendamentos) {\n  // Defensivo: mesmo com o filtro STATUS=AGENDADO na busca, revalida contra dado inconsistente.\n  if (String(ag.STATUS || '').toUpperCase() !== 'AGENDADO') continue;\n\n  const dataHoraFim = parseDataHora(ag.DATA, ag.HORA_FIM);\n  if (!dataHoraFim.isValid) continue; // registro inválido: sem data/hora utilizável, não processa\n\n  const horasDesdeAtendimento = agora.diff(dataHoraFim, 'hours').hours;\n  if (horasDesdeAtendimento < 0) continue; // atendimento ainda não terminou (futuro), nunca pesquisar\n  if (horasDesdeAtendimento < MIN_HORAS_APOS || horasDesdeAtendimento > MAX_HORAS_APOS) continue; // fora da janela\n\n  const base = {\n    id_empresa: idEmpresa,\n    id_agendamento: ag.ID_AGENDAMENTO,\n    id_cliente: ag.ID_CLIENTE || '',\n    id_profissional: ag.ID_PROFISSIONAL || '',\n    id_servico: ag.ID_SERVICO || '',\n    phone_number_id: phoneNumberId\n  };\n\n  const cliente = clientes.find(c => String(c.ID_CLIENTE) === String(ag.ID_CLIENTE)) || null;\n  if (!cliente) {\n    candidatos.push({ ...base, telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Cliente não encontrado para este agendamento.' });\n    continue;\n  }\n\n  const telefoneCliente = String(cliente.TELEFONE || '').replace(/\\D/g, '');\n  if (!telefoneCliente) {\n    candidatos.push({ ...base, telefone_cliente: '', nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Cliente sem telefone válido cadastrado.' });\n    continue;\n  }\n\n  const profissional = profissionais.find(p => String(p.ID_PROFISSIONAL) === String(ag.ID_PROFISSIONAL)) || null;\n  if (!profissional) {\n    candidatos.push({ ...base, telefone_cliente: telefoneCliente, nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Profissional não encontrado para este agendamento.' });\n    continue;\n  }\n\n  const servico = servicos.find(s => String(s.ID_SERVICO) === String(ag.ID_SERVICO)) || null;\n  if (!servico) {\n    candidatos.push({ ...base, telefone_cliente: telefoneCliente, nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Serviço não encontrado para este agendamento.' });\n    continue;\n  }\n\n  // Idempotência: bloqueia somente se já existir pesquisa para este agendamento\n  // registrada como ENVIADA com sucesso. Uma tentativa com FALHA não bloqueia nova tentativa.\n  const jaEnviada = pesquisas.some(p =>\n    String(p.ID_AGENDAMENTO) === String(ag.ID_AGENDAMENTO) &&\n    String(p.STATUS || '').toUpperCase() === 'ENVIADA'\n  );\n\n  if (jaEnviada) {\n    candidatos.push({ ...base, telefone_cliente: telefoneCliente, nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'PESQUISA_JA_ENVIADA', erro: 'Já existe uma pesquisa enviada com sucesso para este agendamento.' });\n    continue;\n  }\n\n  const nomeExibicao = cliente.NOME && String(cliente.NOME).trim() ? String(cliente.NOME).trim() : 'Cliente';\n  const nomeServico = servico.NOME || '';\n  const nomeProfissional = profissional.NOME || '';\n\n  const mensagem = `Olá, ${nomeExibicao}! 💜 Esperamos que tenha gostado do seu atendimento de ${nomeServico} com ${nomeProfissional}. De 1 a 5, qual nota você daria para sua experiência? Se quiser, também pode enviar um comentário. 😊`;\n\n  candidatos.push({\n    ...base,\n    telefone_cliente: telefoneCliente,\n    nome_cliente: cliente.NOME || '',\n    servico: nomeServico,\n    profissional: nomeProfissional,\n    precisa_enviar: true,\n    enviado: false,\n    resposta_cliente: mensagem,\n    origem: 'AUTOMATICO'\n  });\n}\n\nif (candidatos.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_agendamento: '', id_cliente: '', id_pesquisa: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL',\n    erro: 'Nenhum agendamento dentro da janela pós-atendimento (1h-4h após HORA_FIM) nesta execução.'\n  } }];\n}\n\nreturn candidatos.map(c => ({ json: c }));\n"
+      },
+      "id": "8ccef2a5-c4b6-4729-9341-ae7bb0398720",
+      "name": "CODE - Avaliar Pesquisas Elegíveis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.precisa_enviar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1cffd28d-ba4e-476d-ae74-f52843cddba6",
+      "name": "IF - Precisa Enviar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1392,
+        1520
+      ]
     },
     {
       "parameters": {
@@ -117,7 +445,492 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "intencao": "PESQUISA",
+            "servico": "={{ $json.servico }}",
+            "profissional": "={{ $json.profissional }}",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "phone_number_id": "={{ $json.phone_number_id }}",
+            "origem": "={{ $json.origem }}",
+            "id_agendamento": "={{ $json.id_agendamento }}",
+            "dados": "={{ { tipo: 'PESQUISA_SATISFACAO' } }}",
+            "mensagem_texto": "={{ $json.resposta_cliente }}",
+            "confianca": "1"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "b20c027d-209f-4706-a39a-724fc963ab27",
+      "name": "EXEC - WF012 Comunicação",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const envio = $json;\n\n// O WF012 já devolve o contexto necessário.\n// Não reatravessar o EXEC - WF012 usando .item.\nconst dados =\n  envio.dados && typeof envio.dados === 'object'\n    ? envio.dados\n    : {};\n\nconst pesquisa = {\n  id_empresa: envio.id_empresa || '',\n  id_agendamento: envio.id_agendamento || '',\n  id_cliente: envio.id_cliente || '',\n  telefone_cliente: envio.telefone_cliente || '',\n  nome_cliente: envio.nome_cliente || '',\n  phone_number_id: envio.phone_number_id || '',\n  resposta_cliente:\n    envio.resposta_cliente ||\n    envio.mensagem_final ||\n    '',\n  origem: envio.origem || 'AUTOMATICO',\n  ...dados,\n};\n\nconst enviado = envio.enviado === true;\n\nconst timezone =\n  $('CODE - Avaliar Empresa WhatsApp').first().json.timezone ||\n  'America/Sao_Paulo';\n\nconst agora = DateTime.now()\n  .setZone(timezone)\n  .toISO();\n\nconst idPesquisa =\n  `PES${Date.now()}${Math.random().toString(36).slice(2, 8)}`;\n\n// erro do WF012 pode ser string, objeto ou vazio\nlet erroTexto = '';\n\nif (typeof envio.erro === 'string') {\n  erroTexto = envio.erro;\n} else if (envio.erro && typeof envio.erro === 'object') {\n  erroTexto =\n    envio.erro.message ||\n    JSON.stringify(envio.erro);\n}\n\nreturn [\n  {\n    json: {\n      ...pesquisa,\n\n      ID_PESQUISA: idPesquisa,\n      ID_EMPRESA: pesquisa.id_empresa,\n      ID_AGENDAMENTO: pesquisa.id_agendamento,\n      ID_CLIENTE: pesquisa.id_cliente,\n      TELEFONE: pesquisa.telefone_cliente,\n\n      STATUS: enviado ? 'ENVIADA' : 'FALHA',\n      NOTA: '',\n      COMENTARIO: '',\n      DATA_HORA: agora,\n\n      WHATSAPP_MESSAGE_ID:\n        envio.whatsapp_message_id || '',\n\n      OBSERVACOES:\n        enviado ? '' : erroTexto,\n\n      id_pesquisa: idPesquisa,\n      enviada: enviado,\n\n      mensagem:\n        pesquisa.resposta_cliente || '',\n\n      evento_resultado:\n        enviado\n          ? 'PESQUISA_ENVIADA'\n          : 'ERRO_WHATSAPP',\n\n      erro:\n        enviado ? '' : erroTexto,\n    },\n  },\n];"
+      },
+      "id": "57afefbd-77d5-477c-9fe2-d311667b1edd",
+      "name": "CODE - Processar Resultado Envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 779649521,
+          "mode": "list",
+          "cachedResultName": "PESQUISA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=779649521"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_PESQUISA": "={{ $json.ID_PESQUISA }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "ID_AGENDAMENTO": "={{ $json.ID_AGENDAMENTO }}",
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "TELEFONE": "={{ $json.TELEFONE }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "NOTA": "={{ $json.NOTA }}",
+            "COMENTARIO": "={{ $json.COMENTARIO }}",
+            "DATA_HORA": "={{ $json.DATA_HORA }}",
+            "WHATSAPP_MESSAGE_ID": "={{ $json.WHATSAPP_MESSAGE_ID }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_PESQUISA",
+              "displayName": "ID_PESQUISA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TELEFONE",
+              "displayName": "TELEFONE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NOTA",
+              "displayName": "NOTA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "COMENTARIO",
+              "displayName": "COMENTARIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WHATSAPP_MESSAGE_ID",
+              "displayName": "WHATSAPP_MESSAGE_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "9d26e5df-7c5f-4fde-b891-fbdeb5fe6693",
+      "name": "GS - Registrar Pesquisa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2000,
+        1392
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_empresa }}"
+            },
+            {
+              "id": "s2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_agendamento }}"
+            },
+            {
+              "id": "s3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_cliente }}"
+            },
+            {
+              "id": "s4",
+              "name": "id_pesquisa",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_pesquisa }}"
+            },
+            {
+              "id": "s5",
+              "name": "enviado",
+              "type": "boolean",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.enviada ?? false }}"
+            },
+            {
+              "id": "s6",
+              "name": "resposta_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.resposta_cliente }}"
+            },
+            {
+              "id": "s7",
+              "name": "evento_resultado",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.evento_resultado }}"
+            },
+            {
+              "id": "s8",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.erro }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d0ec8078-9c3e-41a2-a65e-8f7df46a80a9",
+      "name": "SET - Pesquisa Registrada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2192,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('CODE - Processar Resultado Envio').item.json;\nconst err = $json.error || {};\n\nreturn [{ json: {\n  id_empresa: p.id_empresa,\n  id_agendamento: p.id_agendamento,\n  id_cliente: p.id_cliente,\n  id_pesquisa: p.id_pesquisa,\n  enviado: p.enviado,\n  resposta_cliente: p.resposta_cliente,\n  evento_resultado: 'ERRO_PESQUISA',\n  erro: `Pesquisa processada (enviado=${p.enviado}) mas falhou ao registrar em PESQUISAS: ${String((err && err.message) || err || 'erro desconhecido')}`\n} }];\n"
+      },
+      "id": "19322819-b231-4854-9698-feeae8f81028",
+      "name": "CODE - Erro Registro Pesquisa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "id": "40069039-374e-4645-9e38-e24cacd1d8d1",
+      "name": "MERGE - Resultado Pesquisa",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2432,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "COM-WF014",
+            "node": "CODE - Avaliar Pesquisas Elegíveis",
+            "tipo": "={{ $json.evento_resultado === 'PESQUISA_ENVIADA' ? 'INFO' : ( ['PESQUISA_JA_ENVIADA','AGENDAMENTO_NAO_ELEGIVEL'].includes($json.evento_resultado) ? 'AVISO' : 'ERRO' ) }}",
+            "evento": "={{ $json.evento_resultado || 'ERRO_PESQUISA' }}",
+            "status": "={{ $json.evento_resultado === 'PESQUISA_ENVIADA' ? 'SUCESSO' : 'BLOQUEADO' }}",
+            "mensagem": "={{ $json.evento_resultado === 'PESQUISA_ENVIADA' ? 'Pesquisa de satisfação enviada com sucesso.' : $json.erro }}",
+            "dados": "={{ JSON.stringify({ id_agendamento: $json.id_agendamento, id_cliente: $json.id_cliente, id_pesquisa: $json.id_pesquisa }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -130,8 +943,8 @@
               "type": "string"
             },
             {
-              "id": "id_cliente",
-              "displayName": "id_cliente",
+              "id": "workflow",
+              "displayName": "workflow",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -139,8 +952,8 @@
               "type": "string"
             },
             {
-              "id": "telefone_cliente",
-              "displayName": "telefone_cliente",
+              "id": "node",
+              "displayName": "node",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -148,8 +961,8 @@
               "type": "string"
             },
             {
-              "id": "nome_cliente",
-              "displayName": "nome_cliente",
+              "id": "tipo",
+              "displayName": "tipo",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -157,8 +970,8 @@
               "type": "string"
             },
             {
-              "id": "mensagem_texto",
-              "displayName": "mensagem_texto",
+              "id": "evento",
+              "displayName": "evento",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -166,8 +979,8 @@
               "type": "string"
             },
             {
-              "id": "intencao",
-              "displayName": "intencao",
+              "id": "status",
+              "displayName": "status",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -175,8 +988,8 @@
               "type": "string"
             },
             {
-              "id": "confianca",
-              "displayName": "confianca",
+              "id": "mensagem",
+              "displayName": "mensagem",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -184,8 +997,8 @@
               "type": "string"
             },
             {
-              "id": "servico",
-              "displayName": "servico",
+              "id": "dados",
+              "displayName": "dados",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -193,62 +1006,8 @@
               "type": "string"
             },
             {
-              "id": "data",
-              "displayName": "data",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "hora_inicio",
-              "displayName": "hora_inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "periodo",
-              "displayName": "periodo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "profissional",
-              "displayName": "profissional",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "resposta_cliente",
-              "displayName": "resposta_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "phone_number_id",
-              "displayName": "phone_number_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "origem",
-              "displayName": "origem",
+              "id": "execution_id",
+              "displayName": "execution_id",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -263,60 +1022,421 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "865d5a58-4191-4c01-a336-5f297938b125",
-      "name": "EXEC - WF012 Comunicação",
+      "id": "94d99df1-95bf-423c-92bf-ecfbbd774b2f",
+      "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        336,
-        1008
+        2672,
+        1520
       ]
     },
     {
       "parameters": {
-        "content": "## COM - WF014 - Pesquisa v5.0\n\nEnvia pesquisa após atendimento.",
-        "height": 280,
-        "width": 520
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.id_empresa || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.id_agendamento || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.id_cliente || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "id_pesquisa",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.id_pesquisa || '' }}"
+            },
+            {
+              "id": "o5",
+              "name": "enviado",
+              "type": "boolean",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.enviado || false }}"
+            },
+            {
+              "id": "o6",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.evento_resultado || '' }}"
+            },
+            {
+              "id": "o7",
+              "name": "mensagem",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.resposta_cliente || '' }}"
+            },
+            {
+              "id": "o8",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('MERGE - Resultado Pesquisa').first().json.erro || '' }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "3ff21e78-2b30-4216-9dfe-1f37529383ba",
-      "name": "NOTA - COM - WF014 - Pesquisa v5.0",
+      "id": "fa760205-4085-426c-af9c-c0bedb8f72df",
+      "name": "SET - Preparar Saída WF014",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2912,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## COM - WF014 - Pesquisa v1.0\n\nEnvia pesquisa de satisfação (nota 1-5 + comentário opcional) aproximadamente 2h após o término do atendimento.\n\nNesta versão: SOMENTE EMISSOR. O processamento da resposta da cliente (nota/comentário) será implementado em etapa futura separada (exige alterar WF002/WF003, fora de escopo aqui).\n\nRegras aprovadas:\n- Somente AGENDAMENTOS com STATUS=AGENDADO, atendimento já concluído (DATA+HORA_FIM no passado) e dentro da janela pós-atendimento\n- Idempotência via aba PESQUISAS (ID_EMPRESA+ID_AGENDAMENTO), só bloqueia se já houver STATUS=ENVIADA\n- ID_EMPRESA obrigatório no trigger (nunca busca multi-tenant sem ele)\n- WHATSAPP_PHONE_NUMBER_ID e TIMEZONE obtidos de EMPRESAS (mesmo padrão do WF011/WF013)\n- Envio sempre via WF012 (nunca HTTP direto à Meta)\n- NOTA e COMENTARIO gravados vazios no envio (preenchidos futuramente)\n\nJanela de detecção (decisão técnica conservadora, documentada no diagnóstico - projeto não define tolerância de execução):\n1h a 4h após HORA_FIM (alvo: ~2h)\n\nDEPENDÊNCIA FUTURA: nenhum Schedule/Cron implementado nesta etapa. WF014 precisa ser chamado periodicamente por um mecanismo externo (a definir).",
+        "height": 520,
+        "width": 660
+      },
+      "id": "26a5ff56-6436-4971-9727-3712de205aed",
+      "name": "NOTA - COM - WF014 - Pesquisa v1.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        512,
-        608
+        -496,
+        928
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Dados WF014": [
+      {
+        "json": {
+          "id_empresa": "EMP001"
+        }
+      }
+    ]
+  },
   "connections": {
     "TRG - Receber Dados WF014": {
       "main": [
         [
           {
-            "node": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+            "node": "CODE - Validar Empresa",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SCHEDULE - Configurar recorrência [CONFIGURAR]": {
+    "CODE - Validar Empresa": {
       "main": [
         [
           {
-            "node": "GS - Buscar Agendamentos Concluídos",
+            "node": "IF - Empresa Válida",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Buscar Agendamentos Concluídos": {
+    "IF - Empresa Válida": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Resultado Pesquisa",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Empresa WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Avaliar Empresa WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Empresa WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "IF - Empresa E WhatsApp OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Empresa E WhatsApp OK": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamentos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Pesquisas Existentes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Clientes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Profissionais",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Servicos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Resultado Pesquisa",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Pesquisas Existentes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Clientes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 2
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Profissionais": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 3
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Servicos": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 4
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "MERGE - Dados Coletados": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Pesquisas Elegíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Pesquisas Elegíveis": {
+      "main": [
+        [
+          {
+            "node": "IF - Precisa Enviar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Precisa Enviar": {
       "main": [
         [
           {
             "node": "EXEC - WF012 Comunicação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Resultado Pesquisa",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "EXEC - WF012 Comunicação": {
+      "main": [
+        [
+          {
+            "node": "CODE - Processar Resultado Envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Resultado Envio": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Pesquisa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Pesquisa": {
+      "main": [
+        [
+          {
+            "node": "SET - Pesquisa Registrada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Registro Pesquisa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Pesquisa Registrada": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Pesquisa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Registro Pesquisa": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Pesquisa",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MERGE - Resultado Pesquisa": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF014",
             "type": "main",
             "index": 0
           }
@@ -330,7 +1450,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "bfa3a89f-7a01-4a70-a90f-1877f1319700",
+  "versionId": "67d13682-32c3-4a2e-b4cb-cf4cba3abfe7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
