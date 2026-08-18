@@ -1,92 +1,64 @@
-# ADM-WF018 — Limpeza
+# WF018 — ADM - WF018 - Limpeza
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`ADM-WF018-limpeza.json`](../../workflows/administracao/ADM-WF018-limpeza.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `ADM-WF018` |
-| Workflow | Limpeza |
-| Arquivo n8n | `ADM-WF018-limpeza.json` |
-| Status | Versionado; rotina destrutiva deve permanecer sob validação controlada |
-| Trigger | Schedule diário às 03:00 e execução como subworkflow/manual. |
-| Última revisão desta documentação | 18/08/2026 |
+Aplicar a política de retenção da aba LOGS, removendo somente registros expirados de forma segura por row_number.
 
-## Objetivo
+## 2. Identificação técnica
 
-Remover somente registros técnicos antigos da aba `LOGS` de acordo com a retenção definida, preservando integralmente os dados operacionais do BeautyFlow.
+- **Workflow:** `ADM - WF018 - Limpeza`
+- **ID funcional:** `WF018`
+- **Arquivo JSON:** `ADM-WF018-limpeza.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** Dois gatilhos: `Execute Workflow Trigger` e Schedule diário configurado para 03:00.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- Execução agendada/manual.
-- Linhas atuais da aba `LOGS`.
+## 3. Entradas
 
-## Fluxo principal
+- Pode ser acionado como subworkflow; a rotina administrativa trabalha com `id_empresa=GLOBAL`.
 
-1. Carrega os registros de `LOGS` com número real da linha.
-2. Calcula a data limite de retenção.
-3. Seleciona somente logs anteriores ao limite e com `row_number` válido.
-4. Se não houver elegíveis, finaliza sem exclusão.
-5. Exclui exatamente as linhas elegíveis, uma a uma/conforme configuração do node.
-6. Consolida sucessos e falhas.
-7. Registra a execução no WF017.
-8. Retorna resumo da limpeza.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Prepara o contexto de limpeza e a política de retenção de 90 dias.
+2. `GS - Buscar Logs` carrega registros da aba `LOGS` com `row_number`.
+3. O código valida `ID_LOG`, `DATA_HORA` e `row_number` e seleciona somente logs com idade superior a 90 dias.
+4. Ordena os `row_number` em ordem decrescente para evitar deslocamento de linhas durante múltiplas exclusões.
+5. `GS - Excluir Log Expirado` remove cada linha selecionada.
+6. Consolida quantidade excluída, falhas de exclusão e status final.
+7. WF017 registra o resultado da limpeza.
 
-```text
-ADM-WF018 → Google Sheets: LOGS → ADM-WF017
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Retenção de `LOGS`: 90 dias.
+- Somente registros com data válida e `row_number` numérico válido podem ser excluídos.
+- Exclusão ocorre do maior `row_number` para o menor.
+- O escopo atual é **somente a aba LOGS**.
+- O JSON atual não limpa automaticamente AGENDAMENTOS, CLIENTES, PAGAMENTOS, COBRANCAS, EMPRESAS, DISPONIBILIDADES, PROFISSIONAIS, SERVICOS, FOLLOWUPS, LEMBRETES ou PESQUISAS; também não há rotina de limpeza de MENSAGENS/IA_MEMORIA neste WF018.
 
-- Google Sheets: `LOGS`
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `LOGS`.
+- WF017 — Logs.
 
-- Retenção atual de logs: 90 dias.
-- Somente `LOGS` faz parte do escopo atual.
-- Nunca excluir linha se data ou `row_number` não forem confiáveis.
-- Não limpar `AGENDAMENTOS`, `CLIENTES`, `PAGAMENTOS`, `COBRANCAS`, `EMPRESAS`, `DISPONIBILIDADES`, `PROFISSIONAIS`, `SERVICOS`, `FOLLOWUPS`, `LEMBRETES` ou `PESQUISAS`.
-- `MENSAGENS` e `IA_MEMORIA` não fazem parte da limpeza atual até decisão explícita de retenção.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Campos principais: `id_empresa`, `status`, `data_hora`, `retencao_dias_logs`, `logs_excluidos`, `logs_com_falha_exclusao`, `erro`, `execution_id`.
+- Status final indica limpeza concluída ou erro de limpeza conforme consolidação.
 
-- Quantidade de logs elegíveis/excluídos.
-- Resumo de sucessos, falhas e itens preservados.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Falhas individuais de exclusão são contabilizadas na consolidação.
+- Itens sem data/row_number válido não são removidos.
 
-- Erro ao listar LOGS deve impedir exclusões.
-- Erro em uma exclusão deve ser registrado sem mascarar as demais.
-- Qualquer incerteza de referência de linha deve resultar em preservação.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- No arquivo versionado, `active` está `false`; o Schedule de 03:00 só executará automaticamente quando o workflow estiver ativo.
 
-- Chamado por: Schedule ou execução administrativa.
-- Logs da própria rotina: `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Log com menos de 90 dias permanece.
-- [ ] Log com mais de 90 dias é elegível.
-- [ ] Linha sem data válida permanece.
-- [ ] Linha sem `row_number` válido permanece.
-- [ ] Planilhas operacionais não são tocadas.
-- [ ] Falha forçada em uma exclusão.
-- [ ] Antes de ativar em produção, validar a operação exata de delete-row do node Google Sheets.
-
-## Cuidados na manutenção
-
-Este workflow é destrutivo. Faça backup antes de alterações, valide em dados de teste e mantenha o escopo explicitamente limitado à aba `LOGS` enquanto não houver política aprovada para outros dados.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `ADM-WF018-limpeza.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
