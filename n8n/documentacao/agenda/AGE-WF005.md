@@ -1,96 +1,72 @@
-# AGE-WF005 — Criar Agendamento
+# WF005 — AGE - WF005 - Criar Agendamento
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`AGE-WF005-criar-agendamento.json`](../../workflows/agenda/AGE-WF005-criar-agendamento.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `AGE-WF005` |
-| Workflow | Criar Agendamento |
-| Arquivo n8n | `AGE-WF005-criar-agendamento.json` |
-| Status | Versionado no repositório |
-| Trigger | Subworkflow após intenção de agendar. |
-| Última revisão desta documentação | 18/08/2026 |
+Criar um agendamento somente após validar disponibilidade, persistindo o evento no Google Calendar e o registro operacional no Google Sheets, e comunicar o resultado ao cliente.
 
-## Objetivo
+## 2. Identificação técnica
 
-Criar um agendamento somente após validar disponibilidade, persistindo o compromisso no Google Sheets e no Google Calendar e disparando a confirmação ao cliente.
+- **Workflow:** `AGE - WF005 - Criar Agendamento`
+- **ID funcional:** `WF005`
+- **Arquivo JSON:** `AGE-WF005-criar-agendamento.json`
+- **Status `active` no JSON versionado:** `true`
+- **Gatilho:** `Execute Workflow Trigger`; normalmente acionado pelo WF003 na intenção `AGENDAR`.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa`, `id_cliente`, telefone e nome.
-- `servico`, `data`, `hora_inicio`, período e profissional.
-- `phone_number_id`, `origem` e demais dados de atendimento.
+## 3. Entradas
 
-## Fluxo principal
+- Contexto de cliente, empresa, serviço, data, horário, período, profissional, `phone_number_id`, origem e demais dados de atendimento.
 
-1. Recebe os dados solicitados para o agendamento.
-2. Executa o WF004 para revalidar a disponibilidade no momento da criação.
-3. Interrompe a criação se o horário não estiver mais disponível.
-4. Gera um `ID_AGENDAMENTO` único.
-5. Monta data/hora de início, fim, duração, valor e status inicial.
-6. Cria o evento correspondente no Google Calendar.
-7. Registra o agendamento na aba `AGENDAMENTOS`, preservando o `GOOGLE_EVENT_ID`.
-8. Aciona o WF012 para enviar confirmação ao cliente.
-9. Registra o resultado no WF017.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Chama WF004 para obter a disponibilidade real.
+2. `CODE - Validar Disponibilidade` valida o retorno do WF004 e a hora solicitada; quando não existe hora explícita, seleciona deterministicamente o primeiro horário livre.
+3. Calcula hora final a partir da duração e bloqueia intervalos que atravessem a meia-noite.
+4. Quando disponível, `CODE - Gerar Agendamento` cria o identificador e o registro lógico do agendamento com status `AGENDADO`.
+5. `GC - Criar Evento` cria o evento no Google Calendar configurado.
+6. `GS - Registrar Agendamento` grava a linha na aba `AGENDAMENTOS`, incluindo o ID retornado pelo Calendar.
+7. Os ramos de sucesso, indisponibilidade e erro técnico convergem.
+8. WF012 envia a resposta ao cliente e WF017 registra o resultado.
+9. O SET final devolve o contrato do WF005.
 
-```text
-AGE-WF005 → AGE-WF004 → Google Sheets: AGENDAMENTOS → Google Calendar
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Agendamento só é criado após consulta ao WF004.
+- Uma hora solicitada precisa estar na lista de horários retornada pelo WF004.
+- Sem hora solicitada, o primeiro horário livre é escolhido.
+- Intervalo que ultrapassa 00:00 é bloqueado.
+- IDs de agendamento são gerados no próprio workflow.
+- O Calendar atual está configurado diretamente como **BeautyFlow - Studio Bella**.
+- O fluxo cria o evento do Calendar antes de anexar o registro à planilha; o JSON atual não possui compensação automática para excluir o evento caso a gravação posterior no Sheets falhe.
 
-- AGE-WF004
-- Google Sheets: `AGENDAMENTOS`
-- Google Calendar
-- COM-WF012
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- WF004 — Consultar Disponibilidade.
+- Google Calendar.
+- Google Sheets: `AGENDAMENTOS`.
+- WF012 — Comunicação.
+- WF017 — Logs.
 
-- Nunca criar sem revalidar disponibilidade.
-- `ID_EMPRESA` deve estar presente em todas as leituras e gravações.
-- O identificador do evento do Calendar deve permanecer vinculado ao agendamento.
-- Em caso de conflito de horário, devolver regra de negócio sem gravar parcialmente o compromisso.
-- Status e timestamps devem ser definidos de forma consistente.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Sucesso de criação retorna status de confirmação e dados do agendamento.
+- Indisponibilidade preserva o motivo/status vindo da validação.
+- Falhas de Calendar/Sheets são consolidadas como erro técnico.
 
-- Agendamento criado com identificador interno e `GOOGLE_EVENT_ID`.
-- Resposta de confirmação/resultado para o fluxo chamador.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Erros dos nodes de Calendar/Sheets são encaminhados para ramo técnico configurado com tratamento de erro.
+- Quando a disponibilidade é inválida, não cria Calendar nem registro em AGENDAMENTOS.
 
-- Diferenciar conflito de agenda de falha técnica.
-- Falha ao criar/registrar uma das partes exige tratamento para evitar divergência entre Sheets e Calendar.
-- Falhas de comunicação não devem apagar silenciosamente um agendamento já criado; devem ser registradas.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- A mensagem ao cliente é centralizada no WF012.
 
-- Chamado por: `ATD-WF003`.
-- Chama: `AGE-WF004`, `COM-WF012`, `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Criação em horário livre.
-- [ ] Concorrência: horário fica ocupado entre consulta e criação.
-- [ ] Falha ao criar evento no Calendar.
-- [ ] Falha ao registrar em AGENDAMENTOS.
-- [ ] Falha no envio de confirmação.
-- [ ] Conferir IDs, horários, valor, status e timestamps gravados.
-
-## Cuidados na manutenção
-
-Alterações na ordem de Calendar/Sheets devem considerar compensação em caso de falha. Não aceite um fluxo que possa terminar como sucesso com apenas metade do agendamento persistido.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `AGE-WF005-criar-agendamento.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
