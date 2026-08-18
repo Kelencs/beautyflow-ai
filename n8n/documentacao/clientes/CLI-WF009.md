@@ -1,91 +1,59 @@
-# CLI-WF009 — Atualizar Cliente
+# WF009 — CLI - WF009 - Atualizar Cliente
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`CLI-WF009-atualizar-cliente.json`](../../workflows/clientes/CLI-WF009-atualizar-cliente.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `CLI-WF009` |
-| Workflow | Atualizar Cliente |
-| Arquivo n8n | `CLI-WF009-atualizar-cliente.json` |
-| Status | Versionado e validado em testes |
-| Trigger | Subworkflow para alteração de cadastro. |
-| Última revisão desta documentação | 18/08/2026 |
+Atualizar parcialmente um cadastro de cliente sem apagar campos existentes quando novos valores não são fornecidos.
 
-## Objetivo
+## 2. Identificação técnica
 
-Atualizar parcialmente os dados de um cliente existente sem apagar campos atuais quando a requisição não fornece novo valor.
+- **Workflow:** `CLI - WF009 - Atualizar Cliente`
+- **ID funcional:** `WF009`
+- **Arquivo JSON:** `CLI-WF009-atualizar-cliente.json`
+- **Status `active` no JSON versionado:** `true`
+- **Gatilho:** `Execute Workflow Trigger` para atualização parcial de cadastro.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa` e `id_cliente`/chave usada na busca.
-- Objeto `dados` com os campos a atualizar.
-- Metadados de origem quando necessários.
+## 3. Entradas
 
-## Fluxo principal
+- `id_empresa`, `id_cliente`, `telefone_cliente`, `nome_cliente`, `email`, `data_nascimento`, `observacoes`, `status`, `origem`, `dados` (objeto).
 
-1. Valida entrada tipada e empresa.
-2. Busca o cliente na aba `CLIENTES`.
-3. Avalia separadamente encontrado, não encontrado e erro técnico.
-4. Monta atualização parcial mesclando novos campos com valores atuais.
-5. Atualiza somente o registro correto.
-6. Atualiza timestamp de última alteração.
-7. Retorna resultado padronizado.
-8. Registra o evento no WF017.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Busca clientes da empresa na aba `CLIENTES` usando node com `alwaysOutputData` e tratamento de erro pela saída regular.
+2. `CODE - Avaliar Cliente Encontrado` separa erro técnico, cliente ausente e cliente válido.
+3. Para cliente válido, `CODE - Montar Atualização Parcial` combina os campos novos com os dados atuais.
+4. Campos novos vazios/nulos não apagam automaticamente o valor existente; o código preserva o dado atual.
+5. `GS - Atualizar Cliente` atualiza a linha por `ID_CLIENTE` e registra `ULTIMA_ATUALIZACAO`.
+6. Os ramos são consolidados, WF017 registra o resultado e o SET final expõe a saída.
 
-```text
-CLI-WF009 → Google Sheets: CLIENTES → ADM-WF017
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- A atualização é parcial: somente valores efetivamente fornecidos substituem o cadastro atual.
+- Erro técnico na busca não é convertido em “cliente não encontrado”.
+- A empresa é utilizada para restringir o conjunto pesquisado antes da resolução do cliente.
 
-- Google Sheets: `CLIENTES`
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `CLIENTES`.
+- WF017 — Logs.
 
-- Campo ausente/vazio na requisição não deve apagar informação válida sem intenção explícita.
-- `ID_EMPRESA` deve fazer parte da resolução do registro.
-- Estados padronizados incluem `CLIENTE_ATUALIZADO`, `CLIENTE_NAO_ENCONTRADO` e `ERRO_ATUALIZACAO`.
-- Erro do Sheets não pode ser convertido em cliente não encontrado.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- `CLIENTE_ATUALIZADO`, `CLIENTE_NAO_ENCONTRADO` ou `ERRO_ATUALIZACAO`, além dos dados correlacionados do cliente.
 
-- Cliente atualizado ou status de não encontrado/erro.
-- Dados consolidados necessários ao chamador.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Falha de busca e falha de atualização possuem ramos técnicos próprios e chegam à consolidação como erro.
 
-- Falha na busca segue caminho técnico.
-- Falha na atualização retorna `ERRO_ATUALIZACAO`.
-- Logs devem apontar o node/origem real do erro.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- A lógica preserva dados existentes quando os campos recebidos estão ausentes ou vazios.
 
-- Pode ser chamado pelo atendimento e, futuramente, pelo gateway do app.
-- Logs: `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Atualização de um único campo.
-- [ ] Atualização de múltiplos campos.
-- [ ] Campo não enviado preserva valor anterior.
-- [ ] Cliente inexistente.
-- [ ] Erro técnico na busca.
-- [ ] Erro técnico na atualização.
-
-## Cuidados na manutenção
-
-Mantenha o contrato de atualização parcial. Não substitua o registro inteiro por um objeto incompleto vindo do chamador.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `CLI-WF009-atualizar-cliente.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
