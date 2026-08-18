@@ -18,48 +18,34 @@
               "name": "nome_cliente"
             },
             {
-              "name": "mensagem_texto"
+              "name": "email"
             },
             {
-              "name": "intencao"
+              "name": "data_nascimento"
             },
             {
-              "name": "confianca"
+              "name": "observacoes"
             },
             {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
+              "name": "status"
             },
             {
               "name": "origem"
+            },
+            {
+              "name": "dados",
+              "type": "object"
             }
           ]
         }
       },
-      "id": "ff42330d-cdc0-4c95-bd4f-ed3ed4e7c780",
+      "id": "baaa61ba-8abc-4564-9589-40819fee6ec6",
       "name": "TRG - Receber Dados WF009",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -768,
-        592
+        3632,
+        3280
       ]
     },
     {
@@ -78,22 +64,66 @@
           "cachedResultName": "CLIENTES",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
         },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "c7a0fa9a-c9ad-492c-ba06-6fc409baefc1",
+      "id": "96805f7c-47c1-440a-8148-a65c2cedb15b",
       "name": "GS - Buscar Cliente",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -528,
-        592
+        4096,
+        3280
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "653779cb-57f3-4712-b0ac-6d9ab2f28f94",
+      "name": "IF - Erro Técnico Na Busca",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4080,
+        3536
+      ]
     },
     {
       "parameters": {
@@ -114,8 +144,19 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
+          "value": {
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "NOME": "={{ $json.NOME }}",
+            "TELEFONE": "={{ $json.TELEFONE }}",
+            "EMAIL": "={{ $json.EMAIL }}",
+            "DATA_NASCIMENTO": "={{ $json.DATA_NASCIMENTO }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "ULTIMA_ATUALIZACAO": "={{ $json.ULTIMA_ATUALIZACAO }}"
+          },
+          "matchingColumns": [
+            "ID_CLIENTE"
+          ],
           "schema": [
             {
               "id": "ID_CLIENTE",
@@ -124,7 +165,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "ID_EMPRESA",
@@ -133,7 +175,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "NOME",
@@ -187,7 +230,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "ULTIMO_ATENDIMENTO",
@@ -196,7 +240,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "ACEITA_MARKETING",
@@ -205,7 +250,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "STATUS",
@@ -223,7 +269,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "ULTIMA_ATUALIZACAO",
@@ -251,20 +298,21 @@
         },
         "options": {}
       },
-      "id": "1b720d2e-6aaf-4c53-a617-d1067ae677ed",
+      "id": "cd9bcfa7-ac3a-438d-8d81-8b07ac43ca0e",
       "name": "GS - Atualizar Cliente",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -288,
-        592
+        4992,
+        3184
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -277,7 +325,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('CODE - Consolidar Resultado Atualização').first().json.id_empresa }}",
+            "workflow": "={{ 'WF009' }}",
+            "node": "={{ ({CLIENTE_ATUALIZADO:'GS - Atualizar Cliente', CLIENTE_NAO_ENCONTRADO:'CODE - Avaliar Cliente Encontrado', MULTIPLOS_CLIENTES_ENCONTRADOS:'CODE - Avaliar Cliente Encontrado', ERRO_ATUALIZACAO:'GS - Buscar Cliente / GS - Atualizar Cliente'})[$('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao] || 'WF009' }}",
+            "tipo": "={{ $('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao === 'CLIENTE_ATUALIZADO' ? 'SUCESSO' : ($('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao === 'ERRO_ATUALIZACAO' ? 'ERRO' : 'AVISO') }}",
+            "evento": "={{ $('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao }}",
+            "status": "={{ $('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao }}",
+            "mensagem": "={{ $('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao === 'CLIENTE_ATUALIZADO' ? 'Cadastro do cliente atualizado com sucesso.' : ($('CODE - Consolidar Resultado Atualização').first().json.erro || 'Falha ao processar atualização de cadastro.') }}",
+            "dados": "={{ JSON.stringify($('CODE - Consolidar Resultado Atualização').first().json) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -369,34 +427,395 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "3e9013ae-d437-47db-b03b-807bcbc91dde",
+      "id": "79dc9242-cfb1-4db1-a12a-71b504f18a70",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        -48,
-        592
+        5664,
+        3280
       ]
     },
     {
       "parameters": {
-        "content": "## CLI - WF009 - Atualizar Cliente v5.0\n\nAtualiza cadastro do cliente.",
+        "content": "## CLI - WF009 - Atualizar Cadastro v5.2\n\nLocaliza o cliente por ID_EMPRESA+ID_CLIENTE (prioridade) ou ID_EMPRESA+TELEFONE normalizado (fallback, mesmo padrão do WF008). GS - Buscar Cliente filtra sempre por ID_EMPRESA (nunca le a planilha inteira). CODE - Avaliar Cliente Encontrado trata 0/1/>1 resultados explicitamente; com múltiplos, bloqueia a atualização automatica. CODE - Montar Atualização Parcial mescla campo a campo com o cadastro atual - campo vazio/null/undefined NUNCA apaga o valor existente. ID_CLIENTE, ID_EMPRESA, PRIMEIRO_ATENDIMENTO, DATA_CADASTRO, ULTIMO_ATENDIMENTO e ACEITA_MARKETING nunca sao incluídos no mapeamento de escrita do GS - Atualizar Cliente, entao nunca são alterados por este workflow. ULTIMA_ATUALIZACAO usa America/Sao_Paulo (Luxon).\n\nv5.2 (2026-08-13) — bug crítico corrigido (teste real n8n Cloud, Teste 4A): GS - Buscar Cliente tinha alwaysOutputData:true + onError:continueErrorOutput, a mesma combinação que já havia causado o bug real confirmado no WF008 — uma falha técnica real (aba inexistente) disparava os branches Success E Error simultaneamente, produzindo 2 items na mesma execução e uma saída semanticamente errada (CLIENTE_NAO_ENCONTRADO em vez de ERRO_ATUALIZACAO). Corrigido com o mesmo padrão já validado no WF008: onError mudou para continueRegularOutput (erro passa a sair pela mesma porta, marcado em $json.error), e um novo node IF - Erro Técnico Na Busca logo após GS - Buscar Cliente decide entre CODE - Preparar Erro Busca (erro técnico) e CODE - Avaliar Cliente Encontrado (busca concluída, com ou sem resultado) — as 3 situações (encontrado / não encontrado / erro técnico) agora têm caminhos mutuamente exclusivos e corretos, nunca mais concorrentes.\n\nTambém corrigido nesta revisão (achado estático, não pedido explicitamente mas identificado ao auditar o workflow): MERGE - Resultado Atualização (numberInputs:3, mode:append) recebia 3 desfechos mutuamente exclusivos em índices diferentes — exatamente o padrão de Merge que trava em n8n real (confirmado no WF016 e já corrigido em WF010/11/13/14/15). Substituído por CODE - Consolidar Resultado Atualização (passthrough, mesmo padrão do WF016), com todos os 4 nodes terminais (SET - Cliente Atualizado, CODE - Preparar Erro Localização, CODE - Preparar Erro Busca, CODE - Preparar Erro Atualização) conectados diretamente no mesmo índice único.\n\nGS - Atualizar Cliente auditado: NÃO tem alwaysOutputData (ausente = false), então não apresenta o mesmo padrão de bug — em caso de falha técnica, só a porta de erro dispara (SET - Cliente Atualizado nunca executa com 0 items no input). Nenhuma alteração feita neste node; configuração de colunas (somente ID_CLIENTE/NOME/TELEFONE/EMAIL/DATA_NASCIMENTO/OBSERVACOES/STATUS/ULTIMA_ATUALIZACAO) preservada exatamente como ajustada manualmente pelo usuário.\n\nEXEC - WF017 Logs e SET - Preparar Saída WF009 atualizados para referenciar CODE - Consolidar Resultado Atualização (era MERGE - Resultado Atualização).\n\nIMPORTANTE: este workflow ainda NAO esta conectado ao WF002/WF003 - integração pendente para etapa futura.",
         "height": 280,
         "width": 520
       },
-      "id": "ea172439-6fdb-48b7-a5f6-09f39dbcd8b3",
+      "id": "d4adbebc-2d78-4908-8fb4-c7f63d52e415",
       "name": "NOTA - CLI - WF009 - Atualizar Cliente v5.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        128,
-        192
+        3872,
+        2816
+      ],
+      "width": 900,
+      "height": 420
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "id_empresa",
+              "value": "={{ $json.id_empresa || 'EMP001' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "id_cliente",
+              "value": "={{ $json.id_cliente || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "telefone_cliente",
+              "value": "={{ $json.telefone_cliente ? String($json.telefone_cliente).replace(/\\D/g, '') : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p4",
+              "name": "nome_cliente",
+              "value": "={{ $json.nome_cliente || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p5",
+              "name": "email",
+              "value": "={{ $json.email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p6",
+              "name": "data_nascimento",
+              "value": "={{ $json.data_nascimento || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p7",
+              "name": "observacoes",
+              "value": "={{ $json.observacoes || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p8",
+              "name": "status",
+              "value": "={{ $json.status || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p9",
+              "name": "origem",
+              "value": "={{ $json.origem || 'WHATSAPP' }}",
+              "type": "string"
+            },
+            {
+              "id": "p10",
+              "name": "dados",
+              "value": "={{ $json.dados || {} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "428a7855-1806-4814-8df8-2bafacc5d13c",
+      "name": "SET - Preparar Atualização",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3872,
+        3280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$('SET - Preparar Atualização').first().json;\nconst err=$json.error||{};\n\nreturn [{json:{\n  id_empresa:d.id_empresa,\n  id_cliente:d.id_cliente,\n  nome_cliente:d.nome_cliente,\n  telefone_cliente:d.telefone_cliente,\n  origem:d.origem,\n  dados:d.dados,\n  cliente_atualizado:false,\n  status_atualizacao:'ERRO_ATUALIZACAO',\n  erro:String((err&&err.message)||err||'Falha técnica ao buscar o cliente para atualização.')\n}}];"
+      },
+      "id": "3782dd85-8aca-4804-84d7-50c613889f96",
+      "name": "CODE - Preparar Erro Busca",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        3536
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$('SET - Preparar Atualização').first().json;\nconst candidatosEmpresa=$items('GS - Buscar Cliente').map(i=>i.json).filter(x=>x&&x.ID_CLIENTE);\n\nlet candidatos=[];\nif(d.id_cliente){\n  // prioridade absoluta: ID_EMPRESA + ID_CLIENTE\n  candidatos=candidatosEmpresa.filter(c=>String(c.ID_CLIENTE)===String(d.id_cliente));\n}else if(d.telefone_cliente){\n  // fallback: telefone normalizado (mesmo padrao do WF008)\n  candidatos=candidatosEmpresa.filter(c=>String(c.TELEFONE||'')===String(d.telefone_cliente));\n}\n\nconst total=candidatos.length;\nreturn [{json:{\n  ...d,\n  pode_atualizar:total===1,\n  status_localizacao: total===0 ? 'CLIENTE_NAO_ENCONTRADO' : (total>1 ? 'MULTIPLOS_CLIENTES_ENCONTRADOS' : 'ENCONTRADO'),\n  total_encontrados:total,\n  cliente_atual:candidatos[0]||null\n}}];"
+      },
+      "id": "d3de0b35-9a86-4f7a-8f2e-f5b3521a2b08",
+      "name": "CODE - Avaliar Cliente Encontrado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        3280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_atualizar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4544,
+        3280
+      ],
+      "id": "d03164ed-590d-43b5-8e74-8e178777d948",
+      "name": "IF - Cliente Encontrado"
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$json; // saida de CODE - Avaliar Cliente Encontrado\n\nreturn [{json:{\n  id_empresa:a.id_empresa,\n  id_cliente:a.id_cliente||'',\n  nome_cliente:a.nome_cliente||'',\n  telefone_cliente:a.telefone_cliente||'',\n  origem:a.origem,\n  dados:a.dados,\n  cliente_atualizado:false,\n  status_atualizacao:a.status_localizacao,\n  erro: a.status_localizacao==='MULTIPLOS_CLIENTES_ENCONTRADOS'\n    ? `Foram encontrados ${a.total_encontrados} clientes correspondentes; atualização automática bloqueada para evitar alterar o cadastro errado.`\n    : 'Cliente não encontrado para atualização.'\n}}];"
+      },
+      "id": "ac3cc8b9-dbb3-4d1c-aff2-c7d9f11afaae",
+      "name": "CODE - Preparar Erro Localização",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4768,
+        3536
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const novo=$json; // saida de CODE - Avaliar Cliente Encontrado (dados normalizados + cliente_atual)\nconst atual=novo.cliente_atual;\nconst agora=DateTime.now().setZone('America/Sao_Paulo').toISO();\n\nfunction mesclar(valorNovo,valorAtual){\n  const vazio=valorNovo===undefined||valorNovo===null||String(valorNovo).trim()==='';\n  return vazio ? (valorAtual||'') : valorNovo;\n}\n\nconst nomeFinal=mesclar(novo.nome_cliente,atual.NOME);\nconst telefoneFinal=mesclar(novo.telefone_cliente,atual.TELEFONE);\n\nreturn [{json:{\n  // colunas da planilha (somente as que de fato serao escritas)\n  ID_CLIENTE:atual.ID_CLIENTE,\n  NOME:nomeFinal,\n  TELEFONE:telefoneFinal,\n  EMAIL:mesclar(novo.email,atual.EMAIL),\n  DATA_NASCIMENTO:mesclar(novo.data_nascimento,atual.DATA_NASCIMENTO),\n  OBSERVACOES:mesclar(novo.observacoes,atual.OBSERVACOES),\n  STATUS:mesclar(novo.status,atual.STATUS),\n  ULTIMA_ATUALIZACAO:agora,\n  // campos de negocio para o restante do fluxo (nao vao para o Sheets)\n  id_empresa:atual.ID_EMPRESA,\n  id_cliente:atual.ID_CLIENTE,\n  nome_cliente:nomeFinal,\n  telefone_cliente:telefoneFinal,\n  origem:novo.origem,\n  dados:novo.dados\n}}];"
+      },
+      "id": "eb3ae57f-9aaf-4b35-8884-4eefb19f8887",
+      "name": "CODE - Montar Atualização Parcial",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4768,
+        3184
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Montar Atualização Parcial').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Montar Atualização Parcial').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Montar Atualização Parcial').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s4",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Montar Atualização Parcial').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s5",
+              "name": "origem",
+              "value": "={{ $('CODE - Montar Atualização Parcial').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "s6",
+              "name": "dados",
+              "value": "={{ $('CODE - Montar Atualização Parcial').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "s7",
+              "name": "cliente_atualizado",
+              "value": "={{ true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "s8",
+              "name": "status_atualizacao",
+              "value": "={{ 'CLIENTE_ATUALIZADO' }}",
+              "type": "string"
+            },
+            {
+              "id": "s9",
+              "name": "erro",
+              "value": "={{ '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1756e19c-f75b-4ecd-95e9-72621d32bd60",
+      "name": "SET - Cliente Atualizado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5216,
+        3184
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$('CODE - Montar Atualização Parcial').first().json;\nconst err=$json.error||{};\n\nreturn [{json:{\n  id_cliente:a.id_cliente,\n  id_empresa:a.id_empresa,\n  nome_cliente:a.nome_cliente,\n  telefone_cliente:a.telefone_cliente,\n  origem:a.origem,\n  dados:a.dados,\n  cliente_atualizado:false,\n  status_atualizacao:'ERRO_ATUALIZACAO',\n  erro:String((err&&err.message)||err||'Falha técnica ao atualizar o cadastro do cliente.')\n}}];"
+      },
+      "id": "8fdd423c-198a-4f71-88e2-76efe54e9988",
+      "name": "CODE - Preparar Erro Atualização",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5216,
+        3536
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;"
+      },
+      "id": "59f41692-20b7-47fe-9961-c6f866c16527",
+      "name": "CODE - Consolidar Resultado Atualização",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5440,
+        3280
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o3",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "status_atualizacao",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.status_atualizacao }}",
+              "type": "string"
+            },
+            {
+              "id": "o6",
+              "name": "cliente_atualizado",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.cliente_atualizado }}",
+              "type": "boolean"
+            },
+            {
+              "id": "o7",
+              "name": "origem",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "o8",
+              "name": "dados",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "o9",
+              "name": "erro",
+              "value": "={{ $('CODE - Consolidar Resultado Atualização').first().json.erro || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9ffc591e-a8b3-4a67-816e-a8c1e07ca199",
+      "name": "SET - Preparar Saída WF009",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5888,
+        3280
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Dados WF009": [
+      {
+        "json": {
+          "id_empresa": "EMP001",
+          "id_cliente": "CLI-NAO-EXISTE-WF009-REG",
+          "telefone_cliente": "5534999990099",
+          "nome_cliente": "Cliente Inexistente Regressao WF009",
+          "email": "",
+          "data_nascimento": "",
+          "observacoes": "",
+          "status": "",
+          "origem": "TESTE_MANUAL",
+          "dados": {}
+        }
+      }
+    ]
+  },
   "connections": {
     "TRG - Receber Dados WF009": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Preparar Atualização": {
       "main": [
         [
           {
@@ -411,6 +830,64 @@
       "main": [
         [
           {
+            "node": "IF - Erro Técnico Na Busca",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Na Busca": {
+      "main": [
+        [
+          {
+            "node": "CODE - Preparar Erro Busca",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Avaliar Cliente Encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Cliente Encontrado": {
+      "main": [
+        [
+          {
+            "node": "IF - Cliente Encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Cliente Encontrado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Atualização Parcial",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Localização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Montar Atualização Parcial": {
+      "main": [
+        [
+          {
             "node": "GS - Atualizar Cliente",
             "type": "main",
             "index": 0
@@ -422,7 +899,80 @@
       "main": [
         [
           {
+            "node": "SET - Cliente Atualizado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Cliente Atualizado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Erro Localização": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Erro Busca": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Erro Atualização": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Atualização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Atualização": {
+      "main": [
+        [
+          {
             "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF009",
             "type": "main",
             "index": 0
           }
@@ -430,19 +980,19 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f2e1b4d0-f859-4158-8a7c-c3d03733ebe5",
+  "versionId": "88e8b4e7-71d3-43cb-8067-c88343d6cdb3",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
   },
   "nodeGroups": [],
-  "id": "AuvfiKw3czKQs4jc",
+  "id": "aK7c4sZgz7yLyuaM",
   "tags": [
     {
       "updatedAt": "2026-08-04T16:34:13.092Z",
@@ -455,6 +1005,12 @@
       "createdAt": "2026-08-05T15:28:49.781Z",
       "id": "TQEdEFTJDGutyaLM",
       "name": "Cliente"
+    },
+    {
+      "updatedAt": "2026-08-05T15:32:03.425Z",
+      "createdAt": "2026-08-05T15:32:03.425Z",
+      "id": "wOHASqEFw5v66HVH",
+      "name": "Logs"
     }
   ]
 }
