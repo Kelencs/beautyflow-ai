@@ -1,88 +1,66 @@
+# WF014 — COM - WF014 - Pesquisa
 
-# COM-WF014 — Pesquisa de Satisfação
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`COM-WF014-pesquisa.json`](../../workflows/comunicacao/COM-WF014-pesquisa.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-> Documentação técnica do BeautyFlow AI — n8n
+## 1. Objetivo
 
-## Identificação
+Enviar pesquisa pós-atendimento na janela definida após o término do serviço, evitando duplicidade e registrando o resultado.
 
-| Campo | Valor |
-|---|---|
-| Código | `COM-WF014` |
-| Workflow | Pesquisa de Satisfação |
-| Arquivo n8n | `COM-WF014-pesquisa.json` |
-| Status | Versionado e validado em testes |
-| Trigger | Subworkflow para processar pesquisas pós-atendimento de uma empresa. |
-| Última revisão desta documentação | 18/08/2026 |
+## 2. Identificação técnica
 
-## Objetivo
+- **Workflow:** `COM - WF014 - Pesquisa`
+- **ID funcional:** `WF014`
+- **Arquivo JSON:** `COM-WF014-pesquisa.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** `Execute Workflow Trigger`; não existe Schedule/Cron no JSON atual.
 
-Identificar atendimentos concluídos elegíveis, enviar pesquisa de satisfação e impedir duplicidade de pesquisas já enviadas com sucesso.
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-## Entradas principais
+## 3. Entradas
 
 - `id_empresa` obrigatório.
 
-## Fluxo principal
+## 4. Fluxo real do workflow
 
-1. Valida empresa.
-2. Busca configurações da empresa e fuso/WhatsApp.
-3. Carrega atendimentos elegíveis após a conclusão.
-4. Consulta a aba `PESQUISAS` para idempotência.
-5. Se já existe pesquisa `ENVIADA` para o agendamento, retorna `PESQUISA_JA_ENVIADA`.
-6. Monta uma mensagem pós-atendimento personalizada.
-7. Envia pelo WF012.
-8. Registra a pesquisa somente de acordo com o resultado do envio.
-9. Registra log pelo WF017.
+1. Valida a empresa e a configuração de WhatsApp em `EMPRESAS`.
+2. Consulta `AGENDAMENTOS`, `PESQUISAS`, `CLIENTES`, `PROFISSIONAIS` e `SERVICOS` da empresa.
+3. Calcula o término real do atendimento usando data e `HORA_FIM`.
+4. Seleciona apenas atendimentos dentro da janela pós-atendimento configurada.
+5. Valida cliente/telefone e os dados necessários para personalizar a pesquisa.
+6. Aplica idempotência usando registros já enviados em `PESQUISAS`.
+7. Envia a mensagem pelo WF012.
+8. Registra o resultado em `PESQUISAS`, consolida, chama WF017 e prepara a saída.
 
-## Fluxo resumido
+## 5. Regras e decisões implementadas
 
-```text
-COM-WF014 → Google Sheets: EMPRESAS, AGENDAMENTOS, PESQUISAS → COM-WF012 → ADM-WF017
-```
+- `id_empresa` é obrigatório.
+- Janela de elegibilidade atual: de 1 a 4 horas após o fim do atendimento (`HORA_FIM`).
+- O código avalia o fim do atendimento; eventos futuros ou ainda não encerrados não são elegíveis.
+- Idempotência bloqueia nova pesquisa quando já existe registro enviado para o agendamento; tentativa com falha não deve equivaler a envio concluído.
+- O envio é delegado ao WF012, sem HTTP direto à Meta.
 
-## Integrações
+## 6. Integrações e dependências
 
-- Google Sheets: `EMPRESAS`, `AGENDAMENTOS`, `PESQUISAS`
-- COM-WF012
-- ADM-WF017
+- Google Sheets: `EMPRESAS`, `AGENDAMENTOS`, `PESQUISAS`, `CLIENTES`, `PROFISSIONAIS`, `SERVICOS`.
+- WF012 — Comunicação.
+- WF017 — Logs.
 
-## Regras de negócio e proteções
+## 7. Saídas e estados
 
-- Pesquisa é pós-atendimento; não confundir com follow-up de reativação.
-- Pesquisa já enviada com sucesso deve bloquear duplicata.
-- Tentativa falha não deve bloquear retry futuro.
-- `ID_EMPRESA` deve ser obrigatório para leitura e escrita.
+- Resultados típicos: `PESQUISA_ENVIADA`, `PESQUISA_JA_ENVIADA`, `AGENDAMENTO_NAO_ELEGIVEL`, `ERRO_PESQUISA`, além de bloqueios de empresa/WhatsApp.
 
-## Saídas esperadas
+## 8. Tratamento de erros e bloqueios
 
-- `PESQUISA_ENVIADA`, `PESQUISA_JA_ENVIADA`, bloqueio ou erro técnico.
+- Erros técnicos nas consultas são tratados como erro, não como ausência de elegíveis.
+- Sem empresa ou `WHATSAPP_PHONE_NUMBER_ID`, o processamento é bloqueado.
 
-## Tratamento de erros e logs
+## 9. Observações do JSON atual
 
-- Falha no WhatsApp não pode virar pesquisa enviada.
-- Falha no Sheets deve ser erro técnico.
-- Persistir contexto suficiente para auditoria pelo WF017.
+- No arquivo versionado, `active` está `false`.
+- O workflow depende de um chamador/agendador externo para execução periódica.
 
-## Dependências entre workflows
+## 10. Critério de manutenção desta documentação
 
-- Chama: `COM-WF012` e `ADM-WF017`.
-
-## Checklist mínimo de teste
-
-- [ ] Atendimento elegível gera pesquisa.
-- [ ] Reexecução após sucesso gera `PESQUISA_JA_ENVIADA`.
-- [ ] Falha de WhatsApp e retry posterior.
-- [ ] Sem atendimentos elegíveis.
-- [ ] Erro técnico na busca/registro.
-
-## Cuidados na manutenção
-
-A janela de envio pós-atendimento deve permanecer alinhada às regras de experiência do cliente. Se a janela mudar, ajuste o teste de elegibilidade e este documento.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
+Sempre que `COM-WF014-pesquisa.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
