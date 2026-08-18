@@ -7,13 +7,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "70078e74-d980-48cb-b1f6-ba892367fc76",
+      "id": "ee2b38ef-ad61-4e64-8d8c-cc96186497e1",
       "name": "Webhook - Validar Meta",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        512,
-        1312
+        672,
+        1536
       ],
       "webhookId": "197d8835-5d6f-46d0-bcd8-9d0f8f29c82f"
     },
@@ -25,13 +25,13 @@
           "responseCode": 200
         }
       },
-      "id": "a79782cc-32f4-46e6-89e7-12787547ccf0",
+      "id": "a4c6f260-ae35-476a-8ed2-4040ffe47d46",
       "name": "RESP - Challenge Meta",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        752,
-        1312
+        912,
+        1536
       ]
     },
     {
@@ -41,13 +41,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "6da1267e-3466-4562-b54c-879b9ee41fa2",
+      "id": "baa71a62-1e65-4305-b561-e1743a9911c8",
       "name": "Webhook - Receber WhatsApp",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        512,
-        1520
+        672,
+        1744
       ],
       "webhookId": "01ad760e-25d1-45e7-9f07-d12bbfb73b2b"
     },
@@ -59,26 +59,60 @@
           "responseCode": 200
         }
       },
-      "id": "c0cc3680-97cb-425a-ab1f-4ce8e54ae010",
+      "id": "eeeafba1-70b7-40c6-8a98-52a134b3c285",
       "name": "RESP - Evento Recebido",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        752,
-        1520
+        912,
+        1744
       ]
     },
     {
       "parameters": {
         "jsCode": "const body=$json.body||$json;\nconst value=body?.entry?.[0]?.changes?.[0]?.value||{};\nconst msg=value?.messages?.[0]||null;\nconst contact=value?.contacts?.[0]||{};\nconst meta=value?.metadata||{};\nif(!msg) return [{json:{evento_valido:false,origem:'WHATSAPP'}}];\nreturn [{json:{\n evento_valido:true,\n id_empresa:'EMP001',\n mensagem_id:msg.id||'',\n telefone_cliente:String(msg.from||'').replace(/\\D/g,''),\n nome_cliente:contact?.profile?.name||'Cliente',\n tipo_mensagem:msg.type||'text',\n mensagem_texto:msg?.text?.body||'',\n timestamp:new Date(Number(msg.timestamp||0)*1000).toISOString(),\n phone_number_id:meta.phone_number_id||'',\n origem:'WHATSAPP'\n}}];"
       },
-      "id": "6db5b0d6-91e4-4387-9def-c50380557ee5",
+      "id": "43aa2604-3435-411f-8fab-5da231aeb6e3",
       "name": "CODE - Normalizar Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        992,
-        1520
+        1152,
+        1744
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.evento_valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b52cb66d-6d11-4fbb-a1ae-40fc1a33810e",
+      "name": "IF - Evento Válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        1744
       ]
     },
     {
@@ -194,13 +228,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "35316c95-1d5b-4ab9-9b26-64326fbaba66",
+      "id": "018eb413-38d5-41f9-be3d-f1fa1dab7842",
       "name": "EXEC - WF002 - IA Atendimento",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1248,
-        1520
+        1600,
+        1664
       ]
     },
     {
@@ -209,13 +243,13 @@
         "height": 280,
         "width": 520
       },
-      "id": "807b2729-6c6d-4335-94a8-83736da050d8",
+      "id": "3f135ab3-4ca6-47d8-8d3e-e45cd886e43a",
       "name": "NOTA - WF001 v5.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1488,
-        1040
+        1648,
+        1264
       ]
     }
   ],
@@ -258,6 +292,17 @@
       "main": [
         [
           {
+            "node": "IF - Evento Válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Evento Válido": {
+      "main": [
+        [
+          {
             "node": "EXEC - WF002 - IA Atendimento",
             "type": "main",
             "index": 0
@@ -272,7 +317,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "86d80a08-6395-4737-b708-3667e963d85e",
+  "versionId": "c214f58b-b118-4338-aa6a-52e848e3f8f3",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
