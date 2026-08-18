@@ -7,70 +7,154 @@
           "values": [
             {
               "name": "id_empresa"
-            },
-            {
-              "name": "id_cliente"
-            },
-            {
-              "name": "telefone_cliente"
-            },
-            {
-              "name": "nome_cliente"
-            },
-            {
-              "name": "mensagem_texto"
-            },
-            {
-              "name": "intencao"
-            },
-            {
-              "name": "confianca"
-            },
-            {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
-            },
-            {
-              "name": "origem"
             }
           ]
         }
       },
-      "id": "0c0364c9-b845-4697-85b3-f5428fe65a76",
+      "id": "ba2a8cf2-a2eb-401e-9548-f5ecc137a16b",
       "name": "TRG - Receber Dados WF015",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -1744,
-        896
+        12560,
+        5616
       ]
     },
     {
-      "parameters": {},
-      "id": "947d6927-a2ef-4851-b6fb-ae0c5a3d76c0",
-      "name": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "jsCode": "const d = $json;\nconst idEmpresa = String(d.id_empresa || '').trim();\nconst empresaValida = idEmpresa.length > 0;\n\nreturn [{ json: {\n  id_empresa: idEmpresa,\n  empresa_valida: empresaValida,\n  evento_resultado: empresaValida ? '' : 'ERRO_FOLLOWUP',\n  erro: empresaValida ? '' : 'id_empresa é obrigatório e não pode ser vazio para executar o envio de follow-up (nunca fazer busca multi-tenant sem ID_EMPRESA).'\n} }];\n"
+      },
+      "id": "2a813d28-d7fa-43fa-a61f-761b496f462b",
+      "name": "CODE - Validar Empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -1504,
-        896
+        12768,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.empresa_valida }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0b354b7-fbd6-49de-94e9-89108f088886",
+      "name": "IF - Empresa Válida",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        12960,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "815b1240-71a1-4da7-8d6a-c839a8812b85",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        13168,
+        5616
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Validar Empresa').first().json;\n\n// Detecta falha técnica pelo campo error do item (nunca por contagem de itens:\n// alwaysOutputData:true garante >=1 item mesmo em erro técnico - mesmo bug já\n// confirmado e corrigido nos WF008/WF009/WF010/WF011).\nconst itensBusca = $items('GS - Buscar Empresa').map(i => i.json);\nconst itemComErro = itensBusca.find(r => r && r.error);\nif (itemComErro) {\n  const err = itemComErro.error || {};\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone: 'America/Sao_Paulo',\n    evento_resultado: 'ERRO_FOLLOWUP',\n    erro: `Falha técnica ao consultar EMPRESAS no Google Sheets: ${String((err && err.message) || err || 'erro desconhecido')}`\n  } }];\n}\n\nconst rows = itensBusca.filter(r => r && r.ID_EMPRESA);\n\nif (rows.length === 0) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone: 'America/Sao_Paulo',\n    evento_resultado: 'EMPRESA_NAO_ENCONTRADA',\n    erro: 'Empresa não encontrada na aba EMPRESAS para o id_empresa informado.'\n  } }];\n}\n\nconst empresa = rows[0];\nconst phoneNumberId = String(empresa.WHATSAPP_PHONE_NUMBER_ID || '').trim();\n// Fallback documentado: se TIMEZONE nao estiver cadastrado na empresa, usa America/Sao_Paulo\n// (unico timezone real usado em todo o projeto ate o momento) em vez de bloquear a execucao.\nconst timezone = String(empresa.TIMEZONE || '').trim() || 'America/Sao_Paulo';\n\nif (!phoneNumberId) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone,\n    evento_resultado: 'WHATSAPP_NAO_CONFIGURADO',\n    erro: 'WHATSAPP_PHONE_NUMBER_ID não está configurado para esta empresa em EMPRESAS.'\n  } }];\n}\n\nconst agoraIso = DateTime.now().setZone(timezone).toISO();\n\nreturn [{ json: {\n  ...ctx, pode_prosseguir: true, phone_number_id: phoneNumberId, timezone, agora_iso: agoraIso, evento_resultado: ''\n} }];\n"
+      },
+      "id": "9c5e07a9-1f72-4e5f-8a2a-42c2d82a4b9a",
+      "name": "CODE - Avaliar Empresa WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13360,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_prosseguir }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e466dca1-95cd-4719-aa0e-c1e1c05d6682",
+      "name": "IF - Empresa E WhatsApp OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        13568,
+        5616
       ]
     },
     {
@@ -89,22 +173,186 @@
           "cachedResultName": "CLIENTES",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
         },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "ATIVO"
+            },
+            {
+              "lookupColumn": "ACEITA_MARKETING",
+              "lookupValue": "SIM"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "516c1a5d-3b63-4788-88c3-3828c1ec7617",
+      "id": "126c73df-290e-4db5-a93f-03a0156e2189",
       "name": "GS - Buscar Clientes",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -1264,
-        896
+        13760,
+        5456
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "859020c8-b26c-4404-ae2a-0e92997097d4",
+      "name": "GS - Buscar Agendamentos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        13760,
+        5616
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 149626744,
+          "mode": "list",
+          "cachedResultName": "FOLLOWUPS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=149626744"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9f9957a4-4108-49de-a063-a165030b51ba",
+      "name": "GS - Buscar Followups Existentes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        13760,
+        5776
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "f2759fe6-d0f0-479e-a0b2-e7d881804c56",
+      "name": "MERGE - Dados Coletados",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        13968,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Avaliar Empresa WhatsApp').first().json;\nconst idEmpresa = ctx.id_empresa;\nconst phoneNumberId = ctx.phone_number_id || '';\nconst timezone = ctx.timezone || 'America/Sao_Paulo';\n\nconst cliRaw = $items('GS - Buscar Clientes').map(i => i.json);\nconst agRaw = $items('GS - Buscar Agendamentos').map(i => i.json);\nconst foRaw = $items('GS - Buscar Followups Existentes').map(i => i.json);\n\n// Detecta falha técnica explicitamente pelo campo error de cada item (nunca por\n// contagem de itens: alwaysOutputData:true garante >=1 item mesmo em falha técnica,\n// então \"0 itens\" nunca é um sinal confiável - mesmo bug já confirmado e corrigido nos\n// WF008/09/10/11).\nconst erroCli = cliRaw.find(r => r && r.error);\nconst erroAg = agRaw.find(r => r && r.error);\nconst erroFo = foRaw.find(r => r && r.error);\nconst itemComErro = erroCli || erroAg || erroFo;\n\nif (itemComErro) {\n  const origemErro = erroCli ? 'CLIENTES' : (erroAg ? 'AGENDAMENTOS' : 'FOLLOWUPS');\n  const err = itemComErro.error || {};\n  return [{ json: {\n    id_empresa: idEmpresa, id_cliente: '', id_followup: '', tentativa: 0, ultimo_atendimento: '',\n    telefone_cliente: '', nome_cliente: '', phone_number_id: phoneNumberId, precisa_enviar: false, enviado: false,\n    origem: 'AUTOMATICO',\n    evento_resultado: 'ERRO_FOLLOWUP',\n    erro: `Falha técnica ao consultar ${origemErro} no Google Sheets: ${String((err && err.message) || err || 'erro desconhecido')}`\n  } }];\n}\n\nconst clientes = cliRaw.filter(r => r && r.ID_CLIENTE);\nconst agendamentos = agRaw.filter(r => r && r.ID_AGENDAMENTO);\nconst followups = foRaw.filter(r => r && r.ID_FOLLOWUP);\n\nconst agora = ctx.agora_iso ? DateTime.fromISO(ctx.agora_iso, { zone: timezone }) : DateTime.now().setZone(timezone);\n\nfunction parseDataHora(dataStr, horaStr) {\n  const hora = String(horaStr || '00:00').slice(0, 5);\n  let dt = DateTime.fromFormat(`${dataStr} ${hora}`, 'dd/MM/yyyy HH:mm', { zone: timezone });\n  if (!dt.isValid) dt = DateTime.fromFormat(`${dataStr} ${hora}`, 'yyyy-MM-dd HH:mm', { zone: timezone });\n  if (!dt.isValid) dt = DateTime.fromISO(`${dataStr}T${hora}`, { zone: timezone });\n  return dt;\n}\n\n// Janelas de detecção (decisão técnica conservadora, documentada no relatório: o projeto\n// não define tolerância de execução periódica). Alvos aprovados: 30 e 45 dias após o\n// último atendimento real. Usamos uma folga de +3 dias em cada janela para tolerar\n// execuções não perfeitamente pontuais, sem sobrepor as duas janelas entre si.\nconst TENTATIVA1_MIN_DIAS = 30, TENTATIVA1_MAX_DIAS = 33;\nconst TENTATIVA2_MIN_DIAS = 45, TENTATIVA2_MAX_DIAS = 48;\n\nif (clientes.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_cliente: '', id_followup: '', tentativa: 0, ultimo_atendimento: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'CLIENTE_NAO_ELEGIVEL',\n    erro: 'Nenhum cliente ATIVO com ACEITA_MARKETING=SIM encontrado para esta empresa.'\n  } }];\n}\n\nconst candidatos = [];\n\nfor (const cli of clientes) {\n  const agsCliente = agendamentos.filter(a => String(a.ID_CLIENTE) === String(cli.ID_CLIENTE));\n\n  const passados = [];\n  const futuros = [];\n  for (const a of agsCliente) {\n    // Nunca considerar CANCELADO nem como atendimento realizado, nem como agendamento futuro.\n    if (String(a.STATUS || '').toUpperCase() === 'CANCELADO') continue;\n\n    const fim = parseDataHora(a.DATA, a.HORA_FIM);\n    if (fim.isValid && fim <= agora) {\n      passados.push({ ag: a, fim });\n      continue;\n    }\n    const inicio = parseDataHora(a.DATA, a.HORA_INICIO);\n    if (inicio.isValid && inicio > agora) {\n      futuros.push(a);\n    }\n  }\n\n  const base = {\n    id_empresa: idEmpresa,\n    id_cliente: cli.ID_CLIENTE,\n    telefone_cliente: String(cli.TELEFONE || '').replace(/\\D/g, ''),\n    nome_cliente: cli.NOME || '',\n    phone_number_id: phoneNumberId\n  };\n\n  if (!base.telefone_cliente) {\n    candidatos.push({ ...base, precisa_enviar: false, enviado: false, tentativa: 0, ultimo_atendimento: '', evento_resultado: 'CLIENTE_NAO_ELEGIVEL', erro: 'Cliente sem telefone válido cadastrado.' });\n    continue;\n  }\n\n  if (futuros.length > 0) {\n    candidatos.push({ ...base, precisa_enviar: false, enviado: false, tentativa: 0, ultimo_atendimento: '', evento_resultado: 'CLIENTE_COM_AGENDAMENTO_FUTURO', erro: 'Cliente já possui agendamento futuro; não enviar follow-up.' });\n    continue;\n  }\n\n  if (passados.length === 0) {\n    // Cliente nunca teve atendimento real registrado: não é \"inativo\", apenas não se aplica ainda.\n    continue;\n  }\n\n  passados.sort((a, b) => b.fim.toMillis() - a.fim.toMillis());\n  const ultimoAtendimento = passados[0];\n  const ultimoAtendimentoStr = ultimoAtendimento.ag.DATA;\n  const diasDesde = agora.diff(ultimoAtendimento.fim, 'days').days;\n\n  let tentativaElegivel = 0;\n  if (diasDesde >= TENTATIVA2_MIN_DIAS && diasDesde <= TENTATIVA2_MAX_DIAS) tentativaElegivel = 2;\n  else if (diasDesde >= TENTATIVA1_MIN_DIAS && diasDesde <= TENTATIVA1_MAX_DIAS) tentativaElegivel = 1;\n\n  if (tentativaElegivel === 0) {\n    // Fora das janelas de 30/45 dias nesta execução (cedo demais, entre janelas, ou tarde demais).\n    continue;\n  }\n\n  // Idempotência: ID_EMPRESA + ID_CLIENTE + ULTIMO_ATENDIMENTO (identifica o ciclo de inatividade) + TENTATIVA.\n  // Um novo atendimento real muda ULTIMO_ATENDIMENTO, o que automaticamente inicia um novo ciclo elegível.\n  const jaEnviado = followups.some(f =>\n    String(f.ID_CLIENTE) === String(cli.ID_CLIENTE) &&\n    String(f.ULTIMO_ATENDIMENTO) === String(ultimoAtendimentoStr) &&\n    Number(f.TENTATIVA) === tentativaElegivel &&\n    String(f.STATUS || '').toUpperCase() === 'ENVIADO'\n  );\n\n  if (jaEnviado) {\n    candidatos.push({ ...base, precisa_enviar: false, enviado: false, tentativa: tentativaElegivel, ultimo_atendimento: ultimoAtendimentoStr, evento_resultado: 'FOLLOWUP_JA_ENVIADO', erro: `Tentativa ${tentativaElegivel} já enviada com sucesso para este ciclo de inatividade.` });\n    continue;\n  }\n\n  const nomeExibicao = base.nome_cliente && base.nome_cliente.trim() ? base.nome_cliente.trim() : 'Cliente';\n  const mensagem = `Oi, ${nomeExibicao}! 😊 Faz um tempinho desde o seu último atendimento com a gente. Se quiser agendar novamente, posso te ajudar a encontrar um horário disponível.`;\n\n  candidatos.push({\n    ...base,\n    precisa_enviar: true,\n    enviado: false,\n    tentativa: tentativaElegivel,\n    ultimo_atendimento: ultimoAtendimentoStr,\n    resposta_cliente: mensagem,\n    origem: 'AUTOMATICO'\n  });\n}\n\nif (candidatos.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_cliente: '', id_followup: '', tentativa: 0, ultimo_atendimento: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'CLIENTE_NAO_ELEGIVEL',\n    erro: 'Nenhum cliente dentro das janelas de follow-up (30 ou 45 dias) nesta execução.'\n  } }];\n}\n\nreturn candidatos.map(c => ({ json: c }));\n"
+      },
+      "id": "92f61ee2-354b-4abb-98b6-2a1122357613",
+      "name": "CODE - Avaliar Follow-ups Elegíveis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14160,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.precisa_enviar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9a62cf17-ff8a-407c-bd7c-3a0fc6c27cc9",
+      "name": "IF - Precisa Enviar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        14368,
+        5616
+      ]
     },
     {
       "parameters": {
@@ -117,7 +365,25 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "mensagem_texto": "={{ $json.resposta_cliente }}",
+            "intencao": "FOLLOWUP",
+            "confianca": "1",
+            "servico": "",
+            "data": "",
+            "hora_inicio": "",
+            "periodo": "",
+            "profissional": "",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "phone_number_id": "={{ $json.phone_number_id }}",
+            "origem": "={{ $json.origem }}",
+            "id_agendamento": "",
+            "dados": "={{ { tipo: 'FOLLOWUP_REATIVACAO', tentativa: $json.tentativa, ultimo_atendimento: $json.ultimo_atendimento } }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -254,22 +520,295 @@
               "display": true,
               "canBeUsedToMatch": true,
               "type": "string"
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
             }
           ],
           "attemptToConvertTypes": false,
-          "convertFieldsToString": true
+          "convertFieldsToString": false
         },
+        "mode": "each",
         "options": {
           "waitForSubWorkflow": true
         }
       },
-      "id": "f7323638-87c2-4286-ac0c-2fb500fa6d10",
+      "id": "e19ff125-da91-4162-a5fd-978ca0826559",
       "name": "EXEC - WF012 Comunicação",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        -1024,
-        896
+        14560,
+        5488
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const envio = $json; // resposta de EXEC - WF012 Comunicação para ESTE follow-up especificamente\n\n// Roda em modo \"Run Once for Each Item\" propositalmente (mesma correção já validada no\n// WF011): no modo padrão, $json equivaleria sempre ao primeiro item e este node só\n// devolveria 1 resultado mesmo recebendo vários follow-ups elegíveis na mesma execução -\n// os demais seriam descartados silenciosamente.\n//\n// NÃO usar $('CODE - Avaliar Follow-ups Elegíveis').item.json aqui: essa referência\n// atravessa o limite do EXEC - WF012 Comunicação (Execute Workflow) e já quebrou em\n// teste real (\"Cannot read properties of undefined (reading 'error')\"). A correção é\n// usar somente os campos que o próprio WF012 já ecoa de volta em $json\n// (id_empresa/id_cliente/telefone_cliente/nome_cliente/phone_number_id/\n// resposta_cliente/origem) e o pacote dados, que WF015 já envia como Object com\n// tipo/tentativa/ultimo_atendimento.\nconst dados = envio.dados && typeof envio.dados === 'object' ? envio.dados : {};\n\nconst followup = {\n  id_empresa: envio.id_empresa || '',\n  id_cliente: envio.id_cliente || '',\n  telefone_cliente: String(envio.telefone_cliente || '').replace(/\\D/g, ''),\n  nome_cliente: envio.nome_cliente || '',\n  phone_number_id: envio.phone_number_id || '',\n  tentativa: Number(dados.tentativa ?? envio.tentativa ?? 0),\n  ultimo_atendimento: dados.ultimo_atendimento || envio.ultimo_atendimento || '',\n  resposta_cliente: envio.resposta_cliente || envio.mensagem_final || '',\n  origem: envio.origem || 'AUTOMATICO'\n};\n\nconst enviado = envio.enviado === true;\n\n// .first() é seguro aqui: contexto da empresa é global/singleton na execução (1 busca de\n// empresa por execução, nunca por cliente), não dado por item.\nconst timezone = $('CODE - Avaliar Empresa WhatsApp').first().json.timezone || 'America/Sao_Paulo';\nconst agora = DateTime.now().setZone(timezone).toISO();\nconst idFollowup = `FUP${Date.now()}${Math.random().toString(36).slice(2, 8)}`;\n\nlet erroTexto = '';\nif (typeof envio.erro === 'string') {\n  erroTexto = envio.erro;\n} else if (envio.erro && typeof envio.erro === 'object') {\n  erroTexto = envio.erro.message || JSON.stringify(envio.erro);\n}\n\nreturn { json: {\n  ...followup,\n  ID_FOLLOWUP: idFollowup,\n  ID_EMPRESA: followup.id_empresa,\n  ID_CLIENTE: followup.id_cliente,\n  TELEFONE: followup.telefone_cliente,\n  ULTIMO_ATENDIMENTO: followup.ultimo_atendimento,\n  TENTATIVA: followup.tentativa,\n  STATUS: enviado ? 'ENVIADO' : 'FALHA',\n  DATA_HORA: agora,\n  WHATSAPP_MESSAGE_ID: envio.whatsapp_message_id || '',\n  OBSERVACOES: enviado ? '' : erroTexto,\n  id_followup: idFollowup,\n  enviado: enviado,\n  evento_resultado: enviado ? 'FOLLOWUP_ENVIADO' : 'ERRO_FOLLOWUP',\n  erro: enviado ? '' : erroTexto\n} };\n"
+      },
+      "id": "0aa114f7-257b-4da4-9e07-5700e2b71678",
+      "name": "CODE - Processar Resultado Envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        14768,
+        5488
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "FOLLOWUPS",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_FOLLOWUP": "={{ $json.ID_FOLLOWUP }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "TELEFONE": "={{ $json.TELEFONE }}",
+            "ULTIMO_ATENDIMENTO": "={{ $json.ULTIMO_ATENDIMENTO }}",
+            "TENTATIVA": "={{ $json.TENTATIVA }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "DATA_HORA": "={{ $json.DATA_HORA }}",
+            "WHATSAPP_MESSAGE_ID": "={{ $json.WHATSAPP_MESSAGE_ID }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_FOLLOWUP",
+              "displayName": "ID_FOLLOWUP",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TELEFONE",
+              "displayName": "TELEFONE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ULTIMO_ATENDIMENTO",
+              "displayName": "ULTIMO_ATENDIMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TENTATIVA",
+              "displayName": "TENTATIVA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WHATSAPP_MESSAGE_ID",
+              "displayName": "WHATSAPP_MESSAGE_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "a2efe51d-9e72-43ce-b00d-7fca3425ef8e",
+      "name": "GS - Registrar Followup",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        14960,
+        5488
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.id_empresa }}"
+            },
+            {
+              "id": "s2",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.id_cliente }}"
+            },
+            {
+              "id": "s3",
+              "name": "id_followup",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.id_followup }}"
+            },
+            {
+              "id": "s4",
+              "name": "tentativa",
+              "type": "number",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.tentativa }}"
+            },
+            {
+              "id": "s5",
+              "name": "ultimo_atendimento",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.ultimo_atendimento }}"
+            },
+            {
+              "id": "s6",
+              "name": "enviado",
+              "type": "boolean",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.enviado }}"
+            },
+            {
+              "id": "s7",
+              "name": "resposta_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.resposta_cliente }}"
+            },
+            {
+              "id": "s8",
+              "name": "evento_resultado",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.evento_resultado }}"
+            },
+            {
+              "id": "s9",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json.erro }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "108b4929-d429-4513-a3bf-d8b7f437b919",
+      "name": "SET - Followup Registrado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        15168,
+        5408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Modo \"Run Once for All Items\" (voltou ao padrão - ver por quê abaixo). Este node é\n// alimentado pela saída de ERRO de GS - Registrar Followup, que pode ser:\n// (a) uma falha GLOBAL/estrutural (ex.: aba inexistente) - confirmado em teste real: o\n//     Google Sheets recebeu N itens mas devolveu só 1 item de erro, SEM nenhuma\n//     informação de pairedItem (n8n lançou \"Paired item data ... is unavailable\" ao\n//     tentar itemMatching contra ele); ou\n// (b) falhas por linha (se o Google Sheets algum dia produzir isso de fato).\n// Por isso NUNCA tentamos correlacionar um item de erro a um follow-up original via\n// pairedItem/itemMatching/.item/.first() - reconstruímos por diferença: todo follow-up\n// original que NÃO aparece nos itens realmente gravados com sucesso (branch 0 de\n// GS - Registrar Followup) é considerado falho. Isso cobre tanto a falha global (0\n// sucessos -> todos os originais falharam) quanto uma eventual falha parcial (alguns\n// sucessos -> só os que não estão lá falharam), sem depender de nenhuma correlação\n// posicional ou de pairedItem entre o(s) item(ns) de erro e os originais.\nconst originais = $('CODE - Processar Resultado Envio').all().map(i => i.json);\n\nlet sucessos = [];\ntry {\n  // branch 0 = saída de sucesso de GS - Registrar Followup (o que foi realmente gravado).\n  sucessos = $('GS - Registrar Followup').all(0, $runIndex).map(i => i.json);\n} catch (e) {\n  sucessos = [];\n}\nconst idsComSucesso = new Set(sucessos.map(s => s.ID_FOLLOWUP).filter(Boolean));\n\nconst falharam = originais.filter(o => !idsComSucesso.has(o.id_followup));\n\n// Mensagem de erro: com 1 único item de erro (caso confirmado em teste real - falha\n// global), usa essa mensagem para todos os originais que falharam. Com mais de um item de\n// erro (falha por linha, não observada neste projeto mas coberta defensivamente), junta as\n// mensagens distintas - nunca tenta adivinhar qual mensagem pertence a qual item original.\nconst itensErro = items.map(i => i.json);\nconst mensagensErro = [...new Set(itensErro.map(i => {\n  const err = i.error || {};\n  return String((err && err.message) || err || 'erro desconhecido');\n}))];\nconst mensagemErro = mensagensErro.join(' | ') || 'Falha técnica ao gravar em FOLLOWUPS.';\n\nreturn falharam.map(f => ({ json: {\n  id_empresa: f.id_empresa,\n  id_cliente: f.id_cliente,\n  id_followup: f.id_followup,\n  tentativa: f.tentativa,\n  ultimo_atendimento: f.ultimo_atendimento,\n  enviado: f.enviado,\n  resposta_cliente: f.resposta_cliente,\n  origem: f.origem,\n  evento_resultado: 'ERRO_FOLLOWUP',\n  erro: `Follow-up processado (enviado=${f.enviado}) mas falhou ao registrar em FOLLOWUPS: ${mensagemErro}`\n} }));\n"
+      },
+      "id": "83c9238d-a99e-4359-88ba-90ee137c4541",
+      "name": "CODE - Erro Registro Followup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        15168,
+        5568
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;\n"
+      },
+      "id": "911cd720-2322-406c-a640-e9d5d114388a",
+      "name": "CODE - Consolidar Resultado Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        15408,
+        5616
       ]
     },
     {
@@ -283,7 +822,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "COM-WF015",
+            "node": "CODE - Avaliar Follow-ups Elegíveis",
+            "tipo": "={{ $json.evento_resultado === 'FOLLOWUP_ENVIADO' ? 'INFO' : ( ['FOLLOWUP_JA_ENVIADO','CLIENTE_NAO_ELEGIVEL','CLIENTE_COM_AGENDAMENTO_FUTURO'].includes($json.evento_resultado) ? 'AVISO' : 'ERRO' ) }}",
+            "evento": "={{ $json.evento_resultado || 'ERRO_FOLLOWUP' }}",
+            "status": "={{ $json.evento_resultado === 'FOLLOWUP_ENVIADO' ? 'SUCESSO' : 'BLOQUEADO' }}",
+            "mensagem": "={{ $json.evento_resultado === 'FOLLOWUP_ENVIADO' ? ('Follow-up (tentativa ' + $json.tentativa + ') enviado com sucesso.') : $json.erro }}",
+            "dados": "={{ JSON.stringify({ id_cliente: $json.id_cliente, id_followup: $json.id_followup, tentativa: $json.tentativa, ultimo_atendimento: $json.ultimo_atendimento }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -371,53 +920,201 @@
           "attemptToConvertTypes": false,
           "convertFieldsToString": true
         },
+        "mode": "each",
         "options": {
           "waitForSubWorkflow": true
         }
       },
-      "id": "16e02ef5-c619-4b54-8f33-1dbca3e4547f",
+      "id": "c98e2927-35ce-49e7-bf60-a39de0e85bd3",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        -784,
-        896
+        15648,
+        5616
       ]
     },
     {
       "parameters": {
-        "content": "## COM - WF015 - Follow-up v5.0\n\nRespeita ACEITA_MARKETING.",
-        "height": 280,
-        "width": 520
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.id_empresa || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.id_cliente || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "id_followup",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.id_followup || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "tentativa",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.tentativa || 0 }}"
+            },
+            {
+              "id": "o5",
+              "name": "ultimo_atendimento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.ultimo_atendimento || '' }}"
+            },
+            {
+              "id": "o6",
+              "name": "enviado",
+              "type": "boolean",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.enviado || false }}"
+            },
+            {
+              "id": "o7",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.evento_resultado || '' }}"
+            },
+            {
+              "id": "o8",
+              "name": "mensagem",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.resposta_cliente || '' }}"
+            },
+            {
+              "id": "o9",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex].json.erro || '' }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "16c2f39d-b474-40c1-b4d1-a86f7a10f3df",
-      "name": "NOTA - COM - WF015 - Follow-up v5.0",
+      "id": "f989ab06-b57f-47ca-9da5-d1cf2d5c6588",
+      "name": "SET - Preparar Saída WF015",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        15888,
+        5616
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## COM - WF015 - Follow-up v1.4\n\nReengajamento/reativação de clientes inativos (não é agradecimento pós-atendimento - esse papel é do WF014).\n\nRegras aprovadas:\n- Somente CLIENTES ATIVO + ACEITA_MARKETING=SIM da empresa\n- Último atendimento real DERIVADO de AGENDAMENTOS (STATUS!=CANCELADO, DATA+HORA_FIM no passado) - nunca de CLIENTES.ULTIMO_ATENDIMENTO (confirmado não confiável)\n- Cliente com agendamento futuro (STATUS!=CANCELADO, DATA+HORA_INICIO no futuro) NUNCA recebe follow-up\n- Tentativa 1: ~30 dias após último atendimento real. Tentativa 2: ~45 dias. Máximo 2 por ciclo.\n- Novo ciclo se inicia automaticamente quando ULTIMO_ATENDIMENTO muda (cliente voltou e teve novo atendimento)\n- Idempotência: ID_EMPRESA+ID_CLIENTE+ULTIMO_ATENDIMENTO+TENTATIVA (chave de ciclo, não permanente)\n- ID_EMPRESA obrigatório no trigger (nunca busca multi-tenant sem ele)\n- WHATSAPP_PHONE_NUMBER_ID e TIMEZONE obtidos de EMPRESAS (mesmo padrão WF011/WF013/WF014)\n- Envio sempre via WF012 (nunca HTTP direto à Meta)\n\nJanelas de detecção (decisão técnica conservadora, documentada no diagnóstico - projeto não define tolerância de execução):\nTentativa 1: 30 a 33 dias após último atendimento real\nTentativa 2: 45 a 48 dias após último atendimento real\n\nDEPENDÊNCIA FUTURA: nenhum Schedule/Cron implementado nesta etapa. WF015 precisa ser chamado periodicamente por um mecanismo externo (a definir).\n\nNÃO RESOLVIDO NESTA ETAPA (fora de escopo, sinalizado no diagnóstico): ACEITA_MARKETING é hoje sempre gravado como SIM pelo WF008 sem opt-in real do cliente.\n\nv1.1 (2026-08-13) — auditoria pré-reimportação encontrou o mesmo padrão de bugs já corrigido no WF011: (1) GS - Buscar Empresa/Clientes/Agendamentos/Followups Existentes tinham alwaysOutputData:true + onError:continueErrorOutput -> onError mudou para continueRegularOutput em todos; CODE - Avaliar Empresa WhatsApp e CODE - Avaliar Follow-ups Elegíveis tinham detecção de erro técnico por contagem de itens (length===0), trocada por checagem explícita do campo error em cada item. (2) EXEC - WF012 Comunicação com contrato desatualizado: mensagem_texto agora usa {{ $json.resposta_cliente }}, confianca agora é a STRING \"1\" (não número), dados passou de type:\"string\"+convertFieldsToString:true para type:\"object\"+convertFieldsToString:false. (3) CODE - Processar Resultado Envio usava $('CODE - Avaliar Follow-ups Elegíveis').item.json, quebrando após o EXEC - WF012 (\"Cannot read properties of undefined\") - reescrito para reconstruir o contexto a partir de $json/$json.dados (campos que o WF012 já ecoa), e convertido para \"Run Once for Each Item\" para processar corretamente 2+ follow-ups elegíveis na mesma execução sem descartar os excedentes. SET - Followup Registrado e CODE - Erro Registro Followup (este também convertido para \"Run Once for Each Item\") trocaram .item por itemMatching($itemIndex). SET - Preparar Saída WF015 trocou .first() (sempre pegaria o primeiro resultado da execução) por itemMatching($itemIndex) nos 9 campos - necessário porque EXEC - WF017 Logs fica entre o consolidador e a saída, e WF017 não ecoa campos de negócio de volta. NÃO havia nenhum \"MERGE - Resultado Followup\" de 5 entradas no arquivo do repositório (a convergência já usava o padrão seguro de fio direto para CODE - Consolidar Resultado Final, corrigido em passagem anterior do projeto) - se esse Merge existe na sua cópia do n8n Cloud, ela está dessincronizada do repositório; reimporte este arquivo por completo. Nenhuma regra de negócio (janelas de 30/45 dias, elegibilidade, idempotência) foi alterada.\n\nv1.2 (2026-08-13) — teste real no n8n Cloud após reimportar v1.1 encontrou um bug crítico não coberto na revisão anterior: EXEC - WF012 Comunicação recebeu 2 itens mas produziu só 1 sub-execução e 1 saída (o 2º cliente foi descartado silenciosamente). Causa raiz: o node Execute Workflow estava sem o parâmetro \"mode\", que no n8n tem 2 valores - \"once\" (\"Run once with all items\", default quando ausente - processa todos os itens de entrada numa única sub-execução em lote) e \"each\" (\"Run once for each item\" - uma sub-execução independente por item). Corrigido: mode:\"each\" adicionado em EXEC - WF012 Comunicação. Auditando a cadeia inteira de novo, EXEC - WF017 Logs tinha exatamente o mesmo risco estrutural (mesmo tipo de node, mesma ausência do parâmetro, também recebe N itens de CODE - Consolidar Resultado Final) - corrigido preventivamente com mode:\"each\" também, mesmo sem ter sido reportado como falho no teste real. waitForSubWorkflow:true preservado em ambos. IMPORTANTE: a chave/valor exata do parâmetro \"mode\" é minha melhor determinação técnica com base no seletor \"Mode\" da UI do node Execute Workflow - não pôde ser verificada ao vivo neste ambiente; confirme após reimportar que o campo \"Mode\" aparece como \"Run once for each item\" na UI do n8n Cloud para ambos os nodes. Harness de simulação atualizado (novo arquivo dedicado) para modelar explicitamente o comportamento do Execute Workflow a partir do próprio parâmetro mode do arquivo - a suíte anterior (41/41) nunca teria pego esse bug porque assumia N-entrada->N-saída em vez de testar a configuração real do node.\n\nv1.3 (2026-08-13) — teste real no n8n Cloud após reimportar v1.2: EXEC-WF012 e EXEC-WF017 corrigidos funcionaram (2 sub-execuções cada, confirmado), mas SET - Preparar Saída WF015 (após o 2º lote de WF017) devolveu clientes do 1º lote (CLI001/CLI-1786478139651) em vez do 2º (CLI_TESTE_WF015_02/03). Causa raiz: CODE - Consolidar Resultado Final é alimentado por 5 fontes que chegam em momentos diferentes (o ramo rápido de IF - Precisa Enviar=false chega antes; o ramo lento que passa por EXEC-WF012 mode=each chega depois) - isso faz o node disparar em múltiplos RUNS na mesma execução (Run 1 = 3 itens do ramo rápido, Run 2 = 2 itens do ramo lento), não apenas múltiplos itens num único run. itemMatching($itemIndex) não tem parâmetro de run e, no teste real, resolveu sempre contra o Run 0 (o primeiro), independente de qual run o SET estava processando - por isso o 2º lote via dados do 1º. Corrigido: SET - Preparar Saída WF015 trocou itemMatching($itemIndex) por $('CODE - Consolidar Resultado Final').all(0, $runIndex)[$itemIndex] nos 9 campos - all(branchIndex, runIndex) é o método nativo do n8n para acessar itens de um run específico de outro node, e $runIndex é o run do PRÓPRIO SET no momento da avaliação; como Consolidar -> WF017 -> SET é uma cadeia linear sem novo fan-in/fan-out entre eles, cada run do SET corresponde exatamente ao mesmo run de Consolidar, então $runIndex identifica o run certo em ambos os lados. SET - Followup Registrado e CODE - Erro Registro Followup NÃO foram alterados: eles referenciam CODE - Processar Resultado Envio, que nunca tem mais de 1 run nesta arquitetura (fica inteiramente dentro do ramo lento, sem convergência de tempos diferentes antes dele) - itemMatching($itemIndex) continua correto ali. WF017 (ADM-WF017-logs.json) NÃO foi alterado - a correção ficou inteiramente dentro do WF015, sem precisar que WF017 devolva contexto de negócio (confirmado lendo o arquivo real: WF017 sempre retornou e continua retornando apenas log_registrado/id_log/data_hora/erro). IMPORTANTE: a correspondência 1:1 entre $runIndex do SET e o run de Consolidar depende de nenhum node entre eles introduzir seu próprio fan-in/fan-out - válida nesta topologia atual, mas deve ser revisada se a cadeia Consolidar->WF017->SET for reestruturada no futuro. Novo harness dedicado modela all(branchIndex, runIndex) explicitamente com 2 runs (3 itens + 2 itens) e prova que a expressão antiga reproduzia o bug relatado.\n\nv1.4 (2026-08-13) — teste real de falha de gravação em FOLLOWUPS (aba temporariamente trocada para forçar erro) encontrou outro bug: GS - Registrar Followup recebeu 2 itens mas devolveu só 1 item no branch de erro - {\"error\": \"Sheet with name FOLLOWUPS_TESTE_ERRO_WF015 not found\"} -, sem NENHUMA informação de pairedItem (diferente do bug do WF011, onde pairedItem existia mas resolvia errado; aqui n8n lançou a exceção \"Paired item data for itemMatching from node 'GS - Registrar Followup' is unavailable\" ao tentar itemMatching). Causa: uma falha ESTRUTURAL/GLOBAL do Google Sheets (aba inexistente) ocorre antes de qualquer processamento por linha, então o node não tem como saber a qual das N linhas de entrada aquele único erro corresponde - não é um bug de configuração, é uma limitação real do node nesse cenário. Corrigido: CODE - Erro Registro Followup voltou ao modo \"Run Once for All Items\" (estava em \"Run Once for Each Item\") e para de tentar correlacionar erro->original via pairedItem/itemMatching/.item/.first(). Nova lógica por diferença: busca todos os follow-ups originais em $('CODE - Processar Resultado Envio').all(), busca quem foi REALMENTE gravado com sucesso em $('GS - Registrar Followup').all(0, $runIndex) (branch 0), e considera \"falho\" todo original cujo ID_FOLLOWUP não está entre os sucessos - gera 1 resultado de erro por original falho, nunca por item de erro recebido. Isso cobre tanto falha global (0 sucessos -> todos falharam) quanto falha parcial (alguns sucessos -> só quem não está lá falhou), sem depender de nenhuma correlação posicional. Mensagem de erro: com 1 único item de erro (caso confirmado real), usa essa mensagem para todos os originais falhos; com múltiplos itens de erro (não observado ainda, coberto defensivamente), junta as mensagens distintas. Acesso ao branch de sucesso envolto em try/catch (robusto a um branch que nunca disparou). Harness dedicado novo com os 4 casos pedidos (A: 2 originais/0 sucessos/1 erro global -> 2 erros; B: 3 originais/erro global -> 3 erros; C: 3 originais/2 sucessos/1 erro -> 1 erro só do que falhou; D: 1 original -> 1 erro) + regression guard de robustez e de não-desaparecimento de itens.",
+        "height": 620,
+        "width": 680
+      },
+      "id": "f57a0106-c21d-4ad4-95e8-c0c853b66a54",
+      "name": "NOTA - COM - WF015 - Follow-up v1.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -848,
-        496
+        12496,
+        4608
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Dados WF015": [
+      {
+        "json": {
+          "id_empresa": "EMP001"
+        }
+      }
+    ]
+  },
   "connections": {
     "TRG - Receber Dados WF015": {
       "main": [
         [
           {
-            "node": "SCHEDULE - Configurar recorrência [CONFIGURAR]",
+            "node": "CODE - Validar Empresa",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SCHEDULE - Configurar recorrência [CONFIGURAR]": {
+    "CODE - Validar Empresa": {
+      "main": [
+        [
+          {
+            "node": "IF - Empresa Válida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Empresa Válida": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Empresa WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Empresa WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "IF - Empresa E WhatsApp OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Empresa E WhatsApp OK": {
       "main": [
         [
           {
             "node": "GS - Buscar Clientes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Agendamentos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Followups Existentes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
@@ -428,7 +1125,69 @@
       "main": [
         [
           {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Followups Existentes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "MERGE - Dados Coletados": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Follow-ups Elegíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Follow-ups Elegíveis": {
+      "main": [
+        [
+          {
+            "node": "IF - Precisa Enviar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Precisa Enviar": {
+      "main": [
+        [
+          {
             "node": "EXEC - WF012 Comunicação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
@@ -439,7 +1198,80 @@
       "main": [
         [
           {
+            "node": "CODE - Processar Resultado Envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Resultado Envio": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Followup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Followup": {
+      "main": [
+        [
+          {
+            "node": "SET - Followup Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Registro Followup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Followup Registrado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Registro Followup": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Final": {
+      "main": [
+        [
+          {
             "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF015",
             "type": "main",
             "index": 0
           }
@@ -453,7 +1285,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "a8479d9a-46bf-4b96-8266-df83a4542e1f",
+  "versionId": "31ec5dd9-3b4e-4219-92e0-51cd61083c87",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
