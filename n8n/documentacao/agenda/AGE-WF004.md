@@ -1,97 +1,64 @@
-# AGE-WF004 — Consultar Disponibilidade
+# WF004 — AGE - WF004 - Consultar Disponibilidade
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`AGE-WF004-consultar-disponibilidade.json`](../../workflows/agenda/AGE-WF004-consultar-disponibilidade.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `AGE-WF004` |
-| Workflow | Consultar Disponibilidade |
-| Arquivo n8n | `AGE-WF004-consultar-disponibilidade.json` |
-| Status | Versionado no repositório |
-| Trigger | Subworkflow chamado pelo roteamento de atendimento e por fluxos que precisam validar horário. |
-| Última revisão desta documentação | 18/08/2026 |
+Calcular horários disponíveis para um serviço/profissional em uma data, cruzando regras operacionais do Google Sheets com ocupações do Google Calendar.
 
-## Objetivo
+## 2. Identificação técnica
 
-Calcular horários realmente disponíveis considerando serviço, duração, profissional, disponibilidade semanal, intervalos, agendamentos existentes e eventos do Google Calendar.
+- **Workflow:** `AGE - WF004 - Consultar Disponibilidade`
+- **ID funcional:** `WF004`
+- **Arquivo JSON:** `AGE-WF004-consultar-disponibilidade.json`
+- **Status `active` no JSON versionado:** `true`
+- **Gatilho:** `Execute Workflow Trigger`; pode ser chamado pelo WF003, WF005 e WF006.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa`, cliente e telefone.
-- `servico`, `data`, `hora_inicio` e/ou `periodo`.
-- `profissional` ou identificador do profissional, quando informado.
-- Contexto de origem e `phone_number_id`.
+## 3. Entradas
 
-## Fluxo principal
+- Contexto de empresa/cliente e agenda: `id_empresa`, `id_cliente`, `telefone_cliente`, `nome_cliente`, `servico`, `dados`, `data`, `hora_inicio`, `periodo`, `id_profissional`, `profissional`, `id_agendamento`, `google_event_id`, `origem`, `resposta_cliente`, `motivo_cancelamento`.
 
-1. Valida os dados mínimos da consulta.
-2. Busca serviços ativos da empresa e resolve o serviço solicitado.
-3. Obtém profissional(is) elegíveis e a disponibilidade cadastrada.
-4. Carrega agendamentos não cancelados do período.
-5. Obtém ocupações relevantes do Google Calendar.
-6. Gera slots em intervalos de 30 minutos respeitando duração do serviço e intervalo configurado.
-7. Remove conflitos com almoço/intervalos, Sheets e Calendar.
-8. Aplica filtro de período (manhã/tarde/noite) ou horário mínimo solicitado.
-9. Retorna até os primeiros horários disponíveis para apresentação ao cliente.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Consulta `SERVICOS` ativos da empresa.
+2. Consulta `PROFISSIONAIS` ativos da empresa.
+3. Consulta `DISPONIBILIDADES` ativas da empresa.
+4. Consulta `AGENDAMENTOS` da empresa.
+5. Consulta eventos do Google Calendar no intervalo da data solicitada.
+6. `CODE - Calcular Horários Livres` resolve serviço, profissional e data e calcula horários disponíveis considerando duração, disponibilidade, agendamentos e eventos do Calendar.
+7. O resultado é enviado ao WF017 para registro de log e depois formatado pelo SET de saída.
 
-```text
-AGE-WF004 → Google Sheets: SERVICOS, PROFISSIONAIS, DISPONIBILIDADES, AGENDAMENTOS → Google Calendar
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- O serviço é procurado primeiro por correspondência normalizada e depois por correspondência parcial.
+- Profissional pode ser resolvido por ID, por nome ou, quando aplicável, por profissional ativo disponível no conjunto retornado.
+- A data aceita formatos tratados pelo código, incluindo referências como hoje/amanhã e datas formatadas.
+- O cálculo cruza indisponibilidades já registradas em AGENDAMENTOS e eventos do Google Calendar.
+- O Calendar está configurado diretamente nos nodes com o calendário cacheado como **BeautyFlow - Studio Bella**; não é resolvido dinamicamente por empresa no JSON atual.
 
-- Google Sheets: `SERVICOS`, `PROFISSIONAIS`, `DISPONIBILIDADES`, `AGENDAMENTOS`
-- Google Calendar
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `SERVICOS`, `PROFISSIONAIS`, `DISPONIBILIDADES`, `AGENDAMENTOS`.
+- Google Calendar — calendário configurado diretamente no workflow.
+- WF017 — Logs.
 
-- Serviço precisa estar ativo.
-- Agendamentos cancelados não devem bloquear horário.
-- Duração e tempo de intervalo do serviço precisam entrar no cálculo.
-- Um slot só é livre se não conflitar com agenda interna nem Google Calendar.
-- Manhã: antes de 12h; tarde: aproximadamente 12h–18h; noite: a partir de 18h, conforme disponibilidade cadastrada.
-- Retorno deve diferenciar `OK` de `SEM_HORARIOS`.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Campos principais: `status`, empresa/cliente, serviço, data/período/profissional, `horarios[]`, `duracao_min`, `valor`, `resposta_cliente` e origem.
+- Status de negócio observados no código incluem `OK`, `SEM_HORARIOS`, `SERVICO_NAO_ENCONTRADO`, `SEM_PROFISSIONAL` e `DATA_INVALIDA`.
 
-- `status`, dados do serviço, duração, valor, profissional e data.
-- Lista `horarios` disponíveis e `resposta_cliente` pronta para comunicação.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Ausência de serviço/profissional/data válida é convertida em status de negócio pelo código de cálculo.
 
-- Erro técnico na busca de Sheets/Calendar não pode ser convertido em `SEM_HORARIOS`.
-- Serviço não encontrado/inativo deve gerar resultado de negócio específico.
-- Registrar erro técnico no WF017.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- Não envia mensagem diretamente ao cliente; sua responsabilidade é calcular e devolver disponibilidade.
 
-- Chamado por: `ATD-WF003`, `AGE-WF005`, `AGE-WF006` e outros fluxos que precisem validar agenda.
-- Não cria agendamento.
-- Logs: `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Dia totalmente livre.
-- [ ] Conflito com AGENDAMENTOS.
-- [ ] Conflito somente com Google Calendar.
-- [ ] Bloqueio por intervalo/almoço.
-- [ ] Período manhã/tarde/noite.
-- [ ] Serviço inativo ou inexistente.
-- [ ] Falha técnica do Google Sheets e do Google Calendar.
-
-## Cuidados na manutenção
-
-Não simplifique a disponibilidade para apenas uma fonte. A segurança do agendamento depende do cruzamento entre regras internas e ocupação real do calendário.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `AGE-WF004-consultar-disponibilidade.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
