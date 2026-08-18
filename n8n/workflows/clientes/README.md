@@ -1,89 +1,77 @@
-# Clientes
+# Clientes — WF008–WF009
 
-## Visão Geral
+> **Sincronização:** 18/08/2026  
+> **Fonte de verdade:** JSONs desta pasta.
 
-Esta pasta contém os workflows responsáveis pelo cadastro e atualização das informações dos clientes.
+## Objetivo
 
----
+Cadastrar e atualizar clientes sem duplicidade e sem apagar dados não informados.
 
-# Objetivos
+## Workflows
 
-- Criar cadastro
-- Atualizar dados
-- Evitar duplicidades
-- Manter histórico
+| ID | Função |
+|---|---|
+| WF008 | Cadastrar Cliente |
+| WF009 | Atualizar Cliente |
 
----
-
-# Workflows
-
-| Código | Workflow |
-|---------|----------|
-| CLI-WF008 | Cadastro Cliente |
-| CLI-WF009 | Atualizar Cadastro |
-
----
-
-# Fluxo
+## Dependências
 
 ```text
-Cliente
-
-↓
-
-Buscar Cadastro
-
-↓
-
-Existe?
-
-↓
-
-Não
-
-↓
-
-Criar
-
-↓
-
-Sim
-
-↓
-
-Atualizar
+WF008 ──► WF017
+WF009 ──► WF017
 ```
 
----
+WF008 também pode ser chamado pelo WF002 durante o atendimento.
 
-# Integrações
+## Integrações diretas
 
-- Google Sheets
-- Gemini
-- WhatsApp
+- Google Sheets;
+- n8n Execute Workflow para WF017.
 
----
+**Gemini e WhatsApp não são integrações diretas deste módulo.**
 
-# Regras
+## WF008 — Cadastro
 
-- Nunca duplicar cliente.
-- Utilizar telefone como chave principal.
-- Atualizar último atendimento.
-- Registrar data de criação.
+Responsabilidades:
 
----
+- validar/normalizar entrada;
+- consultar duplicidade;
+- distinguir "não encontrado" de erro técnico;
+- gerar ID do cliente;
+- criar o registro;
+- retornar resultado padronizado;
+- registrar log via WF017.
 
-# Estrutura
+### Comportamentos atuais conhecidos
 
-```
-clientes/
+O JSON atual ainda possui comportamentos que estão documentados como gaps de produto:
 
-├── README.md
-├── CLI-WF008.json
-└── CLI-WF009.json
-```
+- `PRIMEIRO_ATENDIMENTO` e `ULTIMO_ATENDIMENTO` são preenchidos no cadastro;
+- `ACEITA_MARKETING` pode ser criado como `SIM` pelo fluxo atual;
+- existe uso/fallback legado de `EMP001` em pontos do projeto.
 
----
+Não alterar a RN018/RN019/RN037 para "validar" esses comportamentos. Eles devem permanecer como gaps até decisão/correção.
 
-Versão: 5.0
-Projeto: BeautyFlow AI
+## WF009 — Atualização
+
+Responsabilidades:
+
+- localizar o cliente;
+- diferenciar cliente inexistente de erro técnico;
+- realizar atualização parcial;
+- preservar campos não informados;
+- registrar log.
+
+## Regras
+
+- não criar duplicidade;
+- preservar isolamento por empresa;
+- atualização parcial não pode apagar dados válidos;
+- erro técnico em Sheets não pode ser tratado como "cliente inexistente";
+- consentimento de marketing deve ter origem confiável.
+
+## Documentação
+
+- `n8n/documentacao/clientes/`
+- `docs/04-regras-de-negocio/`
+- `tests/Casos-de-Teste/CT008...CT009`
