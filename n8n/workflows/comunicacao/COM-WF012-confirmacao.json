@@ -49,42 +49,65 @@
             },
             {
               "name": "origem"
+            },
+            {
+              "name": "id_agendamento"
+            },
+            {
+              "name": "dados",
+              "type": "object"
             }
           ]
         }
       },
-      "id": "463d265e-1381-469b-8dbc-7642731a4617",
+      "id": "da7e1007-9cbd-45b8-87d1-8b0eb4de96f8",
       "name": "TRG - Receber Dados WF012",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -512,
-        1056
+        1008,
+        1008
       ]
     },
     {
       "parameters": {
-        "jsCode": "return items;"
+        "jsCode": "const e=$json;\n\nconst telefoneSanitizado=String(e.telefone_cliente||'').replace(/\\D/g,'');\nconst temTelefone=telefoneSanitizado.length>0;\nconst temPhoneNumberId=!!(e.phone_number_id&&String(e.phone_number_id).trim());\n\nconst FALLBACK='Olá! Recebemos sua solicitação e nossa equipe já está cuidando disso. Em breve entraremos em contato.';\nconst temRespostaCliente=!!(e.resposta_cliente&&String(e.resposta_cliente).trim());\nconst mensagemFinal=temRespostaCliente?String(e.resposta_cliente).trim():FALLBACK;\n\nlet podeEnviar=true;\nlet motivoErroValidacao='';\nif(!temTelefone){\n  podeEnviar=false;\n  motivoErroValidacao='Telefone do cliente vazio ou inválido.';\n}else if(!temPhoneNumberId){\n  podeEnviar=false;\n  motivoErroValidacao='phone_number_id ausente.';\n}\n\nreturn [{json:{\n  id_empresa:e.id_empresa||'EMP001',\n  id_cliente:e.id_cliente||'',\n  id_agendamento:e.id_agendamento||'',\n  telefone_cliente:telefoneSanitizado,\n  nome_cliente:e.nome_cliente||'Cliente',\n  mensagem_texto:e.mensagem_texto||'',\n  intencao:e.intencao||'',\n  confianca:e.confianca,\n  servico:e.servico||'',\n  data:e.data||'',\n  hora_inicio:e.hora_inicio||'',\n  periodo:e.periodo||'',\n  profissional:e.profissional||'',\n  origem:e.origem||'WHATSAPP',\n  phone_number_id:e.phone_number_id||'',\n  dados:e.dados||{},\n  resposta_cliente:e.resposta_cliente||'',\n  mensagem_final:mensagemFinal,\n  usou_fallback:!temRespostaCliente,\n  pode_enviar:podeEnviar,\n  motivo_erro_validacao:motivoErroValidacao\n}}];"
       },
-      "id": "5e23ec8e-1adc-425d-acc0-ed488eeb618f",
+      "id": "57c2a886-385f-4be8-988a-24fd0b54df00",
       "name": "CODE - Montar Mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
-        1056
+        1248,
+        1008
       ]
     },
     {
-      "parameters": {},
-      "id": "e24e931a-c395-4e87-823c-64a7f73f7b45",
-      "name": "HTTP - Enviar WhatsApp [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v21.0/' + $json.phone_number_id + '/messages' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  \"messaging_product\": \"whatsapp\",\n  \"to\": $json.telefone_cliente,\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": $json.mensagem_final\n  }\n}\n}}",
+        "options": {}
+      },
+      "id": "032a5fd0-547e-4938-9ee9-9554cc1ad2e5",
+      "name": "HTTP - Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
-        -32,
-        1056
-      ]
+        1696,
+        912
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7Eq0vXUlMKutWIr7",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -105,7 +128,23 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "ID_MENSAGEM": "={{ 'MSG' + Date.now() }}",
+            "ID_EMPRESA": "={{ $json.id_empresa }}",
+            "ID_CLIENTE": "={{ $json.id_cliente }}",
+            "ID_AGENDAMENTO": "={{ $json.id_agendamento }}",
+            "WHATSAPP_MESSAGE_ID": "={{ $json.whatsapp_message_id }}",
+            "DATA_HORA": "={{ new Date().toISOString() }}",
+            "TELEFONE": "={{ $json.telefone_cliente }}",
+            "DIRECAO": "={{ 'ENVIADA' }}",
+            "TIPO_MENSAGEM": "={{ 'text' }}",
+            "MENSAGEM": "={{ $json.mensagem_final }}",
+            "INTENCAO": "={{ $json.intencao }}",
+            "CONFIANCA": "={{ $json.confianca }}",
+            "STATUS_PROCESSAMENTO": "={{ $json.status }}",
+            "ERRO": "={{ $json.erro }}",
+            "PROCESSADO": "={{ $json.enviado ? 'SIM' : 'NAO' }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -249,20 +288,21 @@
         },
         "options": {}
       },
-      "id": "7203bea9-9ace-48b1-865a-7dbc53652ba2",
+      "id": "629b7e18-3925-447a-b274-167cfde28d54",
       "name": "GS - Registrar Mensagem Enviada",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        208,
-        1056
+        2368,
+        1008
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -275,7 +315,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('MERGE - Resultado Envio').first().json.id_empresa }}",
+            "workflow": "={{ 'WF012' }}",
+            "node": "={{ 'HTTP - Enviar WhatsApp' }}",
+            "tipo": "={{ $('MERGE - Resultado Envio').first().json.status === 'ENVIADA' ? 'SUCESSO' : ($('MERGE - Resultado Envio').first().json.status === 'ERRO_VALIDACAO' ? 'AVISO' : 'ERRO') }}",
+            "evento": "={{ 'ENVIO_WHATSAPP' }}",
+            "status": "={{ $('MERGE - Resultado Envio').first().json.status }}",
+            "mensagem": "={{ $('MERGE - Resultado Envio').first().json.mensagem_final }}",
+            "dados": "={{ JSON.stringify(Object.assign({}, $('MERGE - Resultado Envio').first().json, { erro_registro_sheets: $json.error || null })) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -367,28 +417,217 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "74326f6e-422e-4a11-b909-c0c4db281b63",
+      "id": "d22fabf7-108e-4306-8383-55199305bff7",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        448,
-        1056
+        2592,
+        1008
       ]
     },
     {
       "parameters": {
-        "content": "## COM - WF012 - Confirmação v5.0\n\nCentraliza mensagens enviadas.",
+        "content": "## COM - WF012 - Confirmação v5.1\n\nServico central de comunicacao: usa resposta_cliente diretamente (com fallback amigavel se vazio), envia via WhatsApp Cloud API (HTTP - Enviar WhatsApp) e registra em MENSAGENS + WF017. IMPORTANTE: configure a credencial 'WhatsApp Cloud API - Token [CONFIGURAR]' (Header Auth, Authorization: Bearer {token}) no node HTTP - Enviar WhatsApp antes de ativar. MERGE - Resultado Envio padroniza os 3 desfechos (sucesso, erro de validacao, erro da API) antes do registro em Sheets e do log; SET - Preparar Saida WF012 garante que o retorno do WF017 nao substitua a saida funcional (status/enviado/erro/whatsapp_message_id).",
         "height": 280,
         "width": 520
       },
-      "id": "49915702-6a08-4952-bd27-a371502ff0c6",
+      "id": "b15b10a6-e22f-451b-9c5c-8d5d02aea7cd",
       "name": "NOTA - COM - WF012 - Confirmação v5.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        384,
-        656
+        944,
+        576
+      ],
+      "width": 720,
+      "height": 220
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1",
+              "leftValue": "={{ $json.pode_enviar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1472,
+        1008
+      ],
+      "id": "e565c685-153d-4697-b4a7-648dd0c97678",
+      "name": "IF - Pode Enviar"
+    },
+    {
+      "parameters": {
+        "jsCode": "const m=$('CODE - Montar Mensagem').first().json;\nconst resp=$json||{};\nconst messageId=(resp.messages&&resp.messages[0]&&resp.messages[0].id)||'';\n\nreturn [{json:{...m,status:'ENVIADA',enviado:true,whatsapp_message_id:messageId,erro:''}}];"
+      },
+      "id": "45d1e461-d444-4ab2-9dbb-0ce6f7a49d76",
+      "name": "CODE - Processar Resposta WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const m=$('CODE - Montar Mensagem').first().json;\nconst err=$json.error||{};\n\nreturn [{json:{...m,status:'ERRO_WHATSAPP',enviado:false,whatsapp_message_id:'',erro:String((err&&err.message)||err||'Falha ao enviar mensagem via WhatsApp.')}}];"
+      },
+      "id": "e229f365-a21b-43a1-8c81-626e0050c03a",
+      "name": "CODE - Processar Erro WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const m=$json;\n\nreturn [{json:{...m,status:'ERRO_VALIDACAO',enviado:false,whatsapp_message_id:'',erro:m.motivo_erro_validacao||'Dados insuficientes para enviar a mensagem.'}}];"
+      },
+      "id": "37e42703-15a7-407a-95b2-1be1bb87021b",
+      "name": "CODE - Processar Erro Validação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "928ad21a-19c7-47f3-8c39-ee2009699aed",
+      "name": "MERGE - Resultado Envio",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2144,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "status",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "enviado",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.enviado }}",
+              "type": "boolean"
+            },
+            {
+              "id": "o3",
+              "name": "whatsapp_message_id",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.whatsapp_message_id }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "erro",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.erro }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "id_empresa",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "o6",
+              "name": "id_cliente",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o7",
+              "name": "id_agendamento",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.id_agendamento }}",
+              "type": "string"
+            },
+            {
+              "id": "o8",
+              "name": "telefone_cliente",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o9",
+              "name": "nome_cliente",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o10",
+              "name": "mensagem_final",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.mensagem_final }}",
+              "type": "string"
+            },
+            {
+              "id": "o11",
+              "name": "resposta_cliente",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.resposta_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o12",
+              "name": "phone_number_id",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "o13",
+              "name": "origem",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "o14",
+              "name": "dados",
+              "value": "={{ $('MERGE - Resultado Envio').first().json.dados || {} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c9e3127e-4023-402e-ad59-d9ab9f205412",
+      "name": "SET - Preparar Saída WF012",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2816,
+        1008
       ]
     }
   ],
@@ -409,14 +648,83 @@
       "main": [
         [
           {
-            "node": "HTTP - Enviar WhatsApp [CONFIGURAR]",
+            "node": "IF - Pode Enviar",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP - Enviar WhatsApp [CONFIGURAR]": {
+    "IF - Pode Enviar": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Processar Erro Validação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "CODE - Processar Resposta WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Processar Erro WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Resposta WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Erro WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Envio",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Erro Validação": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Envio",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "MERGE - Resultado Envio": {
       "main": [
         [
           {
@@ -435,17 +743,35 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF012",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "20a721d1-3197-458e-a9d1-8ae6bb1785b3",
+  "versionId": "d43f6452-a611-4f62-8a6e-2eb4a2bce18a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
