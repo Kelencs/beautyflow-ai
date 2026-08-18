@@ -1,135 +1,53 @@
 {
-  "name": "ADM - WF017 - Logs",
+  "name": "ADM - WF018 - Limpeza",
   "nodes": [
     {
       "parameters": {
-        "workflowInputs": {
-          "values": [
+        "inputSource": "passthrough"
+      },
+      "id": "2d5f8eb8-9b91-4135-90c9-6e6ce6e38f46",
+      "name": "TRG - Receber Dados WF018",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1280,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
             {
-              "name": "id_empresa"
-            },
-            {
-              "name": "workflow"
-            },
-            {
-              "name": "node"
-            },
-            {
-              "name": "tipo"
-            },
-            {
-              "name": "evento"
-            },
-            {
-              "name": "status"
-            },
-            {
-              "name": "mensagem"
-            },
-            {
-              "name": "dados"
-            },
-            {
-              "name": "execution_id"
+              "triggerAtHour": 3
             }
           ]
         }
       },
-      "id": "4507f72c-aca5-4eb0-bf84-e9d6e663fc8f",
-      "name": "TRG - Receber Evento de Log",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
+      "id": "543090c9-6821-4772-b212-56a1b5fa9a5b",
+      "name": "SCHEDULE - Limpeza Diária 03h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
-        -1568,
-        976
+        -1280,
+        496
       ]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "a1",
-              "name": "ID_LOG",
-              "value": "={{ 'LOG'+Date.now().toString().slice(-6) }}",
-              "type": "string"
-            },
-            {
-              "id": "a2",
-              "name": "DATA_HORA",
-              "value": "={{ $now.toISO() }}",
-              "type": "string"
-            },
-            {
-              "id": "a3",
-              "name": "ID_EMPRESA",
-              "value": "={{ $json.id_empresa || 'EMP001' }}",
-              "type": "string"
-            },
-            {
-              "id": "a4",
-              "name": "WORKFLOW",
-              "value": "={{ $json.workflow || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a5",
-              "name": "NODE",
-              "value": "={{ $json.node || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a6",
-              "name": "TIPO",
-              "value": "={{ String($json.tipo || 'INFO').toUpperCase() }}",
-              "type": "string"
-            },
-            {
-              "id": "a7",
-              "name": "EVENTO",
-              "value": "={{ $json.evento || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a8",
-              "name": "STATUS",
-              "value": "={{ String($json.status || 'PROCESSADO').toUpperCase() }}",
-              "type": "string"
-            },
-            {
-              "id": "a9",
-              "name": "MENSAGEM",
-              "value": "={{ $json.mensagem || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a10",
-              "name": "DADOS",
-              "value": "={{ JSON.stringify($json.dados || {}) }}",
-              "type": "string"
-            },
-            {
-              "id": "a11",
-              "name": "EXECUTION_ID",
-              "value": "={{ $json.execution_id || $execution.id || '' }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "const agora = DateTime.now().setZone('America/Sao_Paulo');\n\nreturn [{ json: {\n  // WF018, assim como WF016, é um workflow de escopo GLOBAL (não recebe id_empresa) -\n  // 'GLOBAL' é um valor explícito e documentado, nunca uma string vazia silenciosa.\n  id_empresa: 'GLOBAL',\n  agora_iso: agora.toISO(),\n  // Retenção de LOGS: decisão técnica conservadora e documentada (não há regra de negócio\n  // definida no projeto para retenção de logs) - mesma lógica usada nas janelas de detecção\n  // dos WF013/WF014/WF015. Ajustável conforme decisão futura do proprietário.\n  retencao_dias_logs: 90\n} }];\n"
       },
-      "id": "ada85148-7fb9-4180-a96b-dff619b578f8",
-      "name": "SET - Preparar Log",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "id": "082bd547-ee48-4ccf-a5f2-4da74c7029b6",
+      "name": "CODE - Preparar Limpeza",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -1296,
-        976
+        -1040,
+        384
       ]
     },
     {
       "parameters": {
-        "operation": "append",
         "documentId": {
           "__rl": true,
           "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
@@ -139,202 +57,516 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": 1780172632,
-          "mode": "list"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "ID_LOG": "={{ $json.ID_LOG }}",
-            "DATA_HORA": "={{ $json.DATA_HORA }}",
-            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
-            "WORKFLOW": "={{ $json.WORKFLOW }}",
-            "NODE": "={{ $json.NODE }}",
-            "TIPO": "={{ $json.TIPO }}",
-            "STATUS": "={{ $json.STATUS }}",
-            "EVENTO": "={{ $json.EVENTO }}",
-            "MENSAGEM": "={{ $json.MENSAGEM }}",
-            "DADOS": "={{ $json.DADOS }}",
-            "EXECUTION_ID": "={{ $json.EXECUTION_ID }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "ID_LOG",
-              "displayName": "ID_LOG",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "DATA_HORA",
-              "displayName": "DATA_HORA",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "ID_EMPRESA",
-              "displayName": "ID_EMPRESA",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "WORKFLOW",
-              "displayName": "WORKFLOW",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "NODE",
-              "displayName": "NODE",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "TIPO",
-              "displayName": "TIPO",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "EVENTO",
-              "displayName": "EVENTO",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "STATUS",
-              "displayName": "STATUS",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "MENSAGEM",
-              "displayName": "MENSAGEM",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "DADOS",
-              "displayName": "DADOS",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "EXECUTION_ID",
-              "displayName": "EXECUTION_ID",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
+          "value": 332914668,
+          "mode": "list",
+          "cachedResultName": "LOGS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=332914668"
         },
         "options": {}
       },
-      "id": "ee9d07ac-5485-4b32-b403-fa0e5ff815d4",
-      "name": "GS - Registrar Log",
+      "id": "99b9e24b-e6f1-4249-9af4-bb86c9fbb83e",
+      "name": "GS - Buscar Todos Os Logs",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -1056,
-        976
+        -800,
+        384
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Preparar Limpeza').first().json;\n\n// Este node só recebe o output de SUCESSO de \"GS - Buscar Todos Os Logs\" (o erro técnico\n// tem seu próprio caminho dedicado em \"CODE - Erro Leitura Logs\", com node_origem correto -\n// mesma correção aplicada ao WF016 nesta revisão, para não usar \"0 itens\" como proxy de erro).\n// alwaysOutputData garante >=1 item mesmo com a aba LOGS vazia (placeholder {}); linhas sem\n// ID_LOG (o placeholder) são descartadas abaixo, então \"linhas.length === 0\" aqui significa\n// genuinamente \"nenhum log gravado ainda\", não erro técnico.\nconst linhas = items.map(i => i.json).filter(x => x && x.ID_LOG);\n\nconst agora = ctx.agora_iso ? DateTime.fromISO(ctx.agora_iso, { zone: 'America/Sao_Paulo' }) : DateTime.now().setZone('America/Sao_Paulo');\nconst retencaoDias = ctx.retencao_dias_logs;\n\nconst expirados = linhas.filter(l => {\n  if (!l.DATA_HORA) return false; // sem data confiável, nunca excluir\n  const dataLog = DateTime.fromISO(String(l.DATA_HORA), { zone: 'America/Sao_Paulo' });\n  if (!dataLog.isValid) return false; // data ilegível, nunca excluir\n  if (typeof l.row_number !== 'number') return false; // sem o número exato da linha, nunca excluir\n  const idadeDias = agora.diff(dataLog, 'days').days;\n  return idadeDias > retencaoDias;\n});\n\n// Ordena do maior row_number para o menor: como cada exclusão desloca as linhas\n// seguintes para cima, processar do fim para o começo garante que os row_number já\n// calculados aqui continuem válidos para os itens ainda não processados neste mesmo lote.\nexpirados.sort((a, b) => b.row_number - a.row_number);\n\nif (expirados.length === 0) {\n  return [{ json: { ...ctx, tem_expirados: false, limpeza_erro: '', total_logs_lidos: linhas.length } }];\n}\n\nreturn expirados.map(l => ({ json: {\n  ...ctx, tem_expirados: true, limpeza_erro: '', total_logs_lidos: linhas.length,\n  row_number_excluir: l.row_number, id_log_excluir: l.ID_LOG\n} }));\n"
+      },
+      "id": "4f42a9d7-8c72-485a-a8dd-44c67c571bff",
+      "name": "CODE - Selecionar Logs Expirados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Preparar Limpeza').first().json;\nconst err = $json.error || {};\n\nreturn [{ json: {\n  ...ctx, tem_expirados: false,\n  node_origem: 'GS - Buscar Todos Os Logs',\n  limpeza_erro: String((err && err.message) || err || 'Falha técnica ao ler a aba LOGS para aplicar a retenção.')\n} }];\n"
+      },
+      "id": "e86e2694-89b9-4146-a096-e4359cdccd9f",
+      "name": "CODE - Erro Leitura Logs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.tem_expirados }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1ec7a918-79bb-4b04-95d4-55fbbad2856d",
+      "name": "IF - Tem Logs Expirados",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -320,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 332914668,
+          "mode": "list",
+          "cachedResultName": "LOGS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=332914668"
+        },
+        "startIndex": "={{ $json.row_number_excluir }}"
+      },
+      "id": "92828dd6-45eb-4eb0-ab06-b162ed1500a9",
+      "name": "GS - Excluir Log Expirado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -80,
+        288
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "parameters": {},
-      "id": "df22c6eb-06c3-4f8c-9f74-70db74d63b36",
-      "name": "OUT - Log Registrado",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "jsCode": "// Mesmo padrão simples e seguro já usado em ADM-WF016 (CODE - Marcar Exclusão OK/Falhou):\n// apenas contabiliza, sem tentar referenciar de volta o item de origem por índice\n// (evita ambiguidade de pareamento quando múltiplos logs expirados são excluídos na mesma\n// execução em modo \"run once for all items\").\nreturn items.map(() => ({ json: { excluido: true } }));\n"
+      },
+      "id": "bc4b7579-fc57-4d91-b4d3-540d4474d90c",
+      "name": "CODE - Marcar Log Excluído OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -816,
-        976
+        160,
+        224
       ]
     },
     {
       "parameters": {
-        "content": "## WF017 v5.0\n\nGrava exclusivamente na aba LOGS.",
-        "height": 280,
-        "width": 520
+        "jsCode": "return items.map(() => ({ json: { excluido: false } }));\n"
       },
-      "id": "3623e7f2-ba1c-4002-9240-b60979feaab3",
-      "name": "NOTA - WF017 v5.0",
+      "id": "1310728c-c1a8-402c-bf33-196d67b28130",
+      "name": "CODE - Marcar Log Excluído Falhou",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Preparar Limpeza').first().json;\n\nlet excluidos = 0, falhas = 0;\nlet limpezaErro = '';\nlet totalLogsLidos;\nlet nodeOrigemHerdado = '';\n\nfor (const it of items) {\n  const j = it.json;\n  if (j.limpeza_erro) limpezaErro = j.limpeza_erro;\n  if (typeof j.total_logs_lidos === 'number') totalLogsLidos = j.total_logs_lidos;\n  if (j.node_origem) nodeOrigemHerdado = j.node_origem;\n  if (j.excluido === true) excluidos++;\n  else if (j.excluido === false) falhas++;\n  // \"excluido\" ausente => ramo \"sem expirados\" ou \"erro de leitura\", não conta.\n}\n\nlet node_origem;\nif (limpezaErro) {\n  // Erro ocorreu na leitura da aba LOGS (node_origem já veio marcado por CODE - Erro Leitura Logs).\n  node_origem = nodeOrigemHerdado || 'GS - Buscar Todos Os Logs';\n} else if (falhas > 0) {\n  node_origem = 'GS - Excluir Log Expirado';\n} else {\n  node_origem = 'CODE - Selecionar Logs Expirados';\n}\n\nconst evento_resultado = limpezaErro ? 'ERRO_LIMPEZA' : 'LIMPEZA_CONCLUIDA';\n\nreturn [{ json: {\n  id_empresa: ctx.id_empresa,\n  agora_iso: ctx.agora_iso,\n  retencao_dias_logs: ctx.retencao_dias_logs,\n  evento_resultado,\n  node_origem,\n  limpeza_erro: limpezaErro,\n  total_logs_lidos: totalLogsLidos,\n  logs_excluidos: excluidos,\n  logs_com_falha_exclusao: falhas\n} }];\n"
+      },
+      "id": "41c93e43-0959-4b26-a3b2-5da378d877cc",
+      "name": "CODE - Consolidar Resultado Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "9ExZcr3lVgCtMqO0",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
+          "cachedResultName": "My project — ADM - WF017 - Logs"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "ADM-WF018",
+            "node": "={{ $json.node_origem || 'ORIGEM_NAO_IDENTIFICADA' }}",
+            "tipo": "={{ $json.evento_resultado === 'LIMPEZA_CONCLUIDA' ? 'INFO' : 'ERRO' }}",
+            "evento": "={{ $json.evento_resultado }}",
+            "status": "={{ $json.evento_resultado === 'LIMPEZA_CONCLUIDA' ? 'SUCESSO' : 'FALHA' }}",
+            "mensagem": "={{ $json.evento_resultado === 'LIMPEZA_CONCLUIDA' ? ('Limpeza de LOGS concluída (retenção: ' + $json.retencao_dias_logs + ' dias). Logs excluídos: ' + $json.logs_excluidos + '. Falhas na exclusão: ' + ($json.logs_com_falha_exclusao || 0) + '.') : $json.limpeza_erro }}",
+            "dados": "={{ JSON.stringify({ retencao_dias_logs: $json.retencao_dias_logs, total_logs_lidos: $json.total_logs_lidos, logs_excluidos: $json.logs_excluidos, logs_com_falha_exclusao: $json.logs_com_falha_exclusao }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "evento",
+              "displayName": "evento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "7bfaf64f-2bb0-4532-930b-5a3bb912b5aa",
+      "name": "EXEC - WF017 Logs",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_empresa || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.evento_resultado || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "data_hora",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.agora_iso || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "retencao_dias_logs",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.retencao_dias_logs || 0 }}"
+            },
+            {
+              "id": "o5",
+              "name": "logs_excluidos",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.logs_excluidos || 0 }}"
+            },
+            {
+              "id": "o6",
+              "name": "logs_com_falha_exclusao",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.logs_com_falha_exclusao || 0 }}"
+            },
+            {
+              "id": "o7",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.limpeza_erro || '' }}"
+            },
+            {
+              "id": "o8",
+              "name": "execution_id",
+              "type": "string",
+              "value": "={{ $execution.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f037b0e9-28cd-4dde-91fa-7675688e7561",
+      "name": "SET - Preparar Saída WF018",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ADM - WF018 - Limpeza v1.0\n\nEste arquivo era uma cópia corrompida do WF017 (mesmo id e nome internos) sem NENHUMA lógica de limpeza própria - reconstruído do zero nesta revisão administrativa (WF016/17/18).\n\nEscopo desta versão: limpeza EXCLUSIVA de registros técnicos antigos na aba LOGS (retenção de 90 dias, decisão técnica conservadora e documentada, sem regra de negócio definida no projeto - ajustável). Critério de exclusão explícito: DATA_HORA do log é anterior a hoje-90 dias E o número exato da linha na planilha é conhecido (nunca exclui sem os dois).\n\nNUNCA toca em dados críticos do negócio: AGENDAMENTOS, CLIENTES, PAGAMENTOS, COBRANCAS, EMPRESAS, DISPONIBILIDADES, PROFISSIONAIS, SERVICOS, FOLLOWUPS, LEMBRETES, PESQUISAS são inacessíveis a este workflow (nenhum node referencia essas abas).\n\nFora de escopo nesta revisão (decisão pendente do proprietário, não implementado): possível limpeza futura de MENSAGENS (histórico de envios WhatsApp, cresce indefinidamente) e/ou IA_MEMORIA (contexto de conversa da IA - requer decisão cuidadosa, já que apagar contexto ativo pode quebrar conversas em andamento). Ambas identificadas durante a análise, mas exigem regra de negócio própria antes de qualquer exclusão.\n\nAÇÃO MANUAL NECESSÁRIA ANTES DO TESTE REAL:\n1. Verificar na UI do n8n os parâmetros exatos do node \"GS - Excluir Log Expirado\" (operation/startIndex/numberOfRows) - construídos com base no schema documentado do Google Sheets node v4.6, NÃO testados ao vivo nesta sessão (mesma ressalva já feita para os nodes DRIVE do WF016). Se a operação de exclusão de linha por índice não estiver disponível como \"delete\"/startIndex/numberOfRows na versão atual da UI, reconfigure para a operação equivalente (ex.: \"Delete Rows or Columns\") mantendo o restante do workflow intacto.\n2. Confirmar que \"GS - Buscar Todos Os Logs\" retorna o campo row_number em cada linha (comportamento padrão do node Google Sheets do n8n) - é ele que permite excluir a linha exata com segurança.\n3. Testar primeiro com poucos logs antigos (ex.: inserir manualmente 1 linha de teste na aba LOGS com DATA_HORA de 100+ dias atrás) antes de rodar contra a aba LOGS real de produção.\n\nRegistra todo resultado (sucesso ou falha) no WF017, exatamente como WF016.",
+        "height": 796,
+        "width": 780
+      },
+      "id": "b058efe1-3dd6-4e03-add5-54beb67968e4",
+      "name": "NOTA - ADM - WF018 - Limpeza v1.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -672,
-        576
+        -1248,
+        -624
       ]
     }
   ],
   "pinData": {},
   "connections": {
-    "TRG - Receber Evento de Log": {
+    "TRG - Receber Dados WF018": {
       "main": [
         [
           {
-            "node": "SET - Preparar Log",
+            "node": "CODE - Preparar Limpeza",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SET - Preparar Log": {
+    "SCHEDULE - Limpeza Diária 03h": {
       "main": [
         [
           {
-            "node": "GS - Registrar Log",
+            "node": "CODE - Preparar Limpeza",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Registrar Log": {
+    "CODE - Preparar Limpeza": {
       "main": [
         [
           {
-            "node": "OUT - Log Registrado",
+            "node": "GS - Buscar Todos Os Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Todos Os Logs": {
+      "main": [
+        [
+          {
+            "node": "CODE - Selecionar Logs Expirados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Leitura Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Selecionar Logs Expirados": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem Logs Expirados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Leitura Logs": {
+      "main": [
+        [
+          {
+            "node": "IF - Tem Logs Expirados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Tem Logs Expirados": {
+      "main": [
+        [
+          {
+            "node": "GS - Excluir Log Expirado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Excluir Log Expirado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Marcar Log Excluído OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Marcar Log Excluído Falhou",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Marcar Log Excluído OK": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Marcar Log Excluído Falhou": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Final": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF018",
             "type": "main",
             "index": 0
           }
@@ -342,19 +574,19 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "ce846acf-a8d4-47d4-818c-7e426fdc11e9",
+  "versionId": "d900c875-5774-4d4f-b80e-1727e9a9ee1b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
   },
   "nodeGroups": [],
-  "id": "9ExZcr3lVgCtMqO0",
+  "id": "am3YmKwZbCLPYop9",
   "tags": [
     {
       "updatedAt": "2026-08-04T16:34:13.092Z",
@@ -363,16 +595,16 @@
       "name": "Google Sheets"
     },
     {
+      "updatedAt": "2026-08-05T13:12:42.011Z",
+      "createdAt": "2026-08-05T13:12:42.011Z",
+      "id": "gqPlLgXC6WdvNzFJ",
+      "name": "Sistema"
+    },
+    {
       "updatedAt": "2026-08-05T15:31:46.885Z",
       "createdAt": "2026-08-05T15:31:46.885Z",
       "id": "mOSdbjaHHUnyV2Wz",
       "name": "Administração"
-    },
-    {
-      "updatedAt": "2026-08-05T15:32:03.425Z",
-      "createdAt": "2026-08-05T15:32:03.425Z",
-      "id": "wOHASqEFw5v66HVH",
-      "name": "Logs"
     }
   ]
 }
