@@ -1,699 +1,401 @@
-# n8n - BeautyFlow
+# n8n — BeautyFlow AI
 
-> **Versão:** 1.0.0  
-> **Projeto:** BeautyFlow  
+> **Versão:** 3.0  
+> **Sincronização:** 18/08/2026  
 > **Plataforma:** n8n Cloud  
-> **Objetivo:** Centralizar toda a automação do sistema BeautyFlow, responsável pelo atendimento inteligente via WhatsApp, gerenciamento de clientes, agenda, financeiro, comunicação e administração.
+> **Workflows versionados:** WF001–WF018  
+> **Fonte de verdade da implementação:** JSONs em `n8n/workflows/`
+
+## 1. Objetivo
+
+A pasta `n8n/` contém a camada de automação operacional do BeautyFlow AI.
+
+Os workflows atuais executam:
+
+- entrada e atendimento via WhatsApp;
+- interpretação por Google Gemini;
+- consulta/criação/reagendamento/cancelamento de agenda;
+- cadastro e atualização de clientes;
+- registro de pagamentos e cobrança;
+- envio de mensagens, lembretes, pesquisas e follow-ups;
+- backup, logging e retenção de logs.
+
+Quando houver divergência entre documentação e JSON, **o JSON versionado representa o comportamento implementado atual**. A documentação deve ser corrigida na mesma alteração.
+
+A intenção do produto continua sendo definida pelos RF/RNF/RN/UC/US em `docs/`.
 
 ---
 
-# Sumário
+## 2. Estrutura
 
-- Visão Geral
-- Arquitetura
-- Estrutura da Pasta
-- Organização dos Workflows
-- Fluxo Geral da Automação
-- Módulos
-- Convenção de Nomenclatura
-- Dependências
-- Credenciais Utilizadas
-- Variáveis Globais
-- Estrutura dos Workflows
-- Integrações
-- Padrão de Desenvolvimento
-- Boas Práticas
-- Versionamento
-- Processo de Alteração
-- Processo de Backup
-- Processo de Deploy
-- Checklist antes de Publicar
-- Roadmap
-- Responsabilidades
-
----
-
-# Visão Geral
-
-A pasta **n8n** contém todos os workflows utilizados pelo BeautyFlow.
-
-Todo o funcionamento do sistema depende destes workflows.
-
-São responsáveis por:
-
-- Receber mensagens do WhatsApp
-- Interpretar intenções utilizando IA
-- Consultar disponibilidade
-- Criar agendamentos
-- Reagendar
-- Cancelar atendimentos
-- Atualizar clientes
-- Registrar pagamentos
-- Enviar confirmações
-- Enviar lembretes
-- Enviar pesquisas
-- Executar backups
-- Registrar logs
-- Executar rotinas automáticas
-
----
-
-# Arquitetura
-
-```
-Cliente
-
-      │
-
-WhatsApp Cloud API
-
-      │
-
-Webhook (WF001)
-
-      │
-
-IA Atendimento (WF002)
-
-      │
-
-Identificar Intenção (WF003)
-
-      │
-
-──────────────┬───────────────────┬─────────────────────
-
-Agenda       Clientes        Financeiro
-
-──────────────┴───────────────────┴─────────────────────
-
-Comunicação
-
-      │
-
-Administração
-
-```
-
----
-
-# Estrutura da Pasta
-
-```
+```text
 n8n/
-
-├── workflows/
-├── documentacao/
-├── templates/
 ├── backups/
 ├── credentials/
+├── documentacao/
+│   ├── atendimento/
+│   ├── agenda/
+│   ├── clientes/
+│   ├── financeiro/
+│   ├── comunicacao/
+│   └── administracao/
+├── templates/
+├── workflows/
+│   ├── atendimento/
+│   ├── agenda/
+│   ├── clientes/
+│   ├── financeiro/
+│   ├── comunicacao/
+│   └── administracao/
 └── README.md
 ```
 
----
+### Fontes relacionadas
 
-# Organização dos Workflows
-
-## Atendimento
-
-```
-ATD-WF001 - Receber WhatsApp
-ATD-WF003 - Identificar Intenção
-```
-
-Responsável por:
-
-- Receber mensagens
-- Validar webhook
-- Identificar cliente
-- Classificar intenção
-- Encaminhar para o módulo correto
+- documentação técnica consolidada: `n8n/documentacao/README.md`;
+- documentação individual: `n8n/documentacao/<modulo>/`;
+- testes: `tests/`;
+- requisitos e arquitetura: `docs/`.
 
 ---
 
-## Agenda
+## 3. Catálogo dos workflows
 
-```
-AGE-WF004 - Consultar Disponibilidade
+| ID | Módulo | Função | Arquivo |
+|---|---|---|---|
+| WF001 | Atendimento | Receber WhatsApp | `ATD-WF001-receber-whatsapp.json` |
+| WF002 | Atendimento | IA Atendimento | `ATD-WF002-ia-atendimento.json` |
+| WF003 | Atendimento | Identificar Intenção | `ATD-WF003-identificar-intencao.json` |
+| WF004 | Agenda | Consultar Disponibilidade | `AGE-WF004-consultar-disponibilidade.json` |
+| WF005 | Agenda | Criar Agendamento | `AGE-WF005-criar-agendamento.json` |
+| WF006 | Agenda | Reagendar | `AGE-WF006-reagendar.json` |
+| WF007 | Agenda | Cancelar | `AGE-WF007-cancelar.json` |
+| WF008 | Clientes | Cadastrar Cliente | `CLI-WF008-cadastrar-cliente.json` |
+| WF009 | Clientes | Atualizar Cliente | `CLI-WF009-atualizar-cliente.json` |
+| WF010 | Financeiro | Registrar Pagamento | `FIN-WF010-registrar-pagamento.json` |
+| WF011 | Financeiro | Cobrança | `FIN-WF011-cobranca.json` |
+| WF012 | Comunicação | Envio centralizado WhatsApp | `COM-WF012-confirmacao.json` |
+| WF013 | Comunicação | Lembrete | `COM-WF013-lembrete.json` |
+| WF014 | Comunicação | Pesquisa | `COM-WF014-pesquisa.json` |
+| WF015 | Comunicação | Follow-up | `COM-WF015-follow-up.json` |
+| WF016 | Administração | Backup | `ADM-WF016-backup.json` |
+| WF017 | Administração | Logs | `ADM-WF017-logs.json` |
+| WF018 | Administração | Limpeza de LOGS | `ADM-WF018-limpeza.json` |
 
-AGE-WF005 - Criar Agendamento
-
-AGE-WF006 - Reagendar Atendimento
-
-AGE-WF007 - Cancelar Atendimento
-```
-
-Responsável por:
-
-- Consultar Google Calendar
-- Validar horários
-- Criar eventos
-- Atualizar agenda
-- Cancelar eventos
-
----
-
-## Clientes
-
-```
-CLI-WF008 - Cadastrar Cliente
-
-CLI-WF009 - Atualizar Cliente
-```
-
-Responsável por:
-
-- Cadastro
-- Atualização
-- Consulta
-- Histórico
+> O campo `active` exportado nos JSONs não deve ser tratado como evidência suficiente do estado atual no n8n Cloud.
 
 ---
 
-## Financeiro
+## 4. Arquitetura funcional atual
 
+### 4.1 Entrada e atendimento
+
+```text
+WhatsApp Cloud API
+       │
+       ▼
+WF001 — webhook / normalização
+       │
+       ▼
+WF002 — cliente + contexto + Gemini
+       │
+       ├──► WF008 — cadastro quando necessário
+       │
+       ▼
+WF003 — roteamento
+       ├──► WF005 — AGENDAR
+       ├──► WF004 — CONSULTAR_DISPONIBILIDADE
+       ├──► WF006 — REAGENDAR
+       ├──► WF007 — CANCELAR
+       └──► WF012 — fallback/resposta conversacional
 ```
-FIN-WF010 - Registrar Pagamento
 
-FIN-WF011 - Cobrança
+WF003 **não chama** Clientes, Financeiro, Administração ou todos os workflows genericamente. O roteamento acima corresponde ao desenho atual.
+
+### 4.2 Dependências de subworkflow
+
+```text
+WF004 ───────────────────────────────► WF017
+WF005 ──► WF004 ──► WF012 ──────────► WF017
+WF006 ──► WF004 ──► WF012 ──────────► WF017
+WF007 ─────────────► WF012 ──────────► WF017
+WF008 ───────────────────────────────► WF017
+WF009 ───────────────────────────────► WF017
+WF010 ───────────────────────────────► WF017
+WF011 ─────────────► WF012 ──────────► WF017
+WF012 ───────────────────────────────► WF017
+WF013 ─────────────► WF012 ──────────► WF017
+WF014 ─────────────► WF012 ──────────► WF017
+WF015 ─────────────► WF012 ──────────► WF017
+WF016 ───────────────────────────────► WF017
+WF018 ───────────────────────────────► WF017
 ```
 
-Responsável por:
-
-- Registrar pagamentos
-- Cobranças
-- Controle financeiro
+**WF001, WF002 e WF003 não chamam WF017 diretamente nos JSONs atuais.**
 
 ---
 
-## Comunicação
+## 5. Módulos
 
-```
-COM-WF012 - Confirmação
+### Atendimento — WF001–WF003
 
-COM-WF013 - Lembrete
+Entrada WhatsApp, normalização, identificação/cadastro de cliente, contexto, Gemini e roteamento.
 
-COM-WF014 - Pesquisa
+Ver: `workflows/atendimento/README.md`.
 
-COM-WF015 - Follow-up
-```
+### Agenda — WF004–WF007
 
-Responsável por:
+Disponibilidade, criação, reagendamento e cancelamento com Google Calendar e dados operacionais.
 
-- Mensagens automáticas
-- Lembretes
-- Pesquisas
-- Pós atendimento
+Ver: `workflows/agenda/README.md`.
+
+### Clientes — WF008–WF009
+
+Cadastro com prevenção de duplicidade e atualização parcial.
+
+Ver: `workflows/clientes/README.md`.
+
+### Financeiro — WF010–WF011
+
+Pagamentos transacionais e cobrança de saldo pendente.
+
+Ver: `workflows/financeiro/README.md`.
+
+### Comunicação — WF012–WF015
+
+Envio centralizado no WhatsApp, lembrete, pesquisa e follow-up.
+
+Ver: `workflows/comunicacao/README.md`.
+
+### Administração — WF016–WF018
+
+Backup, logging e retenção controlada.
+
+Ver: `workflows/administracao/README.md`.
 
 ---
 
-## Administração
+## 6. Integrações atuais
 
-```
-ADM-WF016 - Backup
+| Integração | Uso direto |
+|---|---|
+| WhatsApp Cloud API / Meta | WF001, WF012 |
+| Google Gemini | WF002 |
+| Google Calendar | WF004, WF005, WF006, WF007 |
+| Google Sheets | WF002, WF004–WF015, WF017, WF018 |
+| Google Drive | WF016 |
 
-ADM-WF017 - Logs
+WF005, WF006, WF007, WF011, WF013, WF014 e WF015 usam WhatsApp **indiretamente**, por meio do WF012.
 
-ADM-WF018 - Limpeza
-```
-
-Responsável por:
-
-- Backup
-- Logs
-- Limpeza
-- Manutenção
+WF001, WF003 e WF016 não usam node Google Sheets diretamente.
 
 ---
 
-# Fluxo Geral
+## 7. Dados operacionais
 
-```
-Cliente
+A automação utiliza, conforme cada fluxo:
 
-↓
+- `AGENDAMENTOS`
+- `CLIENTES`
+- `COBRANCAS`
+- `DISPONIBILIDADES`
+- `EMPRESAS`
+- `FOLLOWUPS`
+- `IA_MEMORIA`
+- `LEMBRETES`
+- `LOGS`
+- `MENSAGENS`
+- `PAGAMENTOS`
+- `PESQUISAS`
+- `PROFISSIONAIS`
+- `SERVICOS`
 
-WhatsApp
+### Multiempresa
 
-↓
+`ID_EMPRESA` deve ser preservado nos contratos e filtros aplicáveis.
 
-WF001
+Entretanto, alguns JSONs atuais ainda possuem `EMP001` fixo ou como fallback. Isso é **comportamento legado conhecido**, não garantia de isolamento SaaS completo.
 
-↓
+Não adicionar novos fallbacks silenciosos de tenant.
 
-WF002
+---
 
-↓
+## 8. Comportamentos atuais importantes
 
-WF003
+Estes fatos devem permanecer documentados até o código mudar:
 
-↓
+- WF001 normaliza o payload com `id_empresa: 'EMP001'`.
+- WF001 responde ao `hub.challenge`; o JSON atual não contém comparação explícita de `hub.verify_token` antes da resposta.
+- WF002 e outros fluxos ainda possuem fallbacks para `EMP001`.
+- WF004–WF007 possuem configuração do Google Calendar diretamente nos JSONs atuais.
+- WF013, WF014 e WF015 não possuem Schedule/Cron interno; dependem de acionamento externo.
+- WF016 possui Schedule de 02:00 no JSON e realiza backup via Google Drive.
+- WF018 possui Schedule de 03:00 e aplica retenção da aba `LOGS`.
+- O `active` do JSON não é evidência de execução real no Cloud.
 
-Escolha da intenção
+Esses itens são gaps/configurações atuais e **não devem ser ocultados na documentação**.
 
-↓
+---
 
-Agenda
+## 9. Padrões de implementação
 
-↓
+Quando aplicável:
 
-Clientes
-
-↓
-
-Financeiro
-
-↓
-
+```text
+Trigger
+  ↓
+Normalização / validação
+  ↓
+Busca de dados
+  ↓
+Erro técnico x resultado de negócio
+  ↓
+Processamento / persistência
+  ↓
 Comunicação
-
-↓
-
-Logs
-
-↓
-
-Fim
+  ↓
+Log
+  ↓
+Saída
 ```
+
+Princípios:
+
+- diferenciar zero itens legítimo de erro técnico;
+- preservar correlação com múltiplos itens;
+- manter `ID_EMPRESA` nos fluxos tenant-scoped;
+- não deixar WF017 substituir a saída funcional do chamador;
+- pagamentos são históricos/transacionais;
+- aplicar idempotência em cobrança, lembrete, pesquisa e follow-up;
+- centralizar envio WhatsApp no WF012 quando o fluxo precisar enviar texto;
+- usar WF017 apenas nos fluxos que efetivamente o chamam.
 
 ---
 
-# Fluxo de Dependências
+## 10. Nomenclatura
 
-```
-WF001
- │
- ▼
-WF002
- │
- ▼
-WF003
+### Workflows
 
- ├──► WF004
- │
- ├──► WF005
- │
- ├──► WF006
- │
- ├──► WF007
- │
- ├──► WF008
- │
- ├──► WF009
- │
- ├──► WF010
- │
- ├──► WF011
- │
- ├──► WF012
- │
- ├──► WF013
- │
- ├──► WF014
- │
- ├──► WF015
- │
- ├──► WF016
- │
- ├──► WF017
- │
- └──► WF018
-```
-
----
-
-# Convenção de Nomenclatura
-
-Todos os workflows seguem o padrão:
-
-```
+```text
 <MODULO>-WF<NUMERO>-<DESCRICAO>
 ```
 
-Exemplo:
-
-```
-AGE-WF004-consultar-disponibilidade
-```
-
----
-
-# Prefixos
-
 | Prefixo | Módulo |
-|----------|---------|
-| ATD | Atendimento |
-| AGE | Agenda |
-| CLI | Clientes |
-| FIN | Financeiro |
-| COM | Comunicação |
-| ADM | Administração |
+|---|---|
+| `ATD` | Atendimento |
+| `AGE` | Agenda |
+| `CLI` | Clientes |
+| `FIN` | Financeiro |
+| `COM` | Comunicação |
+| `ADM` | Administração |
+
+### Nodes
+
+Prefixos atuais:
+
+- `TRG`
+- `SET`
+- `CODE`
+- `IF`
+- `SWITCH`
+- `GS`
+- `GC`
+- `HTTP`
+- `EXEC`
+- `MERGE`
+- `RESP`
+- `DRIVE`
+
+Novos nodes devem receber nomes descritivos. Nomes genéricos legados não devem ser copiados como padrão.
 
 ---
 
-# Convenções
+## 11. Credenciais e segredos
 
-Todos os nós devem possuir nomes claros.
+Nunca versionar:
 
-Exemplo:
+- tokens Meta;
+- API keys;
+- senhas;
+- client secrets;
+- private keys;
+- JWTs;
+- Supabase Secret Key futura.
 
-✔ Buscar Cliente
+Utilizar credenciais do n8n e mecanismos server-side apropriados.
 
-✔ Criar Agendamento
-
-✔ Atualizar Google Calendar
-
-Evitar:
-
-Node1
-
-HTTP1
-
-Google2
-
-Function3
+Valores operacionais não devem ser classificados automaticamente como "credencial". Parâmetros de negócio/configuração devem ter fonte adequada e rastreável.
 
 ---
 
-# Credenciais Utilizadas
+## 12. Backup e retenção
 
-## WhatsApp Cloud API
+Dois conceitos são diferentes:
 
-Utilizada por:
+1. `n8n/backups/`: artefatos versionados quando aplicável.
+2. WF016: rotina operacional que copia a planilha principal para Google Drive e remove backups elegíveis com mais de 30 dias.
 
-- WF001
-- WF012
-- WF013
-- WF014
-- WF015
+Logs:
 
----
+- WF018 pode remover da aba `LOGS` registros elegíveis com mais de 90 dias.
 
-## Google Calendar
+Portanto, a regra correta **não é** "nunca excluir logs/backups".
 
-Utilizada por:
+A regra correta é:
 
-- WF004
-- WF005
-- WF006
-- WF007
+> excluir somente pelas políticas de retenção implementadas e validadas.
 
 ---
 
-## Google Sheets
+## 13. Processo de alteração
 
-Utilizada por:
+Ao alterar um workflow:
 
-- WF002
-- WF004
-- WF005
-- WF006
-- WF007
-- WF008
-- WF009
-- WF010
-- WF011
-
----
-
-## Gemini
-
-Utilizada por:
-
-- WF002
+1. identificar chamadores e dependentes;
+2. revisar JSON e documentação individual;
+3. validar dados/integrações afetados;
+4. alterar e testar no ambiente apropriado;
+5. exportar o JSON;
+6. substituir o arquivo em `n8n/workflows/`;
+7. atualizar `n8n/documentacao/<modulo>/`;
+8. atualizar README do módulo se necessário;
+9. atualizar `n8n/README.md` se a arquitetura global mudar;
+10. atualizar RF/RN/UC/US se houver mudança funcional;
+11. atualizar CT/evidência/matriz em `tests/`;
+12. revisar segredos;
+13. commit/PR.
 
 ---
 
-# Variáveis Globais
+## 14. Checklist JSON ↔ documentação
 
-Exemplo:
-
-```
-EMPRESA_ID
-
-CALENDAR_ID
-
-GOOGLE_SHEET_ID
-
-TIMEZONE
-
-HORARIO_FUNCIONAMENTO
-
-TOKEN_META
-
-PHONE_NUMBER_ID
-```
-
-Nunca gravar estas variáveis dentro dos workflows.
-
-Devem permanecer nas credenciais.
+- [ ] Nome do workflow confere.
+- [ ] Trigger descrito existe.
+- [ ] Entradas correspondem ao contrato.
+- [ ] Dependências `Execute Workflow` estão corretas.
+- [ ] Integrações citadas existem.
+- [ ] Abas Sheets citadas existem no fluxo.
+- [ ] Regras descritas aparecem no código.
+- [ ] Saídas/status correspondem.
+- [ ] Tratamento de erro corresponde.
+- [ ] `active` é tratado apenas como valor exportado.
+- [ ] Evidência de teste não é inferida do JSON.
+- [ ] Gaps conhecidos não foram escondidos.
 
 ---
 
-# Estrutura de um Workflow
-
-Todo workflow deverá possuir:
-
-```
-Trigger
-
-↓
-
-Validação
-
-↓
-
-Busca de Dados
-
-↓
-
-Processamento
-
-↓
-
-Atualização
-
-↓
-
-Logs
-
-↓
-
-Resposta
-```
-
----
-
-# Padrão dos Nós
-
-Sugestão:
-
-```
-01 Receber
-
-02 Validar
-
-03 Buscar
-
-04 Processar
-
-05 Atualizar
-
-06 Registrar Log
-
-07 Responder
-```
-
----
-
-# Templates
-
-A pasta templates possui modelos para criação de novos workflows.
-
-Sempre utilizar estes modelos.
-
----
-
-# Backups
-
-Todo backup deve ser armazenado em:
-
-```
-backups/
-
-AAAA-MM/
-```
-
-Exemplo
-
-```
-2026-08/
-
-2026-09/
-```
-
----
-
-# Deploy
-
-Antes do deploy:
-
-- Validar JSON
-- Validar Credenciais
-- Validar Expressões
-- Testar Workflow
-- Atualizar Documentação
-
----
-
-# Checklist antes de Publicar
-
-## Geral
-
-- Workflow salvo
-
-- Sem erros
-
-- Credenciais válidas
-
-- Expressões válidas
-
-- Google Calendar funcionando
-
-- Google Sheets funcionando
-
-- IA funcionando
-
-- WhatsApp funcionando
-
-- Logs funcionando
-
----
-
-# Processo de Alteração
-
-Toda alteração deve:
-
-1. Criar branch
-
-2. Alterar workflow
-
-3. Atualizar documentação
-
-4. Testar
-
-5. Gerar backup
-
-6. Commit
-
-7. Pull Request
-
-8. Merge
-
----
-
-# Boas Práticas
-
-Nunca remover workflows em produção.
-
-Nunca alterar IDs.
-
-Nunca alterar credenciais.
-
-Nunca excluir Logs.
-
-Nunca excluir Backups.
-
-Nunca criar workflows duplicados.
-
-Documentar todas as alterações.
-
-Utilizar nomes padronizados.
-
-Utilizar comentários quando necessário.
-
----
-
-# Roadmap
-
-Futuras melhorias:
-
-- PostgreSQL
-
-- Dashboard Administrativo
-
-- BI
-
-- Multiempresa
-
-- Multi Profissional
-
-- Integração Stripe
-
-- Integração Mercado Pago
-
-- Integração PIX
-
-- Painel Web
-
-- Aplicativo Mobile
-
----
-
-# Responsabilidades
-
-## Atendimento
-
-Receber clientes.
-
----
-
-## Agenda
-
-Gerenciar horários.
-
----
-
-## Clientes
-
-Gerenciar cadastros.
-
----
-
-## Financeiro
-
-Controlar pagamentos.
-
----
-
-## Comunicação
-
-Enviar mensagens automáticas.
-
----
-
-## Administração
-
-Garantir estabilidade do sistema.
-
----
-
-# Compatibilidade
-
-Este projeto foi desenvolvido para:
+## 15. Compatibilidade atual
 
 - n8n Cloud
-- Google Workspace
-- WhatsApp Cloud API
-- Gemini AI
+- WhatsApp Cloud API / Meta
+- Google Gemini
+- Google Sheets
+- Google Calendar
+- Google Drive
 - GitHub
+
+Para a arquitetura do BeautyFlow App, consultar `docs/09-arquitetura/`.
 
 ---
 
-# Licença
-
-Projeto proprietário.
-
-BeautyFlow © 2026
-
-Todos os direitos reservados.
+BeautyFlow AI © 2026
