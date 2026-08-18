@@ -49,17 +49,33 @@
             },
             {
               "name": "motivo_cancelamento"
+            },
+            {
+              "name": "dados",
+              "type": "object"
+            },
+            {
+              "name": "intencao"
+            },
+            {
+              "name": "confianca"
+            },
+            {
+              "name": "mensagem_texto"
+            },
+            {
+              "name": "phone_number_id"
             }
           ]
         }
       },
-      "id": "0f3dd81b-5ec8-47c9-a4ea-5b3794d4f14a",
+      "id": "865a4ef3-01ae-4b2e-9269-92ae77ca1e50",
       "name": "TRG - Receber Dados WF006",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -240,
-        1440
+        -736,
+        2080
       ]
     },
     {
@@ -78,16 +94,29 @@
           "cachedResultName": "AGENDAMENTOS",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
         },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "AGENDADO"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "c36a5ebe-6fab-48ba-9cf1-1ed1dd262f8b",
-      "name": "GS - Buscar Agendamento",
+      "id": "80806460-3841-4d58-9aeb-16b10555d0a1",
+      "name": "GS - Buscar Agendamentos Ativos",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -16,
-        1440
+        -512,
+        1840
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
@@ -106,7 +135,24 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "servico": "={{ $json.servico }}",
+            "dados": "={{ $json.dados }}",
+            "data": "={{ $json.data_nova }}",
+            "hora_inicio": "={{ $json.novo_hora_inicio }}",
+            "periodo": "={{ $json.novo_periodo }}",
+            "id_profissional": "={{ $json.id_profissional_atual }}",
+            "profissional": "={{ '' }}",
+            "id_agendamento": "={{ '' }}",
+            "google_event_id": "={{ '' }}",
+            "origem": "={{ $json.origem }}",
+            "resposta_cliente": "={{ '' }}",
+            "motivo_cancelamento": "={{ '' }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -243,6 +289,15 @@
               "display": true,
               "canBeUsedToMatch": true,
               "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
             }
           ],
           "attemptToConvertTypes": false,
@@ -252,36 +307,42 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "8d7cd5dd-6e83-4b68-b80e-4b880fc0e83b",
+      "id": "ad2bdbd9-6ed9-4223-805d-b572773c98df",
       "name": "EXEC - WF004 - Consultar Nova Disponibilidade",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        208,
-        1440
+        832,
+        1904
       ]
     },
     {
-      "parameters": {},
-      "id": "d774854e-31d4-4887-90ab-75494513744d",
-      "name": "IF - Novo Horário Livre [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "value": "44662433ff0adfe4158dd7e155b55ac73bba692d3762c95df79403cb4b5d575f@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "BeautyFlow - Studio Bella"
+        },
+        "eventId": "={{ $json.google_event_id }}",
+        "updateFields": {}
+      },
+      "id": "2b6f43f0-17ee-4bba-8f9a-b765a77e1b0a",
+      "name": "GC - Atualizar Evento",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
       "position": [
-        432,
-        1440
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "306c6d8a-416d-4e98-a5c0-d97361104dc8",
-      "name": "GC - Atualizar Evento [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        656,
-        1440
-      ]
+        1728,
+        1664
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "D5hP4f39WlayBYFI",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -302,8 +363,18 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
+          "value": {
+            "ID_AGENDAMENTO": "={{ $('CODE - Selecionar Novo Horário').first().json.id_agendamento }}",
+            "DATA": "={{ $('CODE - Selecionar Novo Horário').first().json.data_nova }}",
+            "HORA_INICIO": "={{ $('CODE - Selecionar Novo Horário').first().json.hora_inicio_nova }}",
+            "HORA_FIM": "={{ $('CODE - Selecionar Novo Horário').first().json.hora_fim_nova }}",
+            "ID_PROFISSIONAL": "={{ $('CODE - Selecionar Novo Horário').first().json.id_profissional_novo }}",
+            "ULTIMA_ATUALIZACAO": "={{ new Date().toISOString() }}",
+            "GOOGLE_EVENT_ID": "={{ $('CODE - Selecionar Novo Horário').first().json.google_event_id }}"
+          },
+          "matchingColumns": [
+            "ID_AGENDAMENTO"
+          ],
           "schema": [
             {
               "id": "ID_AGENDAMENTO",
@@ -484,20 +555,21 @@
         },
         "options": {}
       },
-      "id": "439a12bf-9977-4ff1-9e79-5ecb6387d382",
+      "id": "1a7bfe77-7c88-49c9-ba33-fc3e0ecb61b7",
       "name": "GS - Atualizar Agendamento",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        880,
-        1440
+        2176,
+        1904
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -510,7 +582,18 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('MERGE - Confirmação').first().json.id_empresa }}",
+            "id_cliente": "={{ $('MERGE - Confirmação').first().json.id_cliente }}",
+            "telefone_cliente": "={{ $('MERGE - Confirmação').first().json.telefone_cliente }}",
+            "nome_cliente": "={{ $('MERGE - Confirmação').first().json.nome_cliente }}",
+            "mensagem_texto": "={{ $('MERGE - Confirmação').first().json.mensagem_texto }}",
+            "intencao": "={{ $('MERGE - Confirmação').first().json.intencao }}",
+            "confianca": "={{ $('MERGE - Confirmação').first().json.confianca }}",
+            "resposta_cliente": "={{ $('MERGE - Confirmação').first().json.resposta_cliente }}",
+            "phone_number_id": "={{ $('MERGE - Confirmação').first().json.phone_number_id }}",
+            "origem": "={{ $('MERGE - Confirmação').first().json.origem }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -656,13 +739,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "7d5b200e-f41f-4e9f-84a8-d7557c9ef326",
+      "id": "3f2a6122-d36f-44ad-9450-c61e79f2faa2",
       "name": "EXEC - WF012 - Confirmação",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1088,
-        1440
+        2848,
+        2080
       ]
     },
     {
@@ -676,7 +759,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('MERGE - Confirmação').first().json.id_empresa }}",
+            "workflow": "={{ 'WF006' }}",
+            "node": "={{ ({REAGENDADO:'GS - Atualizar Agendamento', ERRO_TECNICO:'CODE - Preparar Erro Técnico', SEM_GOOGLE_EVENT_ID:'CODE - Preparar Sem Google Event ID', NAO_ENCONTRADO:'CODE - Localizar Agendamento', MULTIPLOS_AGENDAMENTOS:'CODE - Localizar Agendamento', FORA_PRAZO_REAGENDAMENTO:'CODE - Validar Prazo', SEM_DISPONIBILIDADE:'CODE - Selecionar Novo Horário', HORARIO_INDISPONIVEL:'CODE - Selecionar Novo Horário'})[$('MERGE - Confirmação').first().json.status] || 'WF006' }}",
+            "tipo": "={{ $('MERGE - Confirmação').first().json.status === 'REAGENDADO' ? 'SUCESSO' : ($('MERGE - Confirmação').first().json.status === 'ERRO_TECNICO' ? 'ERRO' : 'AVISO') }}",
+            "evento": "={{ 'REAGENDAR_ATENDIMENTO' }}",
+            "status": "={{ $('MERGE - Confirmação').first().json.status }}",
+            "mensagem": "={{ $('MERGE - Confirmação').first().json.resposta_cliente }}",
+            "dados": "={{ JSON.stringify($('MERGE - Confirmação').first().json) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -768,28 +861,563 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "17da13ba-93b2-4e4d-ac42-e0d2d553f915",
+      "id": "f0a84088-905b-4636-9aa5-d79db6e04239",
       "name": "EXEC - WF017 - Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1312,
-        1440
+        3072,
+        2080
       ]
     },
     {
       "parameters": {
-        "content": "## WF006 v5.1\n\nConfigure filtros, IF, Google Calendar Update Event e matching column ID_AGENDAMENTO.",
+        "content": "## WF006 v5.2\n\nCODE - Localizar Agendamento prioriza id_agendamento; sem ele, resolve por id_cliente/telefone, usando data apenas para desambiguar quando ha mais de 1 candidato. IF - Dentro do Prazo reaproveita o TEMPO_CANCELAMENTO_MIN da empresa. CODE - Selecionar Novo Horario valida hora_inicio contra a lista real do WF004 (ou escolhe deterministicamente). GC - Atualizar Evento so roda se houver google_event_id; sem ele, segue caminho seguro (CODE - Preparar Sem Google Event ID, sem tocar Calendar/Sheets, para tratamento manual). Erros de Calendar/Sheets sao capturados (onError: continueErrorOutput). MERGE - Confirmacao padroniza os 6 desfechos possiveis antes do WF012 e do log; SET - Preparar Saida WF006 garante que o retorno do WF017 nao substitua a saida real do reagendamento.",
         "height": 260,
         "width": 520
       },
-      "id": "529b20d6-82bd-479b-9255-09ac883781c2",
+      "id": "edb8cac9-bfa6-4fc8-8802-5f5af29e706d",
       "name": "NOTA - WF006 v5.1",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1168,
-        1072
+        -288,
+        2576
+      ],
+      "width": 820,
+      "height": 260
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('TRG - Receber Dados WF006').first().json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "TELEFONE",
+              "lookupValue": "={{ $('TRG - Receber Dados WF006').first().json.telefone_cliente }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b517c272-dcf9-48b7-b23b-06173a860a76",
+      "name": "GS - Buscar Cliente por Telefone",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -512,
+        2080
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const e=$('TRG - Receber Dados WF006').first().json;\nconst lista=$items('GS - Buscar Agendamentos Ativos').map(i=>i.json).filter(x=>x&&x.ID_AGENDAMENTO);\nconst clientePorTelefone=$('GS - Buscar Cliente por Telefone').first().json;\n\nfunction mesmoDia(raw,alvo){\n  if(!raw||!alvo) return false;\n  const parse=v=>{\n    let dt=DateTime.fromFormat(String(v),'dd/MM/yyyy');\n    if(!dt.isValid) dt=DateTime.fromFormat(String(v),'yyyy-MM-dd');\n    if(!dt.isValid) dt=DateTime.fromISO(String(v));\n    return dt;\n  };\n  const a=parse(raw), b=parse(alvo);\n  return a.isValid&&b.isValid&&a.hasSame(b,'day');\n}\n\nconst base={\n  id_empresa:e.id_empresa||'EMP001',\n  id_cliente:e.id_cliente||'',\n  telefone_cliente:e.telefone_cliente||'',\n  nome_cliente:e.nome_cliente||'Cliente',\n  origem:e.origem||'WHATSAPP',\n  phone_number_id:e.phone_number_id||'',\n  mensagem_texto:e.mensagem_texto||'',\n  intencao:e.intencao||'',\n  confianca:e.confianca,\n  dados:e.dados||{},\n  novo_hora_inicio:e.hora_inicio||'',\n  novo_periodo:e.periodo||''\n};\n\nlet candidatos=[];\n\nif(e.id_agendamento){\n  // prioridade absoluta: id_agendamento informado\n  candidatos=lista.filter(a=>String(a.ID_AGENDAMENTO)===String(e.id_agendamento));\n}else{\n  const idClienteResolvido=e.id_cliente||(clientePorTelefone&&clientePorTelefone.ID_CLIENTE)||'';\n  if(!idClienteResolvido){\n    return [{json:{...base,encontrado:false,status:'NAO_ENCONTRADO',resposta_cliente:'Não encontrei nenhum agendamento ativo para reagendar. Pode confirmar os dados do agendamento?'}}];\n  }\n  candidatos=lista.filter(a=>String(a.ID_CLIENTE)===String(idClienteResolvido));\n\n  // 'data' so e usada para desambiguar quando ha mais de 1 candidato: pode ser a data\n  // do agendamento ATUAL (o que o cliente quer alterar) OU a data NOVA desejada;\n  // por isso so filtra por data quando isso reduz para exatamente 1 candidato,\n  // nunca aplica o filtro as cegas.\n  if(candidatos.length>1&&e.data){\n    const filtrados=candidatos.filter(a=>mesmoDia(a.DATA,e.data));\n    if(filtrados.length===1) candidatos=filtrados;\n  }\n}\n\nif(candidatos.length===0){\n  return [{json:{...base,encontrado:false,status:'NAO_ENCONTRADO',resposta_cliente:'Não encontrei nenhum agendamento ativo para reagendar. Pode confirmar os dados do agendamento?'}}];\n}\n\nif(candidatos.length>1){\n  const opcoes=candidatos.slice(0,6).map(a=>`${a.DATA} às ${String(a.HORA_INICIO||'').slice(0,5)}`).join('; ');\n  return [{json:{...base,encontrado:false,status:'MULTIPLOS_AGENDAMENTOS',resposta_cliente:`Encontrei mais de um agendamento ativo: ${opcoes}. Pode me dizer qual deles você quer reagendar (data e horário atuais)?`}}];\n}\n\nconst a=candidatos[0];\nreturn [{json:{...base,encontrado:true,status:'ENCONTRADO',\n  id_agendamento:a.ID_AGENDAMENTO,\n  id_cliente:a.ID_CLIENTE||base.id_cliente,\n  id_profissional_atual:a.ID_PROFISSIONAL||'',\n  id_servico:a.ID_SERVICO||'',\n  servico:a.ID_SERVICO||'',\n  data_atual:a.DATA,\n  hora_inicio_atual:String(a.HORA_INICIO||'').slice(0,5),\n  duracao_min_atual:Number(a.DURACAO_MIN||60),\n  google_event_id:a.GOOGLE_EVENT_ID||'',\n  data_nova:e.data||a.DATA,\n  resposta_cliente:''\n}}];"
+      },
+      "id": "2bab08ae-1bc3-4cef-ba7c-1c7162fe66ab",
+      "name": "CODE - Localizar Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1",
+              "leftValue": "={{ $json.encontrado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -64,
+        2080
+      ],
+      "id": "cc55e492-f299-4685-92aa-129dd31f71ea",
+      "name": "IF - Agendamento Encontrado"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $('CODE - Localizar Agendamento').first().json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "041fab2d-fb4b-4e07-bcf8-156131d44693",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        160,
+        1904
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$('CODE - Localizar Agendamento').first().json;\nconst emp=$('GS - Buscar Empresa').first().json;\n\nfunction parseDataHora(dataStr,horaStr){\n  let dt=DateTime.fromFormat(`${dataStr} ${horaStr}`,'dd/MM/yyyy HH:mm');\n  if(!dt.isValid) dt=DateTime.fromFormat(`${dataStr} ${horaStr}`,'yyyy-MM-dd HH:mm');\n  if(!dt.isValid) dt=DateTime.fromISO(`${dataStr}T${horaStr}`);\n  return dt;\n}\n\nconst inicio=parseDataHora(a.data_atual,String(a.hora_inicio_atual||'00:00').slice(0,5));\nconst agora=DateTime.now();\nconst minutosAte=inicio.isValid?inicio.diff(agora,'minutes').minutes:null;\nconst prazoMin=Number((emp&&emp.TEMPO_CANCELAMENTO_MIN)||0);\n\nconst dentroDoPrazo=minutosAte!==null&&minutosAte>=prazoMin;\n\nif(!dentroDoPrazo){\n  return [{json:{...a,dentro_do_prazo:false,status:'FORA_PRAZO_REAGENDAMENTO',minutos_ate_agendamento:minutosAte,resposta_cliente:`Infelizmente não é possível reagendar automaticamente esse atendimento porque estamos fora do prazo de ${prazoMin} minutos de antecedência. Entre em contato com a equipe para verificar a possibilidade de reagendamento.`}}];\n}\n\nreturn [{json:{...a,dentro_do_prazo:true,status:'DENTRO_DO_PRAZO',minutos_ate_agendamento:minutosAte}}];"
+      },
+      "id": "2193df89-48d9-4734-8864-771046ee6930",
+      "name": "CODE - Validar Prazo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a2",
+              "leftValue": "={{ $json.dentro_do_prazo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        608,
+        1904
+      ],
+      "id": "3b36372b-94cb-4489-917a-ca19bece8bee",
+      "name": "IF - Dentro do Prazo"
+    },
+    {
+      "parameters": {
+        "jsCode": "const loc=$('CODE - Validar Prazo').first().json;\nconst d=$('EXEC - WF004 - Consultar Nova Disponibilidade').first().json;\n\nconst horarios=Array.isArray(d.horarios)?d.horarios:[];\n\nconst tm=t=>{const [h,m]=String(t||'00:00').slice(0,5).split(':').map(Number);return h*60+m};\nconst hs=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');\n\nif(d.status!=='OK'||horarios.length===0){\n  return [{json:{...loc,horario_valido:false,status:'SEM_DISPONIBILIDADE',resposta_cliente:d.resposta_cliente||'Não encontrei horários disponíveis para o novo agendamento. Podemos tentar outra data ou horário?'}}];\n}\n\nlet horaEscolhida=null;\nif(loc.novo_hora_inicio){\n  const alvo=String(loc.novo_hora_inicio).slice(0,5);\n  horaEscolhida=horarios.find(h=>h===alvo)||null;\n  if(!horaEscolhida){\n    return [{json:{...loc,horario_valido:false,status:'HORARIO_INDISPONIVEL',resposta_cliente:`O horário ${alvo} não está disponível para o novo agendamento. Horários livres: ${horarios.slice(0,6).join(', ')}. Qual prefere?`}}];\n  }\n}else{\n  horaEscolhida=horarios[0]; // escolha determinística: primeiro horário livre da lista (já filtrada por periodo pelo WF004)\n}\n\nconst duracaoMin=Number(d.duracao_min||loc.duracao_min_atual||60);\nconst horaFimNova=hs(tm(horaEscolhida)+duracaoMin);\n\nreturn [{json:{...loc,horario_valido:true,status:'NOVO_HORARIO_OK',\n  data_nova:d.data,\n  hora_inicio_nova:horaEscolhida,\n  hora_fim_nova:horaFimNova,\n  duracao_min:duracaoMin,\n  id_profissional_novo:d.id_profissional||loc.id_profissional_atual||''\n}}];"
+      },
+      "id": "3e398797-04e1-49d5-8f0d-2ab6bc637278",
+      "name": "CODE - Selecionar Novo Horário",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a3",
+              "leftValue": "={{ $json.horario_valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        1904
+      ],
+      "id": "8f3c1cd4-d34a-4220-8484-9b135319b04a",
+      "name": "IF - Novo Horário Válido"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a4",
+              "leftValue": "={{ $json.google_event_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        1808
+      ],
+      "id": "77b987e2-864e-47e8-afda-856985279aab",
+      "name": "IF - Possui Google Event ID"
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$('CODE - Selecionar Novo Horário').first().json;\n\nreturn [{json:{\n  id_empresa:a.id_empresa,\n  id_cliente:a.id_cliente,\n  telefone_cliente:a.telefone_cliente,\n  nome_cliente:a.nome_cliente,\n  id_agendamento:a.id_agendamento,\n  data:a.data_nova,\n  hora_inicio:a.hora_inicio_nova,\n  origem:a.origem,\n  phone_number_id:a.phone_number_id,\n  mensagem_texto:a.mensagem_texto,\n  intencao:a.intencao,\n  confianca:a.confianca,\n  dados:a.dados,\n  google_event_id:'',\n  status:'SEM_GOOGLE_EVENT_ID',\n  resposta_cliente:'Encontramos seu agendamento, mas não conseguimos localizar o evento correspondente na agenda para reagendar automaticamente. Nossa equipe vai entrar em contato para confirmar o novo horário.'\n}}];"
+      },
+      "id": "fcbea564-6f4e-446e-a86d-bd383a20f166",
+      "name": "CODE - Preparar Sem Google Event ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        2160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const a=$('CODE - Selecionar Novo Horário').first().json;\nconst err=$json.error||{};\n\nreturn [{json:{\n  id_empresa:a.id_empresa,\n  id_cliente:a.id_cliente,\n  telefone_cliente:a.telefone_cliente,\n  nome_cliente:a.nome_cliente,\n  id_agendamento:a.id_agendamento,\n  data:a.data_nova,\n  hora_inicio:a.hora_inicio_nova,\n  origem:a.origem,\n  phone_number_id:a.phone_number_id,\n  mensagem_texto:a.mensagem_texto,\n  intencao:a.intencao,\n  confianca:a.confianca,\n  dados:a.dados,\n  google_event_id:a.google_event_id,\n  status:'ERRO_TECNICO',\n  erro:String((err&&err.message)||err||'Falha técnica ao reagendar o atendimento.'),\n  resposta_cliente:'Tivemos um problema técnico ao reagendar seu atendimento. Por favor, tente novamente em alguns instantes ou fale com a nossa equipe.'\n}}];"
+      },
+      "id": "b0df9643-77c4-4a6f-84cc-2f9b9bf83eab",
+      "name": "CODE - Preparar Erro Técnico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s4",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "s5",
+              "name": "id_agendamento",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.id_agendamento }}",
+              "type": "string"
+            },
+            {
+              "id": "s6",
+              "name": "data",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.data_nova }}",
+              "type": "string"
+            },
+            {
+              "id": "s7",
+              "name": "hora_inicio",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.hora_inicio_nova }}",
+              "type": "string"
+            },
+            {
+              "id": "s8",
+              "name": "origem",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "s9",
+              "name": "phone_number_id",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "s10",
+              "name": "mensagem_texto",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "s11",
+              "name": "intencao",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.intencao }}",
+              "type": "string"
+            },
+            {
+              "id": "s12",
+              "name": "confianca",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.confianca }}",
+              "type": "number"
+            },
+            {
+              "id": "s13",
+              "name": "dados",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "s14",
+              "name": "google_event_id",
+              "value": "={{ $('CODE - Selecionar Novo Horário').first().json.google_event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "s15",
+              "name": "status",
+              "value": "={{ 'REAGENDADO' }}",
+              "type": "string"
+            },
+            {
+              "id": "s16",
+              "name": "resposta_cliente",
+              "value": "={{ 'Seu atendimento foi reagendado com sucesso para ' + $('CODE - Selecionar Novo Horário').first().json.data_nova + ' às ' + $('CODE - Selecionar Novo Horário').first().json.hora_inicio_nova + '.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b54cae00-287e-467d-9c51-22aa2ab78da2",
+      "name": "SET - Preparar Confirmação Sucesso",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2400,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "id": "9b39c884-36e8-49bb-94f1-be290dfe31be",
+      "name": "MERGE - Confirmação",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2624,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "status",
+              "value": "={{ $('MERGE - Confirmação').first().json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "id_empresa",
+              "value": "={{ $('MERGE - Confirmação').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "o3",
+              "name": "id_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "telefone_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "nome_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o6",
+              "name": "id_agendamento",
+              "value": "={{ $('MERGE - Confirmação').first().json.id_agendamento }}",
+              "type": "string"
+            },
+            {
+              "id": "o7",
+              "name": "data",
+              "value": "={{ $('MERGE - Confirmação').first().json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "o8",
+              "name": "hora_inicio",
+              "value": "={{ $('MERGE - Confirmação').first().json.hora_inicio }}",
+              "type": "string"
+            },
+            {
+              "id": "o9",
+              "name": "google_event_id",
+              "value": "={{ $('MERGE - Confirmação').first().json.google_event_id }}",
+              "type": "string"
+            },
+            {
+              "id": "o10",
+              "name": "origem",
+              "value": "={{ $('MERGE - Confirmação').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "o11",
+              "name": "phone_number_id",
+              "value": "={{ $('MERGE - Confirmação').first().json.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "o12",
+              "name": "mensagem_texto",
+              "value": "={{ $('MERGE - Confirmação').first().json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "o13",
+              "name": "intencao",
+              "value": "={{ $('MERGE - Confirmação').first().json.intencao }}",
+              "type": "string"
+            },
+            {
+              "id": "o14",
+              "name": "confianca",
+              "value": "={{ $('MERGE - Confirmação').first().json.confianca }}",
+              "type": "number"
+            },
+            {
+              "id": "o15",
+              "name": "dados",
+              "value": "={{ $('MERGE - Confirmação').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "o16",
+              "name": "resposta_cliente",
+              "value": "={{ $('MERGE - Confirmação').first().json.resposta_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o17",
+              "name": "minutos_ate_agendamento",
+              "value": "={{ $('MERGE - Confirmação').first().json.minutos_ate_agendamento }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "db1dbcae-cf00-412a-9b20-4572a32de566",
+      "name": "SET - Preparar Saída WF006",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3296,
+        2080
       ]
     }
   ],
@@ -799,20 +1427,100 @@
       "main": [
         [
           {
-            "node": "GS - Buscar Agendamento",
+            "node": "GS - Buscar Agendamentos Ativos",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Buscar Agendamento": {
+    "GS - Buscar Agendamentos Ativos": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Cliente por Telefone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Cliente por Telefone": {
+      "main": [
+        [
+          {
+            "node": "CODE - Localizar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Localizar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Agendamento Encontrado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Agendamento Encontrado": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Validar Prazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Validar Prazo": {
+      "main": [
+        [
+          {
+            "node": "IF - Dentro do Prazo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Dentro do Prazo": {
       "main": [
         [
           {
             "node": "EXEC - WF004 - Consultar Nova Disponibilidade",
             "type": "main",
             "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 2
           }
         ]
       ]
@@ -821,25 +1529,61 @@
       "main": [
         [
           {
-            "node": "IF - Novo Horário Livre [CONFIGURAR]",
+            "node": "CODE - Selecionar Novo Horário",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IF - Novo Horário Livre [CONFIGURAR]": {
+    "CODE - Selecionar Novo Horário": {
       "main": [
         [
           {
-            "node": "GC - Atualizar Evento [CONFIGURAR]",
+            "node": "IF - Novo Horário Válido",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GC - Atualizar Evento [CONFIGURAR]": {
+    "IF - Novo Horário Válido": {
+      "main": [
+        [
+          {
+            "node": "IF - Possui Google Event ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "IF - Possui Google Event ID": {
+      "main": [
+        [
+          {
+            "node": "GC - Atualizar Evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Sem Google Event ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GC - Atualizar Evento": {
       "main": [
         [
           {
@@ -847,10 +1591,68 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Técnico",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "GS - Atualizar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Confirmação Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Técnico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Sem Google Event ID": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Erro Técnico": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "SET - Preparar Confirmação Sucesso": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MERGE - Confirmação": {
       "main": [
         [
           {
@@ -871,15 +1673,26 @@
           }
         ]
       ]
+    },
+    "EXEC - WF017 - Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF006",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "314dbcec-322c-43be-9e17-ffe1f9d23f38",
+  "versionId": "48d6e8dd-158f-4e9d-a12f-2de643a09e5b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
