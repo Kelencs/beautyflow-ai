@@ -20,13 +20,13 @@
           ]
         }
       },
-      "id": "8de1af9b-79d0-4d13-b528-952d7c484899",
+      "id": "a7f3974d-414a-44b2-9809-db21c228a301",
       "name": "TRG - Receber Dados WF008",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -496,
-        1648
+        1872,
+        2416
       ]
     },
     {
@@ -61,13 +61,13 @@
         },
         "options": {}
       },
-      "id": "322996f4-2b00-43e6-9fbb-619fd2fce8d1",
+      "id": "c898def7-6c9d-4e19-be23-da3fe82be541",
       "name": "SET - Preparar Cadastro",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -272,
-        1648
+        2096,
+        2416
       ]
     },
     {
@@ -100,13 +100,13 @@
         },
         "options": {}
       },
-      "id": "a292cb80-f136-4949-a4c0-a6966674dd0b",
+      "id": "16380b20-c9ec-48e3-b345-83652d2bb9bc",
       "name": "GS - Verificar Duplicidade",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -48,
-        1648
+        2544,
+        2304
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -114,7 +114,42 @@
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1f0a1e2-3b4c-4d5e-8f6a-7b8c9d0e1f2a",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "48912c6b-6d74-4094-93a4-078cb74b2ac4",
+      "name": "IF - Erro Técnico Na Verificação",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2672,
+        2304
+      ]
     },
     {
       "parameters": {
@@ -128,11 +163,11 @@
           "conditions": [
             {
               "id": "98755a8f-601e-4d8c-9c6b-d5b8b0c908fd",
-              "leftValue": "={{ $json.ID_CLIENTE || '' }}",
+              "leftValue": "={{ $json.cliente_existe }}",
               "rightValue": "",
               "operator": {
-                "type": "string",
-                "operation": "notEmpty",
+                "type": "boolean",
+                "operation": "true",
                 "singleValue": true
               }
             }
@@ -141,13 +176,13 @@
         },
         "options": {}
       },
-      "id": "9262a95a-9694-4a84-896d-0d2f17d69890",
+      "id": "dcae7626-fc6c-4252-8614-3846452bc97c",
       "name": "IF - Cliente Existe?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        176,
-        1648
+        2992,
+        2304
       ]
     },
     {
@@ -155,204 +190,83 @@
         "assignments": {
           "assignments": [
             {
-              "id": "a6d4976a-3745-4e9a-98b4-35aea2abed66",
-              "name": "ID_CLIENTE",
-              "value": "={{ $json.ID_CLIENTE }}",
-              "type": "string"
-            },
-            {
-              "id": "36cbefee-a1d0-430a-b298-0ec14d9ac164",
+              "id": "a1",
               "name": "id_cliente",
-              "value": "={{ $json.ID_CLIENTE }}",
+              "value": "={{ $json.cliente_encontrado.ID_CLIENTE }}",
               "type": "string"
             },
             {
-              "id": "d9ae85f6-9b79-48c8-8586-ad38478bdc5f",
+              "id": "a2",
               "name": "id_empresa",
-              "value": "={{ $json.ID_EMPRESA }}",
+              "value": "={{ $json.cliente_encontrado.ID_EMPRESA || $json.id_empresa }}",
               "type": "string"
             },
             {
-              "id": "ff937d0b-fdb6-45fb-a7cc-87ce7e9a705e",
+              "id": "a3",
               "name": "nome_cliente",
-              "value": "={{ $json.NOME }}",
+              "value": "={{ $json.cliente_encontrado.NOME || $json.nome_cliente }}",
               "type": "string"
             },
             {
-              "id": "b1c56b58-008e-4429-8b26-a501dc2b7e09",
+              "id": "a4",
               "name": "telefone_cliente",
-              "value": "={{ $json.TELEFONE }}",
+              "value": "={{ $json.cliente_encontrado.TELEFONE || $json.telefone_cliente }}",
               "type": "string"
             },
             {
-              "id": "8bcfb2a2-80be-48b7-9481-474ec6ade755",
+              "id": "a5",
+              "name": "origem",
+              "value": "={{ $json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "a6",
               "name": "cliente_novo",
-              "value": false,
+              "value": "={{ false }}",
               "type": "boolean"
             },
             {
-              "id": "f94688c5-f062-41ae-ad83-3f4a3bb1bcf3",
+              "id": "a7",
               "name": "status_cadastro",
-              "value": "CLIENTE_EXISTENTE",
+              "value": "={{ 'CLIENTE_EXISTENTE' }}",
+              "type": "string"
+            },
+            {
+              "id": "a8",
+              "name": "multiplos_encontrados",
+              "value": "={{ $json.multiplos_encontrados }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a9",
+              "name": "erro",
+              "value": "={{ '' }}",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "b99664d1-3014-4729-910c-2f24970c665e",
+      "id": "1c80b3bd-27b3-47d1-b44f-f9a2504a7cb3",
       "name": "SET - Cliente Existente",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        416,
-        1536
+        3216,
+        2192
       ]
     },
     {
       "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "9ExZcr3lVgCtMqO0",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/9ExZcr3lVgCtMqO0",
-          "cachedResultName": "My project — ADM - WF017 - Logs"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "id_empresa": "={{ $json.id_empresa || 'EMP001' }}",
-            "workflow": "={{ 'WF008' }}",
-            "node": "={{ 'GS - Criar Cliente' }}",
-            "tipo": "={{ 'SUCESSO' }}",
-            "evento": "={{ 'CADASTRO_CLIENTE' }}",
-            "status": "={{ 'PROCESSADO' }}",
-            "mensagem": "={{ 'Cliente cadastrado com sucesso.' }}",
-            "dados": "={{ JSON.stringify($json) }}",
-            "execution_id": "={{ $execution.id }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "id_empresa",
-              "displayName": "id_empresa",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "workflow",
-              "displayName": "workflow",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "node",
-              "displayName": "node",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "tipo",
-              "displayName": "tipo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "evento",
-              "displayName": "evento",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "mensagem",
-              "displayName": "mensagem",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "dados",
-              "displayName": "dados",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "execution_id",
-              "displayName": "execution_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
+        "jsCode": "const e=$json; // dados normalizados: vem de SET - Preparar Cadastro via CODE - Avaliar Duplicidade -> IF - Cliente Existe? (ramo falso)\nconst agora=new Date().toISOString();\nconst sufixoAleatorio=Math.random().toString(36).slice(2,8);\n\nreturn [{\n  json:{\n    ID_CLIENTE:`CLI-${Date.now()}-${sufixoAleatorio}`,\n    ID_EMPRESA:e.id_empresa,\n    NOME:e.nome_cliente,\n    TELEFONE:e.telefone_cliente,\n    EMAIL:'',\n    DATA_NASCIMENTO:'',\n    OBSERVACOES:'',\n    PRIMEIRO_ATENDIMENTO:agora,\n    ULTIMO_ATENDIMENTO:agora,\n    ACEITA_MARKETING:'SIM',\n    STATUS:'ATIVO',\n    DATA_CADASTRO:agora,\n    ULTIMA_ATUALIZACAO:agora,\n    ORIGEM:e.origem\n  }\n}];"
       },
-      "id": "e501490e-0557-4ac2-b129-9f7067c5c564",
-      "name": "EXEC - WF017 - Log Cliente Existente",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [
-        656,
-        1536
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "71c15ac5-c9a4-4127-8d10-41381de53d08",
-      "name": "OUT - Cliente Existente",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        896,
-        1536
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{\n  json: {\n    ID_CLIENTE: 'CLI-' + Date.now(),\n\n    ID_EMPRESA: $('TRG - Receber Dados WF008').first().json.id_empresa,\n\n    NOME: $('TRG - Receber Dados WF008').first().json.nome_cliente,\n\n    TELEFONE: $('TRG - Receber Dados WF008').first().json.telefone_cliente,\n\n    EMAIL: '',\n\n    DATA_NASCIMENTO: '',\n\n    OBSERVACOES: '',\n\n    PRIMEIRO_ATENDIMENTO: new Date().toISOString(),\n\n    ULTIMO_ATENDIMENTO: new Date().toISOString(),\n\n    ACEITA_MARKETING: 'SIM',\n\n    STATUS: 'ATIVO',\n\n    DATA_CADASTRO: new Date().toISOString(),\n\n    ORIGEM: $('TRG - Receber Dados WF008').first().json.origem\n  }\n}];"
-      },
-      "id": "5b83dbe9-2914-43f8-8d10-b058bbf21dd1",
+      "id": "33b8ef5d-3b23-4f1d-992c-f696f24667ca",
       "name": "CODE - Gerar ID Cliente",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        1744
+        3216,
+        2416
       ]
     },
     {
@@ -514,78 +428,193 @@
         },
         "options": {}
       },
-      "id": "1f7e5eb8-0c4a-421a-8ad9-8c6480b35842",
+      "id": "6e1b81db-5ac8-4fcf-a616-58b3e8bd7386",
       "name": "GS - Criar Cliente",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        656,
-        1744
+        3440,
+        2416
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "d7aa89fa-7bb1-40e8-8d44-fe2f520adfd3",
-              "name": "ID_CLIENTE",
+              "id": "b1",
+              "name": "id_cliente",
               "value": "={{ $('CODE - Gerar ID Cliente').first().json.ID_CLIENTE }}",
               "type": "string"
             },
             {
-              "id": "c42c69ae-0d82-4c9a-8505-cd3e64f4e7c2",
-              "name": "id_cliente",
-              "value": "={{ $('CODE - Gerar ID Cliente').first().json.id_cliente }}",
-              "type": "string"
-            },
-            {
-              "id": "02f36e3d-f791-4cb9-ab84-94661fbf6d32",
+              "id": "b2",
               "name": "id_empresa",
-              "value": "={{ $('CODE - Gerar ID Cliente').first().json.id_empresa }}",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.ID_EMPRESA }}",
               "type": "string"
             },
             {
-              "id": "72fd8882-a5cc-41d8-9c2e-22f70194d996",
+              "id": "b3",
               "name": "nome_cliente",
-              "value": "={{ $('CODE - Gerar ID Cliente').first().json.nome_cliente }}",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.NOME }}",
               "type": "string"
             },
             {
-              "id": "55f37877-db04-4c3f-95a4-fde78780fc55",
+              "id": "b4",
               "name": "telefone_cliente",
-              "value": "={{ $('CODE - Gerar ID Cliente').first().json.telefone_cliente }}",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.TELEFONE }}",
               "type": "string"
             },
             {
-              "id": "7420acd4-f702-463a-841c-e68e11e52778",
+              "id": "b5",
+              "name": "origem",
+              "value": "={{ $('CODE - Gerar ID Cliente').first().json.ORIGEM }}",
+              "type": "string"
+            },
+            {
+              "id": "b6",
               "name": "cliente_novo",
-              "value": true,
+              "value": "={{ true }}",
               "type": "boolean"
             },
             {
-              "id": "ba52c386-87db-44be-b802-1c2048d91945",
+              "id": "b7",
               "name": "status_cadastro",
-              "value": "CLIENTE_CRIADO",
+              "value": "={{ 'CLIENTE_CRIADO' }}",
+              "type": "string"
+            },
+            {
+              "id": "b8",
+              "name": "multiplos_encontrados",
+              "value": "={{ false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "b9",
+              "name": "erro",
+              "value": "={{ '' }}",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "fa439717-781a-412c-bc33-f9ffc4d39860",
-      "name": "SET - Retornar Cliente Criado",
+      "id": "fba74633-ab7f-47c2-8c8f-efd7219310e5",
+      "name": "SET - Cliente Criado",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        896,
-        1744
+        3664,
+        2416
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF008 v5.3 — Cadastrar Cliente\n\nIF - Telefone Válido bloqueia telefones malformados antes de qualquer consulta ao Sheets. CODE - Avaliar Duplicidade trata 0/1/>1 resultados explicitamente (nunca escolhe arbitrariamente; com múltiplos, usa o mais antigo e sinaliza no log). CODE - Gerar ID Cliente agora usa os dados JA normalizados (telefone sanitizado, defaults aplicados) e gera ID com timestamp + sufixo aleatório (sem risco de colisão). Erros do Google Sheets (busca ou criação) são capturados via onError e nunca derrubam o fluxo. MERGE - Resultado Cadastro padroniza os 4 desfechos possíveis (existente, criado, erro de validação, erro técnico) antes do log único no WF017; SET - Preparar Saída WF008 garante que o retorno do WF017 nunca substitua id_cliente/id_empresa/nome_cliente/telefone_cliente/cliente_novo/status_cadastro.\n\nCorreção v5.3 (bug crítico encontrado em teste real no n8n Cloud, 13/08/2026): GS - Verificar Duplicidade tinha Always Output Data=ON junto com On Error=Continue (using error output). Confirmado em teste real que essa combinação faz uma falha técnica real (ex.: aba inexistente) produzir um item TAMBÉM no branch de sucesso, simultaneamente ao branch de erro — CODE - Avaliar Duplicidade interpretava esse item vazio como \"nenhum duplicado encontrado\" e todo o resto do fluxo de criação executava indevidamente (CODE - Gerar ID Cliente, GS - Criar Cliente), criando um cliente real mesmo com a verificação de duplicidade tecnicamente falha. O MERGE - Resultado Cadastro então recebia 2 itens (erro + criado) na mesma execução, mas continuava reportando ERRO_CADASTRO externamente, mascarando a escrita indevida.\n\nCorreção v5.4 (regressão encontrada e corrigida em teste real, 13/08/2026): a correção v5.3 (Always Output Data=OFF) eliminou o duplo disparo, mas causou uma REGRESSÃO real: com Always Output Data desligado, uma busca legítima com 0 linhas passou a não emitir NENHUM item na saída de sucesso, e n8n não invoca os nodes conectados quando a saída anterior tem 0 itens — então CODE - Avaliar Duplicidade deixava de executar também no caso legítimo de \"cliente novo\", quebrando o cadastro. Correção estrutural definitiva: GS - Verificar Duplicidade voltou para Always Output Data=ON, porém On Error mudou de \"Continue (using error output)\" para \"Continue (using regular output)\" — erro técnico agora sai pela MESMA (única) saída dos resultados normais, identificado apenas pela presença de $json.error, em vez de por uma segunda saída paralela. Isso elimina estruturalmente a possibilidade de dois ramos dispararem ao mesmo tempo (só existe uma saída agora). Um novo node, IF - Erro Técnico Na Verificação, foi inserido logo após GS - Verificar Duplicidade e decide, antes de qualquer outro processamento, se o item representa um erro técnico ({{ !!$json.error }}) ou um resultado normal (encontrado ou vazio, ambos seguem para CODE - Avaliar Duplicidade sem alteração nenhuma nessa lógica, que já tratava corretamente 0 ou N resultados). CODE - Avaliar Duplicidade e CODE - Preparar Erro Cadastro não foram alterados - apenas passaram a ser alcançados por um caminho estruturalmente exclusivo. Ressalva: o formato exato do objeto retornado com On Error=\"Continue (using regular output)\" foi inferido com alta confiança a partir do mesmo formato já confirmado real via \"Continue (using error output)\" em toda a base do projeto ($json.error.message), mas essa combinação específica ainda não tinha sido testada ao vivo antes do Teste 4 desta rodada - validar isso é justamente o objetivo do reteste.",
+        "height": 620,
+        "width": 760
+      },
+      "id": "3a09cd0b-bfed-49fc-807a-f31ca653ac69",
+      "name": "NOTA - WF008 v5.4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        1472
+      ],
+      "width": 820,
+      "height": 260
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ $json.telefone_cliente }}",
+              "rightValue": "^\\d{10,15}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2320,
+        2416
+      ],
+      "id": "f5d45a1e-6282-41bc-9c1b-092827dd2257",
+      "name": "IF - Telefone Válido"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cadastro=$('SET - Preparar Cadastro').first().json;\nconst encontrados=$items('GS - Verificar Duplicidade').map(i=>i.json).filter(x=>x&&x.ID_CLIENTE);\n\nreturn [{json:{\n  id_empresa:cadastro.id_empresa,\n  telefone_cliente:cadastro.telefone_cliente,\n  nome_cliente:cadastro.nome_cliente,\n  origem:cadastro.origem,\n  cliente_existe:encontrados.length>0,\n  multiplos_encontrados:encontrados.length>1,\n  total_encontrados:encontrados.length,\n  cliente_encontrado:encontrados[0]||null\n}}];"
+      },
+      "id": "75a8ec2d-cc85-4eb5-8d56-a5d01ee1d2b1",
+      "name": "CODE - Avaliar Duplicidade",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        2176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cadastro=$json; // saida direta de SET - Preparar Cadastro (ramo falso do IF - Telefone Valido)\n\nreturn [{json:{\n  id_cliente:'',\n  id_empresa:cadastro.id_empresa,\n  nome_cliente:cadastro.nome_cliente,\n  telefone_cliente:cadastro.telefone_cliente,\n  origem:cadastro.origem,\n  cliente_novo:false,\n  status_cadastro:'ERRO_CADASTRO',\n  multiplos_encontrados:false,\n  erro:'Telefone inválido: deve conter entre 10 e 15 dígitos numéricos (com DDI e DDD).'\n}}];"
+      },
+      "id": "fe017a0b-d782-44e9-b45c-cc7238c89874",
+      "name": "CODE - Erro Validação Telefone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2544,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cadastro=$('SET - Preparar Cadastro').first().json;\nconst err=$json.error||{};\n\nreturn [{json:{\n  id_cliente:'',\n  id_empresa:cadastro.id_empresa,\n  nome_cliente:cadastro.nome_cliente,\n  telefone_cliente:cadastro.telefone_cliente,\n  origem:cadastro.origem,\n  cliente_novo:false,\n  status_cadastro:'ERRO_CADASTRO',\n  multiplos_encontrados:false,\n  erro:String((err&&err.message)||err||'Falha técnica ao verificar/cadastrar o cliente.')\n}}];"
+      },
+      "id": "7f788bec-927d-44c6-82fc-2026825e7c48",
+      "name": "CODE - Preparar Erro Cadastro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2992,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "044f530c-7b9a-4c33-bca0-cbbfb9190655",
+      "name": "MERGE - Resultado Cadastro",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3888,
+        2416
       ]
     },
     {
@@ -599,7 +628,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $('MERGE - Resultado Cadastro').first().json.id_empresa }}",
+            "workflow": "={{ 'WF008' }}",
+            "node": "={{ ({CLIENTE_CRIADO:'GS - Criar Cliente', CLIENTE_EXISTENTE:'IF - Cliente Existe?', ERRO_CADASTRO:'CODE - Preparar Erro Cadastro'})[$('MERGE - Resultado Cadastro').first().json.status_cadastro] || 'WF008' }}",
+            "tipo": "={{ $('MERGE - Resultado Cadastro').first().json.status_cadastro === 'ERRO_CADASTRO' ? 'ERRO' : ($('MERGE - Resultado Cadastro').first().json.multiplos_encontrados ? 'AVISO' : 'SUCESSO') }}",
+            "evento": "={{ $('MERGE - Resultado Cadastro').first().json.status_cadastro }}",
+            "status": "={{ $('MERGE - Resultado Cadastro').first().json.status_cadastro }}",
+            "mensagem": "={{ $('MERGE - Resultado Cadastro').first().json.status_cadastro === 'CLIENTE_CRIADO' ? 'Cliente cadastrado com sucesso.' : ($('MERGE - Resultado Cadastro').first().json.status_cadastro === 'CLIENTE_EXISTENTE' ? ($('MERGE - Resultado Cadastro').first().json.multiplos_encontrados ? 'ATENÇÃO: múltiplos registros de cliente encontrados para este telefone; usando o mais antigo. Verificação manual recomendada.' : 'Cliente já cadastrado, nenhuma ação necessária.') : ($('MERGE - Resultado Cadastro').first().json.erro || 'Falha ao processar cadastro do cliente.')) }}",
+            "dados": "={{ JSON.stringify($('MERGE - Resultado Cadastro').first().json) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -691,43 +730,99 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "9d5018c3-f05c-4a19-890d-32af29ecfff4",
-      "name": "EXEC - WF017 - Log Cliente Criado",
+      "id": "bea013e3-acaa-4b65-bebb-a1a8b1d022b1",
+      "name": "EXEC - WF017 - Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1136,
-        1744
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "b19819a0-3414-4b44-ab7c-d91cbd22b7f8",
-      "name": "OUT - Cliente Criado",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        1376,
-        1744
+        4112,
+        2416
       ]
     },
     {
       "parameters": {
-        "content": "## WF008 v5.1 — Cadastrar Cliente\n\nVerifica duplicidade por ID_EMPRESA + TELEFONE, cria somente quando necessário e registra logs no WF017.\n\nApós importar, selecione a planilha BEAUTYFLOW3.1 e o WF017.",
-        "height": 280,
-        "width": 600
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_cliente",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "id_empresa",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "o3",
+              "name": "nome_cliente",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "telefone_cliente",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "cliente_novo",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.cliente_novo }}",
+              "type": "boolean"
+            },
+            {
+              "id": "o6",
+              "name": "status_cadastro",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.status_cadastro }}",
+              "type": "string"
+            },
+            {
+              "id": "o7",
+              "name": "origem",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.origem }}",
+              "type": "string"
+            },
+            {
+              "id": "o8",
+              "name": "multiplos_encontrados",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.multiplos_encontrados || false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "o9",
+              "name": "erro",
+              "value": "={{ $('MERGE - Resultado Cadastro').first().json.erro || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "d7a4316e-6168-4d2a-8a2b-4d69d1bf48eb",
-      "name": "NOTA - WF008 v5.1",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
+      "id": "1a140e66-dcfd-4a1c-830f-ca448f665286",
+      "name": "SET - Preparar Saída WF008",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        672,
-        1216
+        4336,
+        2416
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Dados WF008": [
+      {
+        "json": {
+          "id_empresa": "EMP001",
+          "telefone_cliente": "5534999990012",
+          "nome_cliente": "Teste Erro Tecnico WF008 Corrigido",
+          "origem": "TESTE_MANUAL"
+        }
+      }
+    ]
+  },
   "connections": {
     "TRG - Receber Dados WF008": {
       "main": [
@@ -744,7 +839,25 @@
       "main": [
         [
           {
+            "node": "IF - Telefone Válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Telefone Válido": {
+      "main": [
+        [
+          {
             "node": "GS - Verificar Duplicidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Validação Telefone",
             "type": "main",
             "index": 0
           }
@@ -752,6 +865,35 @@
       ]
     },
     "GS - Verificar Duplicidade": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Na Verificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Na Verificação": {
+      "main": [
+        [
+          {
+            "node": "CODE - Preparar Erro Cadastro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Avaliar Duplicidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Duplicidade": {
       "main": [
         [
           {
@@ -784,18 +926,7 @@
       "main": [
         [
           {
-            "node": "EXEC - WF017 - Log Cliente Existente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "EXEC - WF017 - Log Cliente Existente": {
-      "main": [
-        [
-          {
-            "node": "OUT - Cliente Existente",
+            "node": "MERGE - Resultado Cadastro",
             "type": "main",
             "index": 0
           }
@@ -817,29 +948,69 @@
       "main": [
         [
           {
-            "node": "SET - Retornar Cliente Criado",
+            "node": "SET - Cliente Criado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Preparar Erro Cadastro",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SET - Retornar Cliente Criado": {
+    "SET - Cliente Criado": {
       "main": [
         [
           {
-            "node": "EXEC - WF017 - Log Cliente Criado",
+            "node": "MERGE - Resultado Cadastro",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Validação Telefone": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Cadastro",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "CODE - Preparar Erro Cadastro": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Resultado Cadastro",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "MERGE - Resultado Cadastro": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF017 - Logs",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "EXEC - WF017 - Log Cliente Criado": {
+    "EXEC - WF017 - Logs": {
       "main": [
         [
           {
-            "node": "OUT - Cliente Criado",
+            "node": "SET - Preparar Saída WF008",
             "type": "main",
             "index": 0
           }
@@ -847,19 +1018,19 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "ad8d7c22-7984-4ced-b92c-b0386973a154",
+  "versionId": "e43ddbf8-9a8a-4c80-8bb6-e5c18fd4e5df",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
   },
   "nodeGroups": [],
-  "id": "aK7c4sZgz7yLyuaM",
+  "id": "AuvfiKw3czKQs4jc",
   "tags": [
     {
       "updatedAt": "2026-08-04T16:34:13.092Z",
