@@ -1,89 +1,660 @@
 {
-  "name": "COM - WF012 - Confirmação",
+  "name": "COM - WF013 - Lembrete",
   "nodes": [
     {
       "parameters": {
-        "workflowInputs": {
-          "values": [
-            {
-              "name": "id_empresa"
-            },
-            {
-              "name": "id_cliente"
-            },
-            {
-              "name": "telefone_cliente"
-            },
-            {
-              "name": "nome_cliente"
-            },
-            {
-              "name": "mensagem_texto"
-            },
-            {
-              "name": "intencao"
-            },
-            {
-              "name": "confianca"
-            },
-            {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
-            },
-            {
-              "name": "origem"
-            }
-          ]
-        }
+        "inputSource": "passthrough"
       },
-      "id": "463d265e-1381-469b-8dbc-7642731a4617",
-      "name": "TRG - Receber Dados WF012",
+      "id": "426aac91-786a-476b-82d7-349c9b6e1187",
+      "name": "TRG - Receber Dados WF013",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -512,
-        1056
+        2832,
+        2880
       ]
     },
     {
       "parameters": {
-        "jsCode": "return items;"
+        "jsCode": "const d = $json;\nconst idEmpresa = String(d.id_empresa || '').trim();\nconst empresaValida = idEmpresa.length > 0;\n\nreturn [{ json: {\n  id_empresa: idEmpresa,\n  empresa_valida: empresaValida,\n  evento_resultado: empresaValida ? '' : 'ERRO_LEMBRETE',\n  erro: empresaValida ? '' : 'id_empresa é obrigatório e não pode ser vazio para executar o envio de lembretes (nunca fazer busca multi-tenant sem ID_EMPRESA).'\n} }];\n"
       },
-      "id": "5e23ec8e-1adc-425d-acc0-ed488eeb618f",
-      "name": "CODE - Montar Mensagem",
+      "id": "571df47f-17e5-426d-b39b-8b4e945e80d6",
+      "name": "CODE - Validar Empresa",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
-        1056
+        3040,
+        2880
       ]
     },
     {
-      "parameters": {},
-      "id": "e24e931a-c395-4e87-823c-64a7f73f7b45",
-      "name": "HTTP - Enviar WhatsApp [CONFIGURAR]",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.empresa_valida }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f94bf03f-0ad0-4b71-b795-c35e6445e9dc",
+      "name": "IF - Empresa Válida",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
       "position": [
-        -32,
-        1056
+        3232,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6baedf50-60bd-48b0-b726-fd6ed9abe423",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        3440,
+        2880
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Validar Empresa').first().json;\n\nconst buscaOk = $items('GS - Buscar Empresa').length > 0;\nif (!buscaOk) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone: 'America/Sao_Paulo',\n    evento_resultado: 'ERRO_LEMBRETE',\n    erro: 'Falha técnica ao consultar EMPRESAS no Google Sheets.'\n  } }];\n}\n\nconst rows = $items('GS - Buscar Empresa').map(i => i.json).filter(r => r && r.ID_EMPRESA);\n\nif (rows.length === 0) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone: 'America/Sao_Paulo',\n    evento_resultado: 'EMPRESA_NAO_ENCONTRADA',\n    erro: 'Empresa não encontrada na aba EMPRESAS para o id_empresa informado.'\n  } }];\n}\n\nconst empresa = rows[0];\nconst phoneNumberId = String(empresa.WHATSAPP_PHONE_NUMBER_ID || '').trim();\nconst timezone = String(empresa.TIMEZONE || '').trim() || 'America/Sao_Paulo';\n\nif (!phoneNumberId) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '', timezone,\n    evento_resultado: 'WHATSAPP_NAO_CONFIGURADO',\n    erro: 'WHATSAPP_PHONE_NUMBER_ID não está configurado para esta empresa em EMPRESAS.'\n  } }];\n}\n\nconst agoraIso = DateTime.now().setZone(timezone).toISO();\n\nreturn [{ json: {\n  ...ctx, pode_prosseguir: true, phone_number_id: phoneNumberId, timezone, agora_iso: agoraIso, evento_resultado: ''\n} }];\n"
+      },
+      "id": "73d3c941-4726-4809-be13-d019c2f1a786",
+      "name": "CODE - Avaliar Empresa WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3632,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_prosseguir }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0ae82fd6-ff80-40af-8f78-54c62c2916fb",
+      "name": "IF - Empresa E WhatsApp OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3840,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "STATUS",
+              "lookupValue": "AGENDADO"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9f00b9df-30d3-4cba-8c32-053832cc3b2a",
+      "name": "GS - Buscar Agendamentos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4032,
+        2624
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "LEMBRETES",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0ce4daad-a2ed-4091-a510-6853f93bc826",
+      "name": "GS - Buscar Lembretes Existentes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4032,
+        2752
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "834cb93b-8a03-4326-9688-8ebd0a593fb0",
+      "name": "GS - Buscar Clientes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4032,
+        2896
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1890272312,
+          "mode": "list",
+          "cachedResultName": "PROFISSIONAIS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1890272312"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "957da61e-d6e0-4fc2-980b-f1c3231a6110",
+      "name": "GS - Buscar Profissionais",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4032,
+        3040
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1181056974,
+          "mode": "list",
+          "cachedResultName": "SERVICOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1181056974"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b13dd042-8597-4a12-95fb-5084211af2c1",
+      "name": "GS - Buscar Servicos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4032,
+        3184
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "id": "00fdd736-6726-4736-9419-9a83f3a961d7",
+      "name": "MERGE - Dados Coletados",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4304,
+        2896
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Avaliar Empresa WhatsApp').first().json;\nconst idEmpresa = ctx.id_empresa;\nconst phoneNumberId = ctx.phone_number_id || '';\nconst timezone = ctx.timezone || 'America/Sao_Paulo';\n\nconst agRaw = $items('GS - Buscar Agendamentos').map(i => i.json);\nconst lemRaw = $items('GS - Buscar Lembretes Existentes').map(i => i.json);\nconst cliRaw = $items('GS - Buscar Clientes').map(i => i.json);\nconst profRaw = $items('GS - Buscar Profissionais').map(i => i.json);\nconst servRaw = $items('GS - Buscar Servicos').map(i => i.json);\n\n// alwaysOutputData garante >=1 item quando a busca teve sucesso (mesmo com 0 resultados reais).\n// 0 itens só acontece quando o node seguiu o caminho de erro (onError: continueErrorOutput).\nif (agRaw.length === 0 || lemRaw.length === 0 || cliRaw.length === 0 || profRaw.length === 0 || servRaw.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_agendamento: '', id_cliente: '', tipo_lembrete: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'ERRO_LEMBRETE',\n    erro: 'Falha técnica ao consultar AGENDAMENTOS, LEMBRETES, CLIENTES, PROFISSIONAIS ou SERVICOS no Google Sheets.'\n  } }];\n}\n\nconst agendamentos = agRaw.filter(r => r && r.ID_AGENDAMENTO);\nconst lembretes = lemRaw.filter(r => r && r.ID_LEMBRETE);\nconst clientes = cliRaw.filter(r => r && r.ID_CLIENTE);\nconst profissionais = profRaw.filter(r => r && r.ID_PROFISSIONAL);\nconst servicos = servRaw.filter(r => r && r.ID_SERVICO);\n\nconst agora = ctx.agora_iso ? DateTime.fromISO(ctx.agora_iso, { zone: timezone }) : DateTime.now().setZone(timezone);\n\nfunction parseDataHora(dataStr, horaStr) {\n  const hora = String(horaStr || '00:00').slice(0, 5);\n  let dt = DateTime.fromFormat(`${dataStr} ${hora}`, 'dd/MM/yyyy HH:mm', { zone: timezone });\n  if (!dt.isValid) dt = DateTime.fromFormat(`${dataStr} ${hora}`, 'yyyy-MM-dd HH:mm', { zone: timezone });\n  if (!dt.isValid) dt = DateTime.fromISO(`${dataStr}T${hora}`, { zone: timezone });\n  return dt;\n}\n\n// Janelas de detecção (decisão técnica conservadora, documentada no relatório: não há\n// tolerância de execução periódica definida no projeto, então usamos janelas com folga\n// de +-2h em torno de 24h e +-1h em torno de 2h, largas o suficiente para tolerar\n// execuções não perfeitamente pontuais, sem se sobrepor entre si).\nconst JANELAS = [\n  { tipo: 'LEMBRETE_24H', minHoras: 22, maxHoras: 26 },\n  { tipo: 'LEMBRETE_2H', minHoras: 1, maxHoras: 3 }\n];\n\nif (agendamentos.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_agendamento: '', id_cliente: '', tipo_lembrete: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL',\n    erro: 'Nenhum agendamento com STATUS=AGENDADO encontrado para esta empresa.'\n  } }];\n}\n\nconst candidatos = [];\n\nfor (const ag of agendamentos) {\n  // Defensivo: mesmo com o filtro STATUS=AGENDADO na busca, revalida contra dado inconsistente.\n  if (String(ag.STATUS || '').toUpperCase() !== 'AGENDADO') continue;\n\n  const dataHora = parseDataHora(ag.DATA, ag.HORA_INICIO);\n  if (!dataHora.isValid) continue; // registro inválido: sem data/hora utilizável, não processa\n\n  const horasAteAgendamento = dataHora.diff(agora, 'hours').hours;\n  if (horasAteAgendamento <= 0) continue; // já passou, nunca lembrar\n\n  for (const janela of JANELAS) {\n    if (horasAteAgendamento < janela.minHoras || horasAteAgendamento > janela.maxHoras) continue;\n\n    const base = {\n      id_empresa: idEmpresa,\n      id_agendamento: ag.ID_AGENDAMENTO,\n      id_cliente: ag.ID_CLIENTE || '',\n      id_profissional: ag.ID_PROFISSIONAL || '',\n      id_servico: ag.ID_SERVICO || '',\n      data: ag.DATA || '',\n      hora_inicio: String(ag.HORA_INICIO || '').slice(0, 5),\n      tipo_lembrete: janela.tipo,\n      phone_number_id: phoneNumberId\n    };\n\n    const cliente = clientes.find(c => String(c.ID_CLIENTE) === String(ag.ID_CLIENTE)) || null;\n    if (!cliente) {\n      candidatos.push({ ...base, telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Cliente não encontrado para este agendamento.' });\n      continue;\n    }\n\n    const telefoneCliente = String(cliente.TELEFONE || '').replace(/\\D/g, '');\n    if (!telefoneCliente) {\n      candidatos.push({ ...base, telefone_cliente: '', nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Cliente sem telefone válido cadastrado.' });\n      continue;\n    }\n\n    const profissional = profissionais.find(p => String(p.ID_PROFISSIONAL) === String(ag.ID_PROFISSIONAL)) || null;\n    if (!profissional) {\n      candidatos.push({ ...base, telefone_cliente: telefoneCliente, nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Profissional não encontrado para este agendamento.' });\n      continue;\n    }\n\n    const servico = servicos.find(s => String(s.ID_SERVICO) === String(ag.ID_SERVICO)) || null;\n    if (!servico) {\n      candidatos.push({ ...base, telefone_cliente: telefoneCliente, nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL', erro: 'Serviço não encontrado para este agendamento.' });\n      continue;\n    }\n\n    // Idempotência: bloqueia somente se já existir um lembrete deste TIPO para este agendamento\n    // registrado como ENVIADO com sucesso. Uma tentativa com FALHA não bloqueia nova tentativa.\n    const jaEnviado = lembretes.some(l =>\n      String(l.ID_AGENDAMENTO) === String(ag.ID_AGENDAMENTO) &&\n      String(l.TIPO_LEMBRETE) === janela.tipo &&\n      String(l.STATUS || '').toUpperCase() === 'ENVIADO'\n    );\n\n    if (jaEnviado) {\n      candidatos.push({ ...base, telefone_cliente: telefoneCliente, nome_cliente: cliente.NOME || '', precisa_enviar: false, enviado: false, evento_resultado: 'LEMBRETE_JA_ENVIADO', erro: `Este ${janela.tipo} já foi enviado com sucesso para este agendamento.` });\n      continue;\n    }\n\n    const nomeExibicao = cliente.NOME && String(cliente.NOME).trim() ? String(cliente.NOME).trim() : 'Cliente';\n    const nomeServico = servico.NOME || '';\n    const nomeProfissional = profissional.NOME || '';\n    const horaExib = base.hora_inicio;\n    const dataExib = base.data;\n\n    let mensagem;\n    if (janela.tipo === 'LEMBRETE_24H') {\n      mensagem = `Olá, ${nomeExibicao}! 💜 Passando para lembrar do seu horário de ${nomeServico} com ${nomeProfissional} em ${dataExib} às ${horaExib}.`;\n    } else {\n      mensagem = `Olá, ${nomeExibicao}! 💜 Seu atendimento de ${nomeServico} com ${nomeProfissional} está agendado para ${dataExib} às ${horaExib}. Estamos te esperando!`;\n    }\n\n    candidatos.push({\n      ...base,\n      telefone_cliente: telefoneCliente,\n      nome_cliente: cliente.NOME || '',\n      servico: nomeServico,\n      profissional: nomeProfissional,\n      precisa_enviar: true,\n      enviado: false,\n      resposta_cliente: mensagem,\n      origem: 'AUTOMATICO'\n    });\n  }\n}\n\nif (candidatos.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_agendamento: '', id_cliente: '', tipo_lembrete: '',\n    telefone_cliente: '', nome_cliente: '', precisa_enviar: false, enviado: false,\n    evento_resultado: 'AGENDAMENTO_NAO_ELEGIVEL',\n    erro: 'Nenhum agendamento dentro das janelas de lembrete (24h/2h) nesta execução.'\n  } }];\n}\n\nreturn candidatos.map(c => ({ json: c }));\n"
+      },
+      "id": "b1ff68a0-f8ed-4c76-9db4-fc58105e7626",
+      "name": "CODE - Avaliar Lembretes Elegíveis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4512,
+        2896
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.precisa_enviar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "175cebaa-c583-4a19-8373-260cb463a82d",
+      "name": "IF - Precisa Enviar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4720,
+        2896
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "K6eEf2xTWr0Ke4Hs",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/K6eEf2xTWr0Ke4Hs",
+          "cachedResultName": "My project — COM - WF012 - Confirmação"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "intencao": "LEMBRETE",
+            "servico": "={{ $json.servico }}",
+            "data": "={{ $json.data }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
+            "profissional": "={{ $json.profissional }}",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "phone_number_id": "={{ $json.phone_number_id }}",
+            "origem": "={{ $json.origem }}",
+            "id_agendamento": "={{ $json.id_agendamento }}",
+            "dados": "={{ {\n  tipo_lembrete: $json.tipo_lembrete,\n  id_agendamento: $json.id_agendamento,\n  data: $json.data,\n  hora_inicio: $json.hora_inicio\n} }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "973eb3f3-989b-4ab8-a6bc-40218209becf",
+      "name": "EXEC - WF012 Comunicação",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4912,
+        2784
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const envio = $json;\n// .item (pareamento por item) quebra aqui porque este node lê o retorno de\n// EXEC - WF012 Comunicação: a travessia de fronteira de sub-workflow (Execute Workflow)\n// não preserva o pairedItem de forma confiável em todas as versões do n8n, causando o erro\n// relatado em teste real. .first() é o padrão validado em teste real no n8n para este ponto\n// específico (única entrada de CODE - Avaliar Lembretes Elegíveis chega até aqui por execução).\nconst lembrete = $('CODE - Avaliar Lembretes Elegíveis').first().json;\n\nconst enviado = envio.enviado === true;\nconst timezone = $('CODE - Avaliar Empresa WhatsApp').first().json.timezone || 'America/Sao_Paulo';\nconst agora = DateTime.now().setZone(timezone).toISO();\nconst idLembrete = `LEM${Date.now()}${Math.random().toString(36).slice(2, 8)}`;\n\nreturn [{ json: {\n  ...lembrete,\n  ID_LEMBRETE: idLembrete,\n  ID_EMPRESA: lembrete.id_empresa,\n  ID_AGENDAMENTO: lembrete.id_agendamento,\n  ID_CLIENTE: lembrete.id_cliente,\n  TIPO_LEMBRETE: lembrete.tipo_lembrete,\n  TELEFONE: lembrete.telefone_cliente,\n  STATUS: enviado ? 'ENVIADO' : 'FALHA',\n  DATA_HORA: agora,\n  WHATSAPP_MESSAGE_ID: envio.whatsapp_message_id || '',\n  OBSERVACOES: enviado ? '' : String(envio.erro || 'Falha ao enviar lembrete via WF012.'),\n  enviado: enviado,\n  evento_resultado: enviado ? 'LEMBRETE_ENVIADO' : 'ERRO_LEMBRETE',\n  erro: enviado ? '' : String(envio.erro || 'Falha ao enviar lembrete via WF012.')\n} }];\n"
+      },
+      "id": "27d83063-bab1-4888-a722-ab581a1669a6",
+      "name": "CODE - Processar Resultado Envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5120,
+        2784
       ]
     },
     {
@@ -98,19 +669,28 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": 1680743471,
-          "mode": "list",
-          "cachedResultName": "MENSAGENS",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1680743471"
+          "value": "LEMBRETES",
+          "mode": "name"
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "ID_LEMBRETE": "={{ $json.ID_LEMBRETE }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "ID_AGENDAMENTO": "={{ $json.ID_AGENDAMENTO }}",
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "TIPO_LEMBRETE": "={{ $json.TIPO_LEMBRETE }}",
+            "TELEFONE": "={{ $json.TELEFONE }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "DATA_HORA": "={{ $json.DATA_HORA }}",
+            "WHATSAPP_MESSAGE_ID": "={{ $json.WHATSAPP_MESSAGE_ID }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
-              "id": "ID_MENSAGEM",
-              "displayName": "ID_MENSAGEM",
+              "id": "ID_LEMBRETE",
+              "displayName": "ID_LEMBRETE",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -127,15 +707,6 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "ID_CLIENTE",
-              "displayName": "ID_CLIENTE",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
               "id": "ID_AGENDAMENTO",
               "displayName": "ID_AGENDAMENTO",
               "required": false,
@@ -145,8 +716,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "WHATSAPP_MESSAGE_ID",
-              "displayName": "WHATSAPP_MESSAGE_ID",
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -154,8 +725,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "DATA_HORA",
-              "displayName": "DATA_HORA",
+              "id": "TIPO_LEMBRETE",
+              "displayName": "TIPO_LEMBRETE",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -172,8 +743,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "DIRECAO",
-              "displayName": "DIRECAO",
+              "id": "STATUS",
+              "displayName": "STATUS",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -181,8 +752,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "TIPO_MENSAGEM",
-              "displayName": "TIPO_MENSAGEM",
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -190,8 +761,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "MENSAGEM",
-              "displayName": "MENSAGEM",
+              "id": "WHATSAPP_MESSAGE_ID",
+              "displayName": "WHATSAPP_MESSAGE_ID",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -199,44 +770,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "INTENCAO",
-              "displayName": "INTENCAO",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "CONFIANCA",
-              "displayName": "CONFIANCA",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "STATUS_PROCESSAMENTO",
-              "displayName": "STATUS_PROCESSAMENTO",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "ERRO",
-              "displayName": "ERRO",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "PROCESSADO",
-              "displayName": "PROCESSADO",
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -249,20 +784,112 @@
         },
         "options": {}
       },
-      "id": "7203bea9-9ace-48b1-865a-7dbc53652ba2",
-      "name": "GS - Registrar Mensagem Enviada",
+      "id": "7fdb4485-eb68-48ff-b72f-6bb924d5145a",
+      "name": "GS - Registrar Lembrete",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        208,
-        1056
+        5312,
+        2784
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_empresa }}"
+            },
+            {
+              "id": "s2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_agendamento }}"
+            },
+            {
+              "id": "s3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_cliente }}"
+            },
+            {
+              "id": "s4",
+              "name": "tipo_lembrete",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.tipo_lembrete }}"
+            },
+            {
+              "id": "s5",
+              "name": "enviado",
+              "type": "boolean",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.enviado }}"
+            },
+            {
+              "id": "s6",
+              "name": "resposta_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.resposta_cliente }}"
+            },
+            {
+              "id": "s7",
+              "name": "evento_resultado",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.evento_resultado }}"
+            },
+            {
+              "id": "s8",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.erro }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "99fa8d01-cb49-4a49-8f68-8d4a21ba4c31",
+      "name": "SET - Lembrete Registrado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        5520,
+        2704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const l = $('CODE - Processar Resultado Envio').item.json;\nconst err = $json.error || {};\n\nreturn [{ json: {\n  id_empresa: l.id_empresa,\n  id_agendamento: l.id_agendamento,\n  id_cliente: l.id_cliente,\n  tipo_lembrete: l.tipo_lembrete,\n  enviado: l.enviado,\n  resposta_cliente: l.resposta_cliente,\n  evento_resultado: 'ERRO_LEMBRETE',\n  erro: `Lembrete processado (enviado=${l.enviado}) mas falhou ao registrar em LEMBRETES: ${String((err && err.message) || err || 'erro desconhecido')}`\n} }];\n"
+      },
+      "id": "16bec944-3127-4873-a1c6-c3b20663b12e",
+      "name": "CODE - Erro Registro Lembrete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5520,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;\n"
+      },
+      "id": "4557f7ff-c603-48c3-9131-fa5414aa66dc",
+      "name": "CODE - Consolidar Resultado Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5760,
+        2896
+      ]
     },
     {
       "parameters": {
@@ -275,7 +902,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "COM-WF013",
+            "node": "CODE - Avaliar Lembretes Elegíveis",
+            "tipo": "={{ $json.evento_resultado === 'LEMBRETE_ENVIADO' ? 'INFO' : ( ['LEMBRETE_JA_ENVIADO','AGENDAMENTO_NAO_ELEGIVEL'].includes($json.evento_resultado) ? 'AVISO' : 'ERRO' ) }}",
+            "evento": "={{ $json.evento_resultado || 'ERRO_LEMBRETE' }}",
+            "status": "={{ $json.evento_resultado === 'LEMBRETE_ENVIADO' ? 'SUCESSO' : 'BLOQUEADO' }}",
+            "mensagem": "={{ $json.evento_resultado === 'LEMBRETE_ENVIADO' ? ('Lembrete ' + $json.tipo_lembrete + ' enviado com sucesso.') : $json.erro }}",
+            "dados": "={{ JSON.stringify({ id_agendamento: $json.id_agendamento, id_cliente: $json.id_cliente, tipo_lembrete: $json.tipo_lembrete }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -367,71 +1004,421 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "74326f6e-422e-4a11-b909-c0c4db281b63",
+      "id": "e4f17f13-36ce-41e8-a720-538e0d114bef",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        448,
-        1056
+        6000,
+        2896
       ]
     },
     {
       "parameters": {
-        "content": "## COM - WF012 - Confirmação v5.0\n\nCentraliza mensagens enviadas.",
-        "height": 280,
-        "width": 520
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_empresa || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_agendamento || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_cliente || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "tipo_lembrete",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.tipo_lembrete || '' }}"
+            },
+            {
+              "id": "o5",
+              "name": "enviado",
+              "type": "boolean",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.enviado || false }}"
+            },
+            {
+              "id": "o6",
+              "name": "status",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.evento_resultado || '' }}"
+            },
+            {
+              "id": "o7",
+              "name": "mensagem",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.resposta_cliente || '' }}"
+            },
+            {
+              "id": "o8",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.erro || '' }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "49915702-6a08-4952-bd27-a371502ff0c6",
-      "name": "NOTA - COM - WF012 - Confirmação v5.0",
+      "id": "9ad111d2-a78d-4445-8332-24dec2fa3d67",
+      "name": "SET - Preparar Saída WF013",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6240,
+        2896
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## COM - WF013 - Lembrete v3.0\n\nEnvia lembretes automáticos de agendamentos (LEMBRETE_24H e LEMBRETE_2H).\n\nRegras aprovadas:\n- Somente AGENDAMENTOS com STATUS=AGENDADO e DATA/HORA_INICIO no futuro\n- Dois tipos independentes: LEMBRETE_24H e LEMBRETE_2H (um não bloqueia o outro)\n- Idempotência via aba LEMBRETES (ID_AGENDAMENTO+TIPO_LEMBRETE), só bloqueia se já houver STATUS=ENVIADO\n- ID_EMPRESA obrigatório no trigger (nunca busca multi-tenant sem ele)\n- WHATSAPP_PHONE_NUMBER_ID e TIMEZONE obtidos de EMPRESAS (mesmo padrão do WF011)\n- Envio sempre via WF012 (nunca HTTP direto à Meta)\n\nJanelas de detecção (decisão técnica conservadora, documentada no diagnóstico - projeto não define tolerância de execução):\nLEMBRETE_24H: 22h a 26h antes\nLEMBRETE_2H: 1h a 3h antes\n\nCORREÇÕES DE ARQUITETURA (validadas em teste real no n8n):\n- MERGE - Resultado Lembrete (append, 5 inputs vindos de ramos mutuamente exclusivos) REMOVIDO - causava \"Node was not executed\" porque nem todos os 5 ramos executam na mesma execução. Substituído por CODE - Consolidar Resultado Final (pass-through simples), com TODOS os ramos terminais (IF - Empresa Válida falso, IF - Empresa E WhatsApp OK falso, IF - Precisa Enviar falso, SET - Lembrete Registrado, CODE - Erro Registro Lembrete) conectados diretamente na mesma entrada única desse node. MERGE - Dados Coletados (5 inputs) foi preservado sem alteração - é um barreira de sincronização legítima, já que as 5 buscas GS são disparadas juntas pelo mesmo ramo verdadeiro de IF - Empresa E WhatsApp OK e cada índice do Merge recebe sucesso OU erro da mesma busca, sempre preenchido a cada execução.\n- CODE - Processar Resultado Envio: referência a CODE - Avaliar Lembretes Elegíveis trocada de .item para .first() - o pareamento de item (.item) não atravessa de forma confiável a fronteira do EXEC - WF012 Comunicação (Execute Workflow), causando erro em teste real. .first() foi validado em teste real (cenário AGE004/LEMBRETE_24H). ATENÇÃO: .first() assume 1 lembrete por execução até este ponto; se o WF013 processar múltiplos lembretes elegíveis na mesma execução, revisar esta suposição.\n\nDEPENDÊNCIA FUTURA: nenhum Schedule/Cron implementado nesta etapa. WF013 precisa ser chamado periodicamente por um mecanismo externo (a definir).",
+        "height": 640,
+        "width": 720
+      },
+      "id": "89a52162-caf7-4253-b955-e52dcaf1ef71",
+      "name": "NOTA - COM - WF013 - Lembrete v3.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        384,
-        656
+        2832,
+        1936
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Dados WF013": [
+      {
+        "json": {
+          "id_empresa": "EMP001"
+        }
+      }
+    ]
+  },
   "connections": {
-    "TRG - Receber Dados WF012": {
+    "TRG - Receber Dados WF013": {
       "main": [
         [
           {
-            "node": "CODE - Montar Mensagem",
+            "node": "CODE - Validar Empresa",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "CODE - Montar Mensagem": {
+    "CODE - Validar Empresa": {
       "main": [
         [
           {
-            "node": "HTTP - Enviar WhatsApp [CONFIGURAR]",
+            "node": "IF - Empresa Válida",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP - Enviar WhatsApp [CONFIGURAR]": {
+    "IF - Empresa Válida": {
       "main": [
         [
           {
-            "node": "GS - Registrar Mensagem Enviada",
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Registrar Mensagem Enviada": {
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Empresa WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Avaliar Empresa WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Empresa WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "IF - Empresa E WhatsApp OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Empresa E WhatsApp OK": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamentos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Lembretes Existentes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Clientes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Profissionais",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Servicos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Lembretes Existentes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Clientes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 2
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Profissionais": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 3
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Servicos": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 4
+          }
+        ],
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "MERGE - Dados Coletados": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Lembretes Elegíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Lembretes Elegíveis": {
+      "main": [
+        [
+          {
+            "node": "IF - Precisa Enviar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Precisa Enviar": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF012 Comunicação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF012 Comunicação": {
+      "main": [
+        [
+          {
+            "node": "CODE - Processar Resultado Envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Resultado Envio": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Lembrete": {
+      "main": [
+        [
+          {
+            "node": "SET - Lembrete Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Registro Lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Lembrete Registrado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Registro Lembrete": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Final": {
       "main": [
         [
           {
             "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF013",
             "type": "main",
             "index": 0
           }
@@ -445,13 +1432,13 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "20a721d1-3197-458e-a9d1-8ae6bb1785b3",
+  "versionId": "5f596dff-59ad-4ecc-ab5b-7376f93b0448",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
   },
   "nodeGroups": [],
-  "id": "K6eEf2xTWr0Ke4Hs",
+  "id": "ggoaN4dzgrlyPzqh",
   "tags": [
     {
       "updatedAt": "2026-08-04T16:34:13.092Z",
@@ -464,6 +1451,12 @@
       "createdAt": "2026-08-04T15:39:27.064Z",
       "id": "d0gotpD6aug9VhAP",
       "name": "WhatsApp"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.519Z",
+      "createdAt": "2026-08-05T15:27:49.519Z",
+      "id": "kBpyDFlwbrEc6QP9",
+      "name": "Agenda"
     },
     {
       "updatedAt": "2026-08-05T15:30:16.361Z",
