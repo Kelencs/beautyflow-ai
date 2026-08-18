@@ -1,93 +1,83 @@
-# Agenda
+# Agenda — WF004–WF007
 
-## Visão Geral
+> **Sincronização:** 18/08/2026  
+> **Fonte de verdade:** JSONs desta pasta.
 
-Esta pasta contém todos os workflows relacionados ao gerenciamento da agenda da empresa.
+## Objetivo
 
-São responsáveis por consultar horários, criar agendamentos, reagendar e cancelar atendimentos.
+Gerenciar disponibilidade e ciclo de vida dos agendamentos.
 
----
+## Workflows
 
-# Objetivos
+| ID | Função |
+|---|---|
+| WF004 | Consultar Disponibilidade |
+| WF005 | Criar Agendamento |
+| WF006 | Reagendar |
+| WF007 | Cancelar |
 
-- Consultar disponibilidade
-- Criar agendamentos
-- Reagendar horários
-- Cancelar atendimentos
-- Sincronizar Google Calendar
-
----
-
-# Workflows
-
-| Código | Workflow |
-|---------|----------|
-| AGE-WF004 | Consultar Disponibilidade |
-| AGE-WF005 | Criar Agendamento |
-| AGE-WF006 | Reagendar Atendimento |
-| AGE-WF007 | Cancelar Atendimento |
-
----
-
-# Fluxo
+## Dependências atuais
 
 ```text
-Cliente
+WF004 ───────────────────────────────► WF017
 
-↓
+WF005 ──► WF004
+      └──► WF012
+      └──► WF017
 
-Consulta Horários
+WF006 ──► WF004
+      └──► WF012
+      └──► WF017
 
-↓
-
-Google Calendar
-
-↓
-
-Disponível?
-
-↓
-
-Sim → Agendar
-
-↓
-
-Não → Sugerir Horários
+WF007 ──► WF012
+      └──► WF017
 ```
 
----
+## Integrações diretas
 
-# Integrações
+- Google Calendar — WF004–WF007;
+- Google Sheets — WF004–WF007;
+- n8n Execute Workflow.
 
-- Google Calendar
-- Google Sheets
-- Gemini
-- WhatsApp Cloud API
+WhatsApp é utilizado **indiretamente** por WF005–WF007 por meio do WF012.
 
----
+**Gemini não é integração direta deste módulo.**
 
-# Regras
+## Regras principais
 
-- Nunca criar horários duplicados.
-- Sempre validar disponibilidade.
-- Atualizar Google Calendar.
-- Atualizar planilha AGENDAMENTOS.
+- validar disponibilidade antes de confirmar criação;
+- considerar duração/intervalo configurado do serviço;
+- evitar sobreposição;
+- respeitar `ID_EMPRESA` quando o contrato exige;
+- cancelamento respeita `TEMPO_CANCELAMENTO_MIN` da empresa;
+- reagendamento deve consultar a nova disponibilidade.
 
----
+## Configuração atual do Calendar
 
-# Estrutura
+Os JSONs atuais possuem configuração do Google Calendar diretamente nos workflows.
 
-```
-agenda/
+Isso deve ser documentado como **estado atual**, sem afirmar que já existe resolução dinâmica do Calendar por empresa.
 
-├── README.md
-├── AGE-WF004.json
-├── AGE-WF005.json
-├── AGE-WF006.json
-└── AGE-WF007.json
-```
+## Gap de reagendamento
 
----
+A documentação funcional mantém RN014 — máximo de um reagendamento — como **gap de implementação**.
 
-Versão: 5.0
-Projeto: BeautyFlow AI
+Não marcar essa regra como cumprida até existir controle explícito e teste correspondente.
+
+O node de atualização do Calendar no WF006 deve ser documentado exatamente como exportado; não inventar campos que não estejam configurados.
+
+## Tratamento de erro
+
+Erros de Calendar/Sheets devem ser diferenciados de:
+
+- horário não disponível;
+- serviço não encontrado;
+- data inválida;
+- agendamento não encontrado;
+- bloqueio de antecedência.
+
+## Documentação
+
+- `n8n/documentacao/agenda/`
+- `docs/04-regras-de-negocio/`
+- `tests/Casos-de-Teste/CT004...CT007`
