@@ -1,92 +1,67 @@
-# COM-WF013 — Lembrete
+# WF013 — COM - WF013 - Lembrete
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`COM-WF013-lembrete.json`](../../workflows/comunicacao/COM-WF013-lembrete.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `COM-WF013` |
-| Workflow | Lembrete |
-| Arquivo n8n | `COM-WF013-lembrete.json` |
-| Status | Versionado e validado em testes |
-| Trigger | Subworkflow executado para processar lembretes de uma empresa/período. |
-| Última revisão desta documentação | 18/08/2026 |
+Identificar agendamentos próximos e enviar lembretes nas janelas de 24h e 2h, com idempotência e registro de cada tentativa.
 
-## Objetivo
+## 2. Identificação técnica
 
-Enviar lembretes de agendamentos elegíveis sem duplicar mensagens já enviadas e permitindo nova tentativa quando uma tentativa anterior falhou.
+- **Workflow:** `COM - WF013 - Lembrete`
+- **ID funcional:** `WF013`
+- **Arquivo JSON:** `COM-WF013-lembrete.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** `Execute Workflow Trigger`; o JSON atual não contém Schedule/Cron. A execução periódica precisa ser acionada externamente.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa` e contexto de execução do lembrete.
+## 3. Entradas
 
-## Fluxo principal
+- `id_empresa` obrigatório.
 
-1. Valida a empresa.
-2. Busca a configuração da empresa, inclusive `WHATSAPP_PHONE_NUMBER_ID` e fuso.
-3. Localiza agendamentos elegíveis para a janela de lembrete.
-4. Define o tipo de lembrete (incluindo o lembrete de 24h).
-5. Consulta `LEMBRETES` para verificar idempotência.
-6. Se já houver o mesmo lembrete com status `ENVIADO`, retorna `LEMBRETE_JA_ENVIADO`.
-7. Se não houver envio concluído, monta a mensagem.
-8. Envia pelo WF012.
-9. Somente após o resultado correspondente, registra/atualiza o controle do lembrete.
-10. Registra a execução no WF017.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Valida `id_empresa` e busca a empresa em `EMPRESAS`.
+2. Obtém `WHATSAPP_PHONE_NUMBER_ID` e timezone da empresa; usa `America/Sao_Paulo` como referência quando previsto pelo código.
+3. Consulta `AGENDAMENTOS`, `LEMBRETES`, `CLIENTES`, `PROFISSIONAIS` e `SERVICOS`, sempre no escopo da empresa.
+4. Avalia agendamentos `AGENDADO` futuros e cria candidatos às janelas de lembrete.
+5. Verifica cliente/telefone, profissional e serviço necessários para montar a mensagem.
+6. Aplica idempotência contra `LEMBRETES` já enviados.
+7. Cada candidato elegível é enviado por WF012.
+8. Registra o resultado em `LEMBRETES`, consolida o resultado, grava log pelo WF017 e prepara a saída.
 
-```text
-COM-WF013 → Google Sheets: EMPRESAS, AGENDAMENTOS, LEMBRETES → COM-WF012 → ADM-WF017
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- `id_empresa` é obrigatório.
+- Lembrete de 24h: janela entre 22 e 26 horas antes do atendimento.
+- Lembrete de 2h: janela entre 1 e 3 horas antes do atendimento.
+- Somente agendamentos futuros com `STATUS=AGENDADO` são elegíveis.
+- Idempotência considera `ID_AGENDAMENTO + TIPO_LEMBRETE` com registro `STATUS=ENVIADO`; falha anterior não bloqueia nova tentativa.
+- Envio é sempre delegado ao WF012.
 
-- Google Sheets: `EMPRESAS`, `AGENDAMENTOS`, `LEMBRETES`
-- COM-WF012
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `EMPRESAS`, `AGENDAMENTOS`, `LEMBRETES`, `CLIENTES`, `PROFISSIONAIS`, `SERVICOS`.
+- WF012 — Comunicação.
+- WF017 — Logs.
 
-- RN005: lembrete principal 24 horas antes do atendimento.
-- Idempotência deve considerar agendamento + tipo de lembrete.
-- Uma tentativa com falha não deve impedir uma futura repetição.
-- Somente `STATUS=ENVIADO` deve bloquear duplicidade do mesmo lembrete.
-- Configuração de WhatsApp deve vir da empresa correta.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Resultados típicos: `LEMBRETE_ENVIADO`, `LEMBRETE_JA_ENVIADO`, `AGENDAMENTO_NAO_ELEGIVEL`, `ERRO_LEMBRETE` e bloqueios de configuração de empresa/WhatsApp.
 
-- `LEMBRETE_ENVIADO`, `LEMBRETE_JA_ENVIADO`, bloqueio ou erro técnico por candidato.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Falha técnica de busca é diferenciada de ausência legítima de registros.
+- Empresa inexistente ou sem `WHATSAPP_PHONE_NUMBER_ID` bloqueia os envios.
 
-- Erro em Sheets precisa ser classificado como técnico.
-- Falha do WhatsApp deve permanecer falha, e não criar falsa idempotência de sucesso.
-- Vários candidatos podem gerar vários itens de saída; isso é esperado.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- No arquivo versionado, `active` está `false`.
+- O JSON não agenda a própria execução; não documentar horário diário inexistente.
 
-- Chama: `COM-WF012` e `ADM-WF017`.
-- Lê dados de empresa/agendamento/controle de lembrete.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Lembrete elegível enviado.
-- [ ] Reexecução do mesmo lembrete retorna `LEMBRETE_JA_ENVIADO`.
-- [ ] Tentativa anterior com falha permite retry.
-- [ ] Nenhum agendamento na janela.
-- [ ] Erro técnico na busca.
-- [ ] Falha no envio do WhatsApp.
-
-## Cuidados na manutenção
-
-Preserve a distinção entre `ENVIADO` e tentativa falha. Usar simplesmente 'existe uma linha em LEMBRETES' como bloqueio quebraria o retry.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `COM-WF013-lembrete.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
