@@ -1,317 +1,72 @@
-# Matriz de Rastreabilidade
-
-**Projeto:** BeautyFlow AI
-
-**Documento:** Matriz de Rastreabilidade de Requisitos (RTM)
-
-**Código:** TEST002
-
-**Versão:** 1.0
-
-**Data:** 28/07/2026
-
-**Autor:** Product Owner
-
-**Status:** Em elaboração
-
----
-
-# Histórico de Alterações
-
-| Versão | Data | Responsável | Alteração |
-|---------|------|-------------|-----------|
-| 1.0 | 28/07/2026 | Product Owner | Criação inicial |
-
----
-
-# Sumário
-
-1. Objetivo
-2. Escopo
-3. Referências
-4. Estratégia de Rastreabilidade
-5. Matriz de Rastreabilidade
-6. Cobertura por Requisitos
-7. Cobertura por Casos de Uso
-8. Cobertura por User Stories
-9. Cobertura por Workflows
-10. Cobertura por Casos de Teste
-11. Critérios de Cobertura
-12. Indicadores
-13. Atualização da Matriz
-14. Aprovação
-
----
-
-# 1. Objetivo
-
-A Matriz de Rastreabilidade tem como objetivo garantir que todos os requisitos do BeautyFlow AI sejam implementados, testados e aprovados.
-
-Ela permite identificar rapidamente:
-
-- quais requisitos foram implementados;
-- quais Casos de Uso atendem cada requisito;
-- quais User Stories originaram a implementação;
-- quais Workflows executam o processo;
-- quais Casos de Teste validam cada funcionalidade.
-
----
-
-# 2. Escopo
-
-Esta matriz contempla:
-
-- Requisitos Funcionais
-- Requisitos Não Funcionais
-- Casos de Uso
-- User Stories
-- Workflows n8n
-- Casos de Teste
-- Critérios de Aceitação
-
----
-
-# 3. Referências
-
-Este documento está relacionado aos seguintes artefatos:
-
-- Documento de Visão
-- Requisitos
-- Casos de Uso
-- Personas
-- User Stories
-- Regras de Negócio
-- Arquitetura
-- Banco de Dados
-- Workflows n8n
-- Plano de Testes
-- Estratégia de Testes
-
----
-
-# 4. Estratégia de Rastreabilidade
-
-Todo requisito deverá possuir obrigatoriamente:
-
-- pelo menos um Caso de Uso;
-- pelo menos uma User Story;
-- pelo menos um Workflow;
-- pelo menos um Caso de Teste.
-
-Nenhum requisito poderá seguir para produção sem rastreabilidade completa.
-
----
-
-# 5. Matriz de Rastreabilidade
-
-| Requisito | Caso de Uso | User Story | Workflow | Caso de Teste | Status |
-|------------|-------------|------------|----------|---------------|--------|
-| REQ001 | UC001 | US001 | WF001 | CT001 | ☐ |
-| REQ002 | UC002 | US002 | WF002 | CT002 | ☐ |
-| REQ003 | UC003 | US003 | WF003 | CT003 | ☐ |
-| REQ004 | UC004 | US004 | WF004 | CT004 | ☐ |
-| REQ005 | UC005 | US005 | WF005 | CT005 | ☐ |
-| REQ006 | UC006 | US006 | WF006 | CT006 | ☐ |
-| REQ007 | UC007 | US007 | WF007 | CT007 | ☐ |
-| REQ008 | UC008 | US008 | WF008 | CT008 | ☐ |
-| REQ009 | UC009 | US009 | WF009 | CT009 | ☐ |
-| REQ010 | UC010 | US010 | WF010 | CT010 | ☐ |
-
----
-
-# 6. Cobertura por Requisitos
-
-## Requisitos Funcionais
-
-| Código | Descrição | Coberto |
-|----------|-----------|:-------:|
-| REQ001 | Receber mensagens do WhatsApp | ☐ |
-| REQ002 | Identificar cliente | ☐ |
-| REQ003 | Consultar agenda | ☐ |
-| REQ004 | Agendar atendimento | ☐ |
-| REQ005 | Reagendar atendimento | ☐ |
-| REQ006 | Cancelar atendimento | ☐ |
-| REQ007 | Enviar lembretes | ☐ |
-| REQ008 | Consultar histórico | ☐ |
-| REQ009 | Configurar IA | ☐ |
-| REQ010 | Gerenciar usuários | ☐ |
-
----
-
-## Requisitos Não Funcionais
-
-| Código | Descrição | Coberto |
-|----------|-----------|:-------:|
-| RNF001 | Segurança | ☐ |
-| RNF002 | Performance | ☐ |
-| RNF003 | Disponibilidade | ☐ |
-| RNF004 | Escalabilidade | ☐ |
-| RNF005 | Auditoria | ☐ |
-
----
-
-# 7. Cobertura por Casos de Uso
-
-| Caso de Uso | Descrição | Testado |
-|--------------|-----------|:-------:|
-| UC001 | Agendar Atendimento | ☐ |
-| UC002 | Consultar Agenda | ☐ |
-| UC003 | Reagendar Atendimento | ☐ |
-| UC004 | Cancelar Atendimento | ☐ |
-| UC005 | Enviar Lembretes | ☐ |
-| UC006 | Identificar Cliente | ☐ |
-| UC007 | Gerenciar Usuários | ☐ |
-| UC008 | Configurar IA | ☐ |
-| UC009 | Monitorar Plataforma | ☐ |
-| UC010 | Gerenciar Permissões | ☐ |
-
----
-
-# 8. Cobertura por User Stories
-
-| User Story | Descrição | Validada |
-|-------------|-----------|:--------:|
-| US001 | Agendar Atendimento | ☐ |
-| US002 | Consultar Agenda | ☐ |
-| US003 | Reagendar Atendimento | ☐ |
-| US004 | Cancelar Atendimento | ☐ |
-| US005 | Receber Lembretes | ☐ |
-| US006 | Identificar Cliente | ☐ |
-| US007 | Configurar IA | ☐ |
-| US008 | Gerenciar Agenda | ☐ |
-| US009 | Dashboard | ☐ |
-| US010 | Administração | ☐ |
-
----
-
-# 9. Cobertura por Workflows
-
-| Workflow | Nome | Testado |
-|-----------|------|:-------:|
-| WF001 | Webhook WhatsApp | ☐ |
-| WF002 | Identificar Cliente | ☐ |
-| WF003 | IA - Classificação | ☐ |
-| WF004 | Consultar Agenda | ☐ |
-| WF005 | Agendar Atendimento | ☐ |
-| WF006 | Reagendar Atendimento | ☐ |
-| WF007 | Cancelar Atendimento | ☐ |
-| WF008 | Enviar Lembretes | ☐ |
-| WF009 | Logs | ☐ |
-| WF010 | Monitoramento | ☐ |
-
----
-
-# 10. Cobertura por Casos de Teste
-
-| Caso de Teste | Objetivo | Executado |
-|----------------|----------|:---------:|
-| CT001 | Webhook | ☐ |
-| CT002 | Receber Mensagem | ☐ |
-| CT003 | Identificar Cliente | ☐ |
-| CT004 | Agendar Atendimento | ☐ |
-| CT005 | Reagendar Atendimento | ☐ |
-| CT006 | Cancelar Atendimento | ☐ |
-| CT007 | Lembretes | ☐ |
-| CT008 | IA | ☐ |
-| CT009 | Google Calendar | ☐ |
-| CT010 | Integração n8n | ☐ |
-
----
-
-# 11. Critérios de Cobertura
-
-Um requisito será considerado totalmente coberto quando possuir:
-
-- Caso de Uso aprovado;
-- User Story implementada;
-- Workflow desenvolvido;
-- Caso de Teste aprovado;
-- Evidências registradas.
-
----
-
-# 12. Indicadores
-
-Serão acompanhados os seguintes indicadores:
-
-| Indicador | Objetivo |
-|------------|----------|
-| Cobertura de Requisitos | 100% |
-| Cobertura de Casos de Uso | 100% |
-| Cobertura de User Stories | 100% |
-| Cobertura de Workflows | 100% |
-| Cobertura de Casos de Teste | 100% |
-| Casos de Teste Aprovados | ≥ 95% |
-| Defeitos Críticos | 0 |
-
----
-
-# 13. Atualização da Matriz
-
-A matriz deverá ser atualizada sempre que ocorrer uma das seguintes situações:
-
-- inclusão de novo requisito;
-- alteração de requisito existente;
-- criação de novo Caso de Uso;
-- criação de nova User Story;
-- criação de novo Workflow;
-- criação de novo Caso de Teste;
-- aprovação de testes;
-- correção de defeitos.
-
-Toda atualização deverá ser registrada no histórico de alterações do documento.
-
----
-
-# 14. Aprovação
-
-| Papel | Responsável | Assinatura |
-|--------|-------------|------------|
-| Product Owner | __________________ | __________________ |
-| QA | __________________ | __________________ |
-| Desenvolvedor | __________________ | __________________ |
-| Stakeholder | __________________ | __________________ |
-
----
-
-# Anexo A — Legenda
-
-| Sigla | Descrição |
-|--------|-----------|
-| REQ | Requisito Funcional |
-| RNF | Requisito Não Funcional |
-| UC | Caso de Uso |
-| US | User Story |
-| WF | Workflow n8n |
-| CT | Caso de Teste |
-| RTM | Requirements Traceability Matrix |
-
----
-
-# Anexo B — Fluxo de Rastreabilidade
-
-```text
-Requisito
-      │
-      ▼
-Caso de Uso
-      │
-      ▼
-User Story
-      │
-      ▼
-Workflow n8n
-      │
-      ▼
-Caso de Teste
-      │
-      ▼
-Evidência
-      │
-      ▼
-Aprovação
-```
-
----
-
-**Fim do Documento**
+# Matriz de Rastreabilidade — BeautyFlow AI
+
+**Código:** TEST002  
+**Versão:** 2.0  
+**Data:** 18/08/2026  
+**Status:** Atualizada para WF001–WF018
+
+## 1. Objetivo
+
+Relacionar implementação, requisitos, casos de uso, user stories, casos de teste e evidência, sem criar vínculos artificiais quando um artefato ainda não existe.
+
+## 2. Matriz principal
+
+| Workflow | Implementação | RF/RNF relacionado | Caso de Uso | User Story | Caso de Teste | Estado da evidência |
+|---|---|---|---|---|---|---|
+| WF001 | ATD - Receber WhatsApp | RF001 | — | — | CT001 | ⚪ Revalidar evidência consolidada |
+| WF002 | ATD - IA Atendimento | RF002, RF003, RF005, RF006, RF007, RF020 | UC005, UC008 | US005, US008 | CT002 | ⚪ Revalidar evidência consolidada |
+| WF003 | ATD - Identificar Intenção | RF008, RF009, RF011, RF012 (orquestração) | UC001–UC004 (orquestração) | US001–US004 (orquestração) | CT003 | ⚪ Revalidar evidência consolidada |
+| WF004 | AGE - Consultar Disponibilidade | RF008 | UC002 | US002 | CT004 | ⚪ Revalidar evidência consolidada |
+| WF005 | AGE - Criar Agendamento | RF009, RF010, RF015 | UC001, UC006 | US001, US006 | CT005 | ⚪ Revalidar evidência consolidada |
+| WF006 | AGE - Reagendar | RF011 | UC003 | US003 | CT006 | ⚪ Revalidar evidência consolidada |
+| WF007 | AGE - Cancelar Agendamento | RF012, RF016 | UC004 | US004 | CT007 | ⚪ Revalidar evidência consolidada |
+| WF008 | CLI - Cadastrar Cliente | RF003 | UC008 | US008 | CT008 | ✅ Validado |
+| WF009 | CLI - Atualizar Cliente | RF004 | UC009 | US009 | CT009 | ✅ Validado |
+| WF010 | FIN - Registrar Pagamento | GAP: requisito financeiro específico não existe em RF001–RF020 | — | — | CT010 | ✅ Validado |
+| WF011 | FIN - Cobrança | GAP: requisito de cobrança não existe em RF001–RF020 | — | — | CT011 | ✅ Validado |
+| WF012 | COM - Confirmação/Comunicação | RF010 | UC006 | US006 | CT012 | 🟡 Lógica validada; integração externa deve ser revalidada no ambiente alvo |
+| WF013 | COM - Lembrete | RF014 | UC007 | US007 | CT013 | ✅ Validado |
+| WF014 | COM - Pesquisa | GAP: RF específico não existe; relacionado a UC012/US012 | UC012 | US012 | CT014 | 🟡 Parcialmente validado; manter pendência explícita até evidência final |
+| WF015 | COM - Follow-up | RF019 (parcialmente relacionado) | — | — | CT015 | ✅ Validado em rodada posterior ao relatório de 14/08 |
+| WF016 | ADM - Backup | RNF004 | — | — | CT016 | ✅ Validado |
+| WF017 | ADM - Logs | RNF003, RNF009 | — | — | CT017 | ✅ Validado |
+| WF018 | ADM - Limpeza | RNF009 (parcial); GAP: retenção de 90 dias não está formalizada em RNF | — | — | CT018 | ✅ Validado |
+
+## 3. Leitura da matriz
+
+- `—` = não existe artefato equivalente claro na documentação atual.
+- `GAP` = o workflow implementa capacidade relevante que ainda não possui requisito formal correspondente.
+- `orquestração` = o workflow encaminha para o responsável; não executa sozinho toda a regra.
+- `⚪` = evidência consolidada insuficiente, não reprovação.
+
+## 4. Gaps identificados
+
+### GAP-RF-001 — Pagamentos
+WF010 implementa registro transacional e cálculo de saldo, porém RF001–RF020 não possuem requisito financeiro específico.
+
+### GAP-RF-002 — Cobrança
+WF011 implementa cobrança automática, janela 09h–18h, 24h entre tentativas e limite de 3, sem RF/UC/US específico equivalente.
+
+### GAP-RF-003 — Pesquisa pós-atendimento
+UC012/US012 existem, mas falta RF explícito correspondente.
+
+### GAP-RF-004 — Follow-up
+RF019 é apenas parcialmente relacionado; o comportamento de 30/45 dias e idempotência do WF015 merece requisito próprio.
+
+### GAP-RNF-001 — Retenção de logs
+WF018 executa retenção de 90 dias, mas a duração não está formalizada nos RNFs atuais.
+
+## 5. Cobertura técnica
+
+- Workflows com caso principal: **18/18**.
+- Workflows representados na matriz: **18/18**.
+- Workflows com gaps formais de requisito: documentados acima.
+- Aprovação de teste: consultar `Evidencias/BeautyFlow-Status-Testes-Workflows-2026-08-18.md`.
+
+## 6. Regra de atualização
+
+Alterar esta matriz sempre que:
+- um workflow for criado/removido;
+- RF/RNF/UC/US mudar;
+- um CT mudar;
+- status de evidência mudar.
