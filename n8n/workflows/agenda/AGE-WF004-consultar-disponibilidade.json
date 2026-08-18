@@ -21,6 +21,10 @@
               "name": "servico"
             },
             {
+              "name": "dados",
+              "type": "object"
+            },
+            {
               "name": "data"
             },
             {
@@ -53,13 +57,13 @@
           ]
         }
       },
-      "id": "855f9c82-d750-4104-99ca-f2d437572dfd",
+      "id": "de99e7be-f3cf-4af7-a369-c5b42d5dc278",
       "name": "TRG - Receber Dados WF004",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -144,
-        1264
+        464,
+        1904
       ]
     },
     {
@@ -85,10 +89,6 @@
               "lookupValue": "={{ $json.id_empresa }}"
             },
             {
-              "lookupColumn": "NOME",
-              "lookupValue": "={{ $json.servico }}"
-            },
-            {
               "lookupColumn": "STATUS",
               "lookupValue": "ATIVO"
             }
@@ -96,14 +96,15 @@
         },
         "options": {}
       },
-      "id": "a4e58f12-c802-43b3-9fa9-5335b28a9182",
+      "id": "22adaf2e-1be7-4828-8948-c39ca0884651",
       "name": "GS - Buscar Serviço",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        96,
-        1264
+        704,
+        1904
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
@@ -141,14 +142,15 @@
         },
         "options": {}
       },
-      "id": "7dbba411-d866-4ce7-bc0b-abd091979398",
+      "id": "975fb5f2-9d82-4989-b034-d63579e2d2e1",
       "name": "GS - Buscar Profissional",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        304,
-        1264
+        912,
+        1904
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
@@ -179,10 +181,6 @@
               "lookupValue": "={{ $('TRG - Receber Dados WF004').first().json.id_empresa }}"
             },
             {
-              "lookupColumn": "ID_PROFISSIONAL",
-              "lookupValue": "={{ $('GS - Buscar Profissional').first().json.ID_PROFISSIONAL }}"
-            },
-            {
               "lookupColumn": "ATIVO",
               "lookupValue": "SIM"
             }
@@ -190,14 +188,15 @@
         },
         "options": {}
       },
-      "id": "08df9b3c-1e19-479d-9f97-f4e45c85f29b",
+      "id": "120c3d8c-f82a-48d0-ab3a-feaa42c2870c",
       "name": "GS - Buscar Disponibilidade",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        528,
-        1264
+        1136,
+        1904
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
@@ -226,23 +225,20 @@
             {
               "lookupColumn": "ID_EMPRESA",
               "lookupValue": "={{ $('TRG - Receber Dados WF004').first().json.id_empresa }}"
-            },
-            {
-              "lookupColumn": "ID_PROFISSIONAL",
-              "lookupValue": "={{ $('GS - Buscar Profissional').first().json.ID_PROFISSIONAL }}"
             }
           ]
         },
         "options": {}
       },
-      "id": "fe2a75f2-38e1-481d-a581-8b4cb41096d9",
+      "id": "684cba62-417d-424a-b102-d41f65b907c3",
       "name": "GS - Buscar Agendamentos",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        752,
-        1264
+        1360,
+        1904
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
@@ -252,26 +248,26 @@
     },
     {
       "parameters": {
-        "jsCode": "const e=$('TRG - Receber Dados WF004').first().json;\nconst s=$('GS - Buscar Serviço').first().json;\nconst p=$('GS - Buscar Profissional').first().json;\nconst ds=$items('GS - Buscar Disponibilidade').map(i=>i.json);\nconst ag=$items('GS - Buscar Agendamentos').map(i=>i.json);\nconst dur=Number(s.DURACAO_MIN||60), intervalo=Number(s.TEMPO_INTERVALO_MIN||0);\nconst tm=t=>{const [h,m]=String(t||'00:00').slice(0,5).split(':').map(Number);return h*60+m};\nconst hs=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');\nconst dia=new Date(`${e.data}T12:00:00`).getDay();\nconst d=ds.find(x=>Number(x.DIA_SEMANA_NUM)===dia)||ds[0];\nif(!d)return [{json:{status:'SEM_DISPONIBILIDADE',horarios:[],resposta_cliente:'Não encontrei disponibilidade cadastrada.'}}];\nconst occ=ag.filter(a=>!['CANCELADO'].includes(String(a.STATUS||'').toUpperCase())).map(a=>[tm(a.HORA_INICIO),tm(a.HORA_FIM)]);\nconst ini=tm(d.HORA_INICIO), fim=tm(d.HORA_FIM), pi=d.INTERVALO_INICIO?tm(d.INTERVALO_INICIO):null, pf=d.INTERVALO_FIM?tm(d.INTERVALO_FIM):null;\nconst horarios=[]; for(let x=ini;x+dur<=fim;x+=30){const y=x+dur+intervalo; if(!(pi!==null&&x<pf&&y>pi)&&!occ.some(([a,b])=>x<b&&y>a)) horarios.push(hs(x));}\nreturn [{json:{...e,id_servico:s.ID_SERVICO,servico:s.NOME,duracao_min:dur,valor:Number(s.VALOR||0),id_profissional:p.ID_PROFISSIONAL,profissional:p.NOME,horarios,resposta_cliente:horarios.length?`Horários disponíveis: ${horarios.slice(0,6).join(', ')}`:'Não encontrei horários livres.'}}];"
+        "jsCode": "const e = $('TRG - Receber Dados WF004').first().json;\n\n// ==============================\n// SERVIÇOS\n// ==============================\nconst servicos = $items('GS - Buscar Serviço')\n  .map(i => i.json)\n  .filter(x => x && x.ID_SERVICO);\n\n// Normaliza textos para comparação flexível\nconst normalizar = (texto) => {\n  const stopwords = new Set([\n    'em', 'de', 'da', 'do', 'das', 'dos',\n    'para', 'com', 'no', 'na'\n  ]);\n\n  return String(texto || '')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase()\n    .replace(/[^a-z0-9\\s]/g, ' ')\n    .split(/\\s+/)\n    .filter(Boolean)\n    .filter(p => !stopwords.has(p))\n    .join(' ')\n    .trim();\n};\n\nconst servicoSolicitado = normalizar(e.servico);\n\nlet s = null;\n\n// 1. Correspondência exata após normalização\nif (servicoSolicitado) {\n  s = servicos.find(x =>\n    normalizar(x.NOME) === servicoSolicitado\n  );\n}\n\n// 2. Correspondência parcial\nif (!s && servicoSolicitado) {\n  s = servicos.find(x => {\n    const nome = normalizar(x.NOME);\n\n    return (\n      nome.includes(servicoSolicitado) ||\n      servicoSolicitado.includes(nome)\n    );\n  });\n}\n\nif (!s || !s.ID_SERVICO) {\n  return [{\n    json: {\n      ...e,\n      status: 'SERVICO_NAO_ENCONTRADO',\n      horarios: [],\n      resposta_cliente:\n        'Não encontrei esse serviço no nosso catálogo. Pode confirmar o nome do serviço desejado?'\n    }\n  }];\n}\n\n\n// ==============================\n// PROFISSIONAIS\n// ==============================\nconst profs = $items('GS - Buscar Profissional')\n  .map(i => i.json)\n  .filter(x => x && x.ID_PROFISSIONAL);\n\nlet p = null;\n\nif (e.id_profissional) {\n  p = profs.find(\n    x => String(x.ID_PROFISSIONAL) === String(e.id_profissional)\n  );\n}\n\nif (!p && e.profissional) {\n  const alvo = normalizar(e.profissional);\n\n  p = profs.find(\n    x => normalizar(x.NOME) === alvo\n  );\n}\n\n// fallback: primeiro profissional ativo\nif (!p) {\n  p = profs[0] || null;\n}\n\nif (!p) {\n  return [{\n    json: {\n      ...e,\n      id_servico: s.ID_SERVICO,\n      servico: s.NOME,\n      status: 'SEM_PROFISSIONAL',\n      horarios: [],\n      resposta_cliente:\n        'Não encontrei profissionais disponíveis para este atendimento.'\n    }\n  }];\n}\n\n\n// ==============================\n// DATA\n// ==============================\nconst timezone = 'America/Sao_Paulo';\nconst textoData = String(e.data || '')\n  .trim()\n  .toLowerCase();\n\nlet dataRef;\n\nif (textoData === 'hoje') {\n\n  dataRef = DateTime\n    .now()\n    .setZone(timezone)\n    .startOf('day');\n\n} else if (\n  textoData === 'amanhã' ||\n  textoData === 'amanha'\n) {\n\n  dataRef = DateTime\n    .now()\n    .setZone(timezone)\n    .plus({ days: 1 })\n    .startOf('day');\n\n} else {\n\n  dataRef = DateTime.fromFormat(\n    String(e.data || ''),\n    'dd/MM/yyyy',\n    { zone: timezone }\n  );\n\n  if (!dataRef.isValid) {\n    dataRef = DateTime.fromFormat(\n      String(e.data || ''),\n      'yyyy-MM-dd',\n      { zone: timezone }\n    );\n  }\n\n  if (!dataRef.isValid) {\n    dataRef = DateTime.fromISO(\n      String(e.data || ''),\n      { zone: timezone }\n    );\n  }\n}\n\nif (!dataRef || !dataRef.isValid) {\n\n  return [{\n    json: {\n      ...e,\n      id_servico: s.ID_SERVICO,\n      servico: s.NOME,\n      id_profissional: p.ID_PROFISSIONAL,\n      profissional: p.NOME,\n      status: 'DATA_INVALIDA',\n      horarios: [],\n      resposta_cliente:\n        'Não entendi a data informada. Pode confirmar a data desejada?'\n    }\n  }];\n}\n\n\n// ==============================\n// DISPONIBILIDADE\n// ==============================\nconst dsAll = $items('GS - Buscar Disponibilidade')\n  .map(i => i.json)\n  .filter(\n    x =>\n      x &&\n      x.DIA_SEMANA_NUM !== undefined &&\n      x.DIA_SEMANA_NUM !== ''\n  );\n\nconst agAll = $items('GS - Buscar Agendamentos')\n  .map(i => i.json)\n  .filter(x => x && x.HORA_INICIO);\n\nconst eventos = $items('Get many events')\n  .map(i => i.json)\n  .filter(x => x && (x.start || x.id));\n\n\n// Luxon:\n// 1 = segunda ... 7 = domingo\n// Cadastro:\n// 0 = domingo ... 6 = sábado\nconst dia = dataRef.weekday % 7;\n\nconst ds = dsAll.filter(\n  x =>\n    String(x.ID_PROFISSIONAL) ===\n    String(p.ID_PROFISSIONAL)\n);\n\nconst ag = agAll.filter(\n  x =>\n    String(x.ID_PROFISSIONAL) ===\n    String(p.ID_PROFISSIONAL)\n);\n\nconst d = ds.find(\n  x => Number(x.DIA_SEMANA_NUM) === dia\n);\n\nif (!d) {\n\n  return [{\n    json: {\n      ...e,\n      id_servico: s.ID_SERVICO,\n      servico: s.NOME,\n      duracao_min: Number(s.DURACAO_MIN || 60),\n      valor: Number(s.VALOR || 0),\n      id_profissional: p.ID_PROFISSIONAL,\n      profissional: p.NOME,\n      status: 'SEM_DISPONIBILIDADE',\n      horarios: [],\n      resposta_cliente:\n        'Não encontrei disponibilidade cadastrada para este profissional nessa data.'\n    }\n  }];\n}\n\n\n// ==============================\n// FUNÇÕES DE HORÁRIO\n// ==============================\nconst tm = (t) => {\n  const [h, m] = String(t || '00:00')\n    .slice(0, 5)\n    .split(':')\n    .map(Number);\n\n  return h * 60 + m;\n};\n\nconst hs = (m) =>\n  String(Math.floor(m / 60)).padStart(2, '0') +\n  ':' +\n  String(m % 60).padStart(2, '0');\n\n\n// ==============================\n// COMPARAÇÃO DE DATA\n// ==============================\nconst mesmaData = (raw) => {\n\n  if (!raw) return false;\n\n  let dt = DateTime.fromFormat(\n    String(raw),\n    'dd/MM/yyyy',\n    { zone: timezone }\n  );\n\n  if (!dt.isValid) {\n    dt = DateTime.fromFormat(\n      String(raw),\n      'yyyy-MM-dd',\n      { zone: timezone }\n    );\n  }\n\n  if (!dt.isValid) {\n    dt = DateTime.fromISO(\n      String(raw),\n      { zone: timezone }\n    );\n  }\n\n  return (\n    dt.isValid &&\n    dt.hasSame(dataRef, 'day')\n  );\n};\n\n\n// ==============================\n// OCUPAÇÕES NO SHEETS\n// ==============================\nconst occAgenda = ag\n  .filter(\n    a =>\n      String(a.STATUS || '').toUpperCase() !== 'CANCELADO'\n  )\n  .filter(\n    a => mesmaData(a.DATA)\n  )\n  .map(\n    a => [\n      tm(a.HORA_INICIO),\n      tm(a.HORA_FIM)\n    ]\n  );\n\n\n// ==============================\n// OCUPAÇÕES GOOGLE CALENDAR\n// ==============================\nconst occCalendar = eventos.map(ev => {\n\n  if (\n    ev.start &&\n    ev.start.dateTime &&\n    ev.end &&\n    ev.end.dateTime\n  ) {\n\n    const inicio = DateTime\n      .fromISO(ev.start.dateTime)\n      .setZone(timezone);\n\n    const fim = DateTime\n      .fromISO(ev.end.dateTime)\n      .setZone(timezone);\n\n    if (\n      inicio.isValid &&\n      fim.isValid &&\n      inicio.hasSame(dataRef, 'day')\n    ) {\n\n      return [\n        tm(inicio.toFormat('HH:mm')),\n        tm(fim.toFormat('HH:mm'))\n      ];\n    }\n\n    return null;\n  }\n\n  // Evento de dia inteiro\n  if (\n    ev.start &&\n    ev.start.date\n  ) {\n\n    const inicioDia = DateTime.fromISO(\n      ev.start.date,\n      { zone: timezone }\n    );\n\n    if (\n      inicioDia.isValid &&\n      inicioDia.hasSame(dataRef, 'day')\n    ) {\n      return [0, 24 * 60];\n    }\n  }\n\n  return null;\n})\n.filter(Boolean);\n\n\nconst occ = [\n  ...occAgenda,\n  ...occCalendar\n];\n\n\n// ==============================\n// DURAÇÃO / INTERVALO\n// ==============================\nconst dur = Number(\n  s.DURACAO_MIN || 60\n);\n\nconst intervalo = Number(\n  s.TEMPO_INTERVALO_MIN || 0\n);\n\n\n// ==============================\n// JORNADA DO PROFISSIONAL\n// ==============================\nconst ini = tm(d.HORA_INICIO);\nconst fim = tm(d.HORA_FIM);\n\nconst pi = d.INTERVALO_INICIO\n  ? tm(d.INTERVALO_INICIO)\n  : null;\n\nconst pf = d.INTERVALO_FIM\n  ? tm(d.INTERVALO_FIM)\n  : null;\n\n\n// ==============================\n// FILTRO POR PERÍODO\n// ==============================\nconst periodoFiltro = normalizar(\n  e.periodo\n);\n\nconst dentroPeriodo = (mins) => {\n\n  if (periodoFiltro === 'manha') {\n    return mins < 12 * 60;\n  }\n\n  if (periodoFiltro === 'tarde') {\n    return (\n      mins >= 12 * 60 &&\n      mins < 18 * 60\n    );\n  }\n\n  if (periodoFiltro === 'noite') {\n    return mins >= 18 * 60;\n  }\n\n  return true;\n};\n\n\n// ==============================\n// HORÁRIO MÍNIMO SOLICITADO\n// ==============================\nconst horaMin = e.hora_inicio\n  ? tm(String(e.hora_inicio).slice(0, 5))\n  : null;\n\n\n// ==============================\n// GERAR HORÁRIOS LIVRES\n// ==============================\nconst horarios = [];\n\nfor (\n  let x = ini;\n  x + dur <= fim;\n  x += 30\n) {\n\n  const fimServico = x + dur;\n\n  const fimComIntervalo =\n    fimServico + intervalo;\n\n  // intervalo/almoço\n  if (\n    pi !== null &&\n    pf !== null &&\n    x < pf &&\n    fimComIntervalo > pi\n  ) {\n    continue;\n  }\n\n  // conflito de agenda\n  if (\n    occ.some(\n      ([a, b]) =>\n        x < b &&\n        fimComIntervalo > a\n    )\n  ) {\n    continue;\n  }\n\n  // período solicitado\n  if (!dentroPeriodo(x)) {\n    continue;\n  }\n\n  // horário mínimo solicitado\n  if (\n    horaMin !== null &&\n    x < horaMin\n  ) {\n    continue;\n  }\n\n  horarios.push(\n    hs(x)\n  );\n}\n\n\n// ==============================\n// RESPOSTA FINAL\n// ==============================\nconst dataFormatada =\n  dataRef.toFormat('dd/MM/yyyy');\n\nlet respostaCliente;\n\nif (horarios.length) {\n\n  respostaCliente =\n    `Encontrei horários disponíveis para ${s.NOME} ` +\n    `em ${dataFormatada}: ` +\n    `${horarios.slice(0, 6).join(', ')}.`;\n\n} else {\n\n  respostaCliente =\n    `Não encontrei horários livres para ${s.NOME} ` +\n    `em ${dataFormatada} com os critérios informados.`;\n}\n\n\nreturn [{\n  json: {\n    ...e,\n\n    status:\n      horarios.length\n        ? 'OK'\n        : 'SEM_HORARIOS',\n\n    id_servico:\n      s.ID_SERVICO,\n\n    servico:\n      s.NOME,\n\n    duracao_min:\n      dur,\n\n    valor:\n      Number(s.VALOR || 0),\n\n    id_profissional:\n      p.ID_PROFISSIONAL,\n\n    profissional:\n      p.NOME,\n\n    data:\n      dataFormatada,\n\n    horarios,\n\n    resposta_cliente:\n      respostaCliente\n  }\n}];"
       },
-      "id": "659e1b81-2c87-4021-86c0-fa5d5f2def2b",
+      "id": "d6e89d87-a6e8-4c63-a8d4-c0e5d612e73a",
       "name": "CODE - Calcular Horários Livres",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1184,
-        1264
+        1792,
+        1904
       ]
     },
     {
       "parameters": {},
-      "id": "17767a92-b5cd-419b-b787-61dbfd08c9f4",
+      "id": "de134328-99ed-4652-a252-2dafd4e7be0d",
       "name": "OUT - Horários Disponíveis",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        1408,
-        1264
+        2016,
+        1904
       ]
     },
     {
@@ -288,11 +284,13 @@
           "value": {
             "id_empresa": "={{ $json.id_empresa }}",
             "workflow": "=WF004",
-            "node": "=",
-            "tipo": "=",
+            "node": "={{ 'CODE - Calcular Horários Livres' }}",
+            "tipo": "={{ $json.status === 'OK' ? 'SUCESSO' : 'AVISO' }}",
             "evento": "CONSULTA_DISPONIBILIDADE",
             "status": "={{ $json.status }}",
-            "mensagem": "={{ $json.resposta_cliente }}"
+            "mensagem": "={{ $json.resposta_cliente }}",
+            "dados": "={{ JSON.stringify($json) }}",
+            "execution_id": "={{ $execution.id }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -385,13 +383,132 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "a1b86930-a96a-448b-947d-7f85bb5b9a6c",
+      "id": "cbdf4375-1c2e-40ca-9832-3c08d851e2da",
       "name": "EXEC - WF017 - Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1632,
-        1264
+        2240,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "status",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "o2",
+              "name": "id_empresa",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.id_empresa }}",
+              "type": "string"
+            },
+            {
+              "id": "o3",
+              "name": "id_cliente",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.id_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o4",
+              "name": "telefone_cliente",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.telefone_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o5",
+              "name": "nome_cliente",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.nome_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o6",
+              "name": "servico",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.servico }}",
+              "type": "string"
+            },
+            {
+              "id": "o7",
+              "name": "dados",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.dados || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "o8",
+              "name": "data",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "o9",
+              "name": "hora_inicio",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.hora_inicio }}",
+              "type": "string"
+            },
+            {
+              "id": "o10",
+              "name": "periodo",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.periodo }}",
+              "type": "string"
+            },
+            {
+              "id": "o11",
+              "name": "id_profissional",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.id_profissional }}",
+              "type": "string"
+            },
+            {
+              "id": "o12",
+              "name": "profissional",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.profissional }}",
+              "type": "string"
+            },
+            {
+              "id": "o13",
+              "name": "horarios",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.horarios }}",
+              "type": "array"
+            },
+            {
+              "id": "o14",
+              "name": "duracao_min",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.duracao_min }}",
+              "type": "number"
+            },
+            {
+              "id": "o15",
+              "name": "valor",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.valor }}",
+              "type": "number"
+            },
+            {
+              "id": "o16",
+              "name": "resposta_cliente",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.resposta_cliente }}",
+              "type": "string"
+            },
+            {
+              "id": "o17",
+              "name": "origem",
+              "value": "={{ $('CODE - Calcular Horários Livres').first().json.origem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b4e7eefe-6d91-47de-86ce-1c63e3bdbb09",
+      "name": "SET - Preparar Saída WF004",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2464,
+        1904
       ]
     },
     {
@@ -400,13 +517,13 @@
         "height": 260,
         "width": 520
       },
-      "id": "91762650-6d21-4c61-bca8-81a906da4415",
+      "id": "71316323-10fd-4946-9898-7986d58c91d1",
       "name": "NOTA - WF004 v5.1",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1264,
-        896
+        1872,
+        1536
       ]
     },
     {
@@ -426,11 +543,12 @@
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [
-        976,
-        1264
+        1584,
+        1904
       ],
-      "id": "af41baea-89ff-4c38-835f-0de6688a613d",
+      "id": "0a0db7d3-3c3a-4a86-a011-ac05e2c529ec",
       "name": "Get many events",
+      "alwaysOutputData": true,
       "credentials": {
         "googleCalendarOAuth2Api": {
           "id": "D5hP4f39WlayBYFI",
@@ -518,6 +636,17 @@
         ]
       ]
     },
+    "EXEC - WF017 - Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF004",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Get many events": {
       "main": [
         [
@@ -536,7 +665,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "af8648f9-168c-4c02-8781-4949523f099f",
+  "versionId": "d3ce4f62-52a4-4c5e-912f-c3003d1c7fe0",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
