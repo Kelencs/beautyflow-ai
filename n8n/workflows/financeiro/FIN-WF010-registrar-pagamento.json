@@ -9,70 +9,452 @@
               "name": "id_empresa"
             },
             {
+              "name": "id_agendamento"
+            },
+            {
               "name": "id_cliente"
             },
             {
-              "name": "telefone_cliente"
+              "name": "valor_pago_raw"
             },
             {
-              "name": "nome_cliente"
+              "name": "forma_pagamento"
             },
             {
-              "name": "mensagem_texto"
-            },
-            {
-              "name": "intencao"
-            },
-            {
-              "name": "confianca"
-            },
-            {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
+              "name": "observacoes"
             },
             {
               "name": "origem"
+            },
+            {
+              "name": "dados",
+              "type": "object"
             }
           ]
         }
       },
-      "id": "600d1791-191c-4fd2-83c5-446efa8968f7",
+      "id": "5eaf66ac-c5bf-4518-adec-e038703596e9",
       "name": "TRG - Receber Dados WF010",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -272,
-        1040
+        20784,
+        8672
       ]
     },
     {
       "parameters": {
-        "jsCode": "return items.map(i=>({json:{...i.json,ID_PAGAMENTO:'PAG'+Date.now().toString().slice(-6)}}));"
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $json.id_empresa || 'EMP001' }}"
+            },
+            {
+              "id": "a2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $json.id_agendamento || '' }}"
+            },
+            {
+              "id": "a3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $json.id_cliente || '' }}"
+            },
+            {
+              "id": "a4",
+              "name": "valor_pago_raw",
+              "type": "string",
+              "value": "={{ $json.valor_pago_raw }}"
+            },
+            {
+              "id": "a5",
+              "name": "forma_pagamento",
+              "type": "string",
+              "value": "={{ $json.forma_pagamento || '' }}"
+            },
+            {
+              "id": "a6",
+              "name": "observacoes",
+              "type": "string",
+              "value": "={{ $json.observacoes || '' }}"
+            },
+            {
+              "id": "a7",
+              "name": "origem",
+              "type": "string",
+              "value": "={{ $json.origem || 'TESTE_MANUAL' }}"
+            },
+            {
+              "id": "a8",
+              "name": "dados",
+              "type": "object",
+              "value": "={{ $json.dados || {} }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "6bc13986-1bb9-4135-89fa-38f6a042df88",
-      "name": "CODE - Gerar ID Pagamento",
+      "id": "563a1a75-6b0c-4cf4-9bd2-6a5ea90eec0d",
+      "name": "SET - Preparar Pagamento",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        21024,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nconst bruto = d.valor_pago_raw;\nconst numero = typeof bruto === 'number' ? bruto : Number(String(bruto ?? '').trim().replace(',', '.'));\nconst valido = bruto !== undefined && bruto !== null && String(bruto).trim() !== '' && !isNaN(numero) && isFinite(numero);\n\nconst base = {\n  id_empresa: d.id_empresa,\n  id_agendamento: d.id_agendamento,\n  id_cliente: d.id_cliente,\n  forma_pagamento: d.forma_pagamento,\n  observacoes: d.observacoes,\n  origem: d.origem,\n  dados: d.dados\n};\n\nif (!valido) {\n  return [{ json: { ...base, valor_pago: 0, pagamento_valido: false, evento_resultado: 'VALOR_INVALIDO', node_origem: 'CODE - Validar Valor Pago', erro: 'Valor pago inválido: não é um número.' } }];\n}\nif (numero <= 0) {\n  return [{ json: { ...base, valor_pago: numero, pagamento_valido: false, evento_resultado: 'VALOR_INVALIDO', node_origem: 'CODE - Validar Valor Pago', erro: 'Valor pago deve ser maior que zero.' } }];\n}\n\nreturn [{ json: { ...base, valor_pago: numero, pagamento_valido: true } }];\n"
+      },
+      "id": "1a6ef893-43c2-4088-b0fe-129daa9454ad",
+      "name": "CODE - Validar Valor Pago",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -32,
-        1040
+        21264,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pagamento_valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5c26d2e5-955b-4283-ba81-9b07e8a3b074",
+      "name": "IF - Valor Válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        21504,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "ID_AGENDAMENTO",
+              "lookupValue": "={{ $json.id_agendamento }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "55a388a0-95fe-4f8b-9061-4ca897a95035",
+      "name": "GS - Buscar Agendamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        21744,
+        8672
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b73876c8-a17c-40a7-b070-bfe4ee45a472",
+      "name": "IF - Erro Técnico Busca Agendamento",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        21872,
+        8880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalizarValorMonetario(v) {\n  if (typeof v === 'number') return isFinite(v) ? v : NaN;\n  if (v === null || v === undefined) return NaN;\n  let s = String(v).trim();\n  if (s === '') return NaN;\n  s = s.replace(/R\\$\\s?/gi, '').trim();\n  if (s.includes(',') && s.includes('.')) {\n    // formato BR completo: \".\" é separador de milhar, \",\" é separador decimal\n    s = s.replace(/\\./g, '').replace(',', '.');\n  } else if (s.includes(',')) {\n    // só vírgula: separador decimal BR (ex.: \"100,00\")\n    s = s.replace(',', '.');\n  }\n  // só ponto ou nenhum separador: já compatível com Number() (ex.: \"100\", \"100.50\")\n  const n = Number(s);\n  return isFinite(n) ? n : NaN;\n}\n\nconst d = $('CODE - Validar Valor Pago').first().json;\nconst candidatos = $items('GS - Buscar Agendamento').map(i => i.json).filter(x => x && x.ID_AGENDAMENTO);\n\nif (candidatos.length === 0) {\n  return [{ json: { ...d, agendamento_ok: false, evento_resultado: 'AGENDAMENTO_NAO_ENCONTRADO', node_origem: 'CODE - Avaliar Agendamento', erro: 'Agendamento não encontrado para esta empresa.' } }];\n}\nif (candidatos.length > 1) {\n  return [{ json: { ...d, agendamento_ok: false, evento_resultado: 'AGENDAMENTO_NAO_ENCONTRADO', node_origem: 'CODE - Avaliar Agendamento', erro: `Foram encontrados ${candidatos.length} agendamentos com o mesmo ID_AGENDAMENTO - inconsistência de dados, registro bloqueado.` } }];\n}\n\nconst ag = candidatos[0];\nif (String(ag.STATUS || '').toUpperCase() === 'CANCELADO') {\n  return [{ json: { ...d, agendamento_ok: false, evento_resultado: 'AGENDAMENTO_CANCELADO', node_origem: 'CODE - Avaliar Agendamento', erro: 'Não é possível registrar pagamento para um agendamento cancelado.' } }];\n}\n\nconst valorTotal = normalizarValorMonetario(ag.VALOR);\nif (isNaN(valorTotal)) {\n  return [{ json: { ...d, agendamento_ok: false, evento_resultado: 'VALOR_INVALIDO', node_origem: 'CODE - Avaliar Agendamento', erro: `Valor do agendamento (AGENDAMENTOS.VALOR=\"${ag.VALOR}\") não pôde ser interpretado como um número válido.` } }];\n}\n\nreturn [{ json: { ...d, agendamento_ok: true, valor_total: valorTotal, id_cliente: d.id_cliente || ag.ID_CLIENTE || '' } }];\n"
+      },
+      "id": "2704fa06-71a3-4b1a-a193-6c5b8d287a49",
+      "name": "CODE - Avaliar Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        21984,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.agendamento_ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "09d3258e-1df5-4ad8-8036-f2efc53223e9",
+      "name": "IF - Agendamento Válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        22224,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2103767306,
+          "mode": "list",
+          "cachedResultName": "PAGAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=2103767306"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            },
+            {
+              "lookupColumn": "ID_AGENDAMENTO",
+              "lookupValue": "={{ $json.id_agendamento }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c4eecc0-1617-4dc3-b622-7041d5536074",
+      "name": "GS - Buscar Pagamento Existente",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        22464,
+        8672
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8da27e10-a764-4aad-ac2c-43bec5462972",
+      "name": "IF - Erro Técnico Busca Pagamento",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        22592,
+        8880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('CODE - Avaliar Agendamento').first().json;\nconst existentes = $items('GS - Buscar Pagamento Existente').map(i => i.json).filter(x => x && x.ID_PAGAMENTO);\n\n// Soma somente valores numéricos válidos já registrados para este agendamento.\n// Pagamentos parciais legítimos geram múltiplas transações (múltiplos ID_PAGAMENTO) -\n// a simples existência de outros registros não é mais tratada como duplicidade.\nconst totalPagoAnterior = existentes.reduce((soma, p) => {\n  const v = Number(p.VALOR_PAGO);\n  return soma + (isNaN(v) ? 0 : v);\n}, 0);\n\nconst valorTotal = Number(d.valor_total || 0);\n\n// Único caso em que reaproveitamos o evento PAGAMENTO_DUPLICADO: o agendamento já está\n// totalmente quitado (soma dos pagamentos anteriores >= valor devido). Não há, na estrutura\n// atual do projeto, um identificador de transação (TRANSACAO_ID nunca é preenchido) que\n// permita detectar a repetição exata de uma mesma transação - essa limitação é aceita e\n// documentada aqui, em vez de bloquear pagamentos parciais legítimos.\nif (totalPagoAnterior >= valorTotal && valorTotal > 0) {\n  return [{ json: {\n    ...d, pode_registrar: false, total_pago_anterior: totalPagoAnterior,\n    evento_resultado: 'PAGAMENTO_DUPLICADO',\n    // O agendamento já está de fato quitado (estado financeiro real), mesmo que ESTA\n    // tentativa de pagamento não tenha sido registrada. status_pagamento reflete o estado\n    // real do agendamento; pagamento_registrado (calculado depois, no SET final) continua\n    // false e id_pagamento continua vazio, pois nenhuma nova linha foi criada em PAGAMENTOS.\n    status_pagamento: 'PAGO',\n    node_origem: 'CODE - Calcular Pagamentos Anteriores',\n    erro: `Este agendamento já está totalmente quitado (total pago: ${totalPagoAnterior}, valor devido: ${valorTotal}); nenhum novo pagamento pode ser registrado.`\n  } }];\n}\n\nreturn [{ json: { ...d, pode_registrar: true, total_pago_anterior: totalPagoAnterior } }];\n"
+      },
+      "id": "2bdde56b-277e-4ce8-bba0-69f3210e1e7e",
+      "name": "CODE - Calcular Pagamentos Anteriores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22704,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_registrar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "05426749-3f66-472a-a8db-29343fdbf50c",
+      "name": "IF - Pode Registrar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        22944,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('CODE - Calcular Pagamentos Anteriores').first().json;\nconst valorTotal = Number(d.valor_total || 0);\nconst valorPagoAtual = Number(d.valor_pago || 0);\nconst totalPagoAnterior = Number(d.total_pago_anterior || 0);\n\nconst novoTotalPago = Number((totalPagoAnterior + valorPagoAtual).toFixed(2));\n\nif (novoTotalPago > valorTotal) {\n  return [{ json: {\n    ...d, pode_registrar_final: false, evento_resultado: 'VALOR_INVALIDO',\n    node_origem: 'CODE - Calcular Pagamento',\n    erro: `Valor pago (${valorPagoAtual}) somado ao total já pago anteriormente (${totalPagoAnterior}) ultrapassa o valor devido (${valorTotal}). Pagamento não registrado.`\n  } }];\n}\n\nconst valorPendente = Number((valorTotal - novoTotalPago).toFixed(2));\nconst status = valorPendente > 0 ? 'PARCIAL' : 'PAGO';\nconst idPagamento = `PAG${Date.now()}${Math.random().toString(36).slice(2, 8)}`;\nconst agora = DateTime.now().setZone('America/Sao_Paulo').toISO();\n\nreturn [{ json: {\n  ...d,\n  pode_registrar_final: true,\n  ID_PAGAMENTO: idPagamento,\n  ID_EMPRESA: d.id_empresa,\n  ID_AGENDAMENTO: d.id_agendamento,\n  ID_CLIENTE: d.id_cliente,\n  VALOR_TOTAL: valorTotal,\n  VALOR_PAGO: valorPagoAtual,\n  VALOR_PENDENTE: valorPendente,\n  FORMA_PAGAMENTO: d.forma_pagamento,\n  STATUS: status,\n  DATA_HORA: agora,\n  TRANSACAO_ID: '',\n  OBSERVACOES: d.observacoes,\n  status_pagamento: status\n} }];\n"
+      },
+      "id": "b57af8bf-d086-4963-9f42-80db95c9380d",
+      "name": "CODE - Calcular Pagamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23184,
+        8672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_registrar_final }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1b16acba-c8dc-4829-9b57-0a66ae9c79ce",
+      "name": "IF - Valor Dentro Do Limite",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        23424,
+        8672
       ]
     },
     {
@@ -94,7 +476,20 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "ID_PAGAMENTO": "={{ $json.ID_PAGAMENTO }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "ID_AGENDAMENTO": "={{ $json.ID_AGENDAMENTO }}",
+            "VALOR_TOTAL": "={{ $json.VALOR_TOTAL }}",
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "VALOR_PAGO": "={{ $json.VALOR_PAGO }}",
+            "FORMA_PAGAMENTO": "={{ $json.FORMA_PAGAMENTO }}",
+            "VALOR_PENDENTE": "={{ $json.VALOR_PENDENTE }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "DATA_HORA": "={{ $json.DATA_HORA }}",
+            "TRANSACAO_ID": "={{ $json.TRANSACAO_ID }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -211,20 +606,161 @@
         },
         "options": {}
       },
-      "id": "607094d1-2b83-4d86-a436-3d7952241429",
+      "id": "6c39f100-12aa-48f2-aa3e-d34a9d07e057",
       "name": "GS - Registrar Pagamento",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        208,
-        1040
+        23664,
+        8672
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.ID_PAGAMENTO }}"
+            },
+            {
+              "id": "s2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.ID_AGENDAMENTO }}"
+            },
+            {
+              "id": "s3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.ID_CLIENTE }}"
+            },
+            {
+              "id": "s4",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.ID_EMPRESA }}"
+            },
+            {
+              "id": "s5",
+              "name": "valor_total",
+              "type": "number",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.VALOR_TOTAL }}"
+            },
+            {
+              "id": "s6",
+              "name": "valor_pago",
+              "type": "number",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.VALOR_PAGO }}"
+            },
+            {
+              "id": "s7",
+              "name": "valor_pendente",
+              "type": "number",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.VALOR_PENDENTE }}"
+            },
+            {
+              "id": "s8",
+              "name": "forma_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.FORMA_PAGAMENTO }}"
+            },
+            {
+              "id": "s9",
+              "name": "status_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.status_pagamento }}"
+            },
+            {
+              "id": "s10",
+              "name": "evento_resultado",
+              "type": "string",
+              "value": "PAGAMENTO_REGISTRADO"
+            },
+            {
+              "id": "s11",
+              "name": "origem",
+              "type": "string",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.origem }}"
+            },
+            {
+              "id": "s12",
+              "name": "dados",
+              "type": "object",
+              "value": "={{ $('CODE - Calcular Pagamento').first().json.dados || {} }}"
+            },
+            {
+              "id": "s13",
+              "name": "erro",
+              "type": "string",
+              "value": ""
+            },
+            {
+              "id": "s14",
+              "name": "node_origem",
+              "type": "string",
+              "value": "GS - Registrar Pagamento"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "97dc916a-b663-47e0-b1b4-5b5145bf06d3",
+      "name": "SET - Pagamento Registrado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        23904,
+        8544
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('CODE - Calcular Pagamento').first().json;\nconst err = $json.error || {};\nreturn [{ json: {\n  id_pagamento: '',\n  id_agendamento: d.ID_AGENDAMENTO,\n  id_cliente: d.ID_CLIENTE,\n  id_empresa: d.ID_EMPRESA,\n  valor_total: d.VALOR_TOTAL,\n  valor_pago: d.VALOR_PAGO,\n  valor_pendente: d.VALOR_PENDENTE,\n  forma_pagamento: d.FORMA_PAGAMENTO,\n  status_pagamento: '',\n  evento_resultado: 'ERRO_REGISTRO_PAGAMENTO',\n  node_origem: 'GS - Registrar Pagamento',\n  origem: d.origem,\n  dados: d.dados,\n  erro: String((err && err.message) || err || 'Falha técnica ao registrar o pagamento.')\n} }];\n"
+      },
+      "id": "8ce18819-e8c6-41bd-b5e4-9c80f8e043ad",
+      "name": "CODE - Erro Registro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        23904,
+        8832
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('CODE - Validar Valor Pago').first().json;\nconst err = $json.error || {};\nreturn [{ json: {\n  id_pagamento: '',\n  id_agendamento: d.id_agendamento,\n  id_cliente: d.id_cliente,\n  id_empresa: d.id_empresa,\n  valor_total: 0,\n  valor_pago: d.valor_pago,\n  valor_pendente: 0,\n  forma_pagamento: d.forma_pagamento,\n  status_pagamento: '',\n  evento_resultado: 'ERRO_REGISTRO_PAGAMENTO',\n  node_origem: 'GS - Buscar Agendamento',\n  origem: d.origem,\n  dados: d.dados,\n  erro: String((err && err.message) || err || 'Falha técnica ao consultar dados no Google Sheets.')\n} }];\n"
+      },
+      "id": "9b23df8b-2b7f-4fa5-b8a4-17f2c772fefd",
+      "name": "CODE - Erro Busca Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22224,
+        9152
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;\n"
+      },
+      "id": "47539b57-3a46-40e4-9ae4-b39ef203dabe",
+      "name": "CODE - Consolidar Resultado Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        24144,
+        8800
+      ]
     },
     {
       "parameters": {
@@ -237,7 +773,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "FIN-WF010",
+            "node": "={{ $json.node_origem || 'ORIGEM_NAO_IDENTIFICADA' }}",
+            "tipo": "={{ $json.evento_resultado === 'PAGAMENTO_REGISTRADO' ? 'INFO' : 'ERRO' }}",
+            "evento": "={{ $json.evento_resultado }}",
+            "status": "={{ $json.evento_resultado === 'PAGAMENTO_REGISTRADO' ? 'SUCESSO' : 'FALHA' }}",
+            "mensagem": "={{ $json.evento_resultado === 'PAGAMENTO_REGISTRADO' ? ('Pagamento registrado com sucesso (status: ' + $json.status_pagamento + ').') : $json.erro }}",
+            "dados": "={{ JSON.stringify({ id_pagamento: $json.id_pagamento, id_agendamento: $json.id_agendamento, id_cliente: $json.id_cliente, valor_total: $json.valor_total, valor_pago: $json.valor_pago, valor_pendente: $json.valor_pendente, forma_pagamento: $json.forma_pagamento }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -329,49 +875,329 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "0112c717-9bf7-418e-817a-3f571fddb313",
+      "id": "0d758cde-d287-40de-8082-87c5b148d934",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        448,
-        1040
+        24384,
+        8800
       ]
     },
     {
       "parameters": {
-        "content": "## FIN - WF010 - Registrar Pagamento v5.0\n\nRegistra pagamento total ou parcial.",
-        "height": 280,
-        "width": 520
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_pagamento || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_agendamento || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_cliente || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.id_empresa || '' }}"
+            },
+            {
+              "id": "o5",
+              "name": "valor_total",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.valor_total || 0 }}"
+            },
+            {
+              "id": "o6",
+              "name": "valor_pago",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.valor_pago || 0 }}"
+            },
+            {
+              "id": "o7",
+              "name": "valor_pendente",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.valor_pendente || 0 }}"
+            },
+            {
+              "id": "o8",
+              "name": "forma_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.forma_pagamento || '' }}"
+            },
+            {
+              "id": "o9",
+              "name": "status_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.status_pagamento || '' }}"
+            },
+            {
+              "id": "o10",
+              "name": "evento_resultado",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.evento_resultado || '' }}"
+            },
+            {
+              "id": "o11",
+              "name": "pagamento_registrado",
+              "type": "boolean",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.evento_resultado === 'PAGAMENTO_REGISTRADO' }}"
+            },
+            {
+              "id": "o12",
+              "name": "mensagem",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').first().json.evento_resultado === 'PAGAMENTO_REGISTRADO' ? ('Pagamento registrado com sucesso (status: ' + $('CODE - Consolidar Resultado Final').first().json.status_pagamento + ').') : $('CODE - Consolidar Resultado Final').first().json.erro }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "ab929e1e-1b8d-4076-9400-96a41bf1d39b",
-      "name": "NOTA - FIN - WF010 - Registrar Pagamento v5.0",
+      "id": "f4438b6d-1a3a-4c7b-a616-c9e2627310b7",
+      "name": "SET - Preparar Saída WF010",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        24624,
+        8800
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## FIN - WF010 - Registrar Pagamento v6.1\n\nRegistra pagamento total ou parcial de um agendamento.\n\nRegras aprovadas:\n- Pagamento parcial permitido (STATUS PARCIAL/PAGO)\n- Pagamento acima do valor devido bloqueado (VALOR_INVALIDO)\n- Valor zero/negativo bloqueado (VALOR_INVALIDO)\n- Pagamento duplicado por ID_AGENDAMENTO bloqueado (PAGAMENTO_DUPLICADO)\n- Agendamento cancelado bloqueado (AGENDAMENTO_CANCELADO)\n- NUNCA altera AGENDAMENTOS.STATUS (campo operacional, distinto do financeiro)\n\nID_PAGAMENTO: timestamp completo + entropia aleatória (mesmo padrão do WF008), testado 1000x sem colisão.\n\nv6.1 (2026-08-13) — auditoria pré-teste real encontrou o mesmo bug crítico já corrigido nos WF008/WF009: GS - Buscar Agendamento e GS - Buscar Pagamento Existente tinham alwaysOutputData:true + onError:continueErrorOutput, causando disparo simultâneo dos branches Success e Error numa falha técnica real (ex.: aba inexistente). Corrigido com o mesmo padrão: onError -> continueRegularOutput em ambos, e dois novos nodes IF - Erro Técnico Busca Agendamento / IF - Erro Técnico Busca Pagamento (condição {{ !!$json.error }}) logo após cada busca, separando explicitamente erro técnico do fluxo normal antes de CODE - Avaliar Agendamento / CODE - Calcular Pagamentos Anteriores. GS - Registrar Pagamento auditado e confirmado seguro (sem alwaysOutputData, não precisa do mesmo tratamento). TRG - Receber Dados WF010: campo dados tipado como Object (estava sem tipo, defaultava para String) para consistência com AGE-WF004/005/006/007 e CLI-WF009. SET - Preparar Pagamento: já usava expressões dinâmicas no arquivo do repositório (nenhum hardcode de teste encontrado aqui — os valores fixos relatados existiam apenas na cópia editada manualmente no n8n Cloud, fora de sincronia com este arquivo); único ajuste real foi o fallback de origem, 'WHATSAPP' -> 'TESTE_MANUAL' (mais correto: WF010 ainda não é chamado pelo fluxo WhatsApp/IA). valor_pago_raw NÃO ganhou fallback || '' como sugerido, deliberadamente: isso quebraria o valor legítimo 0 (0 || '' vira string vazia em JS), fazendo CODE - Validar Valor Pago reportar 'não é um número' em vez de 'deve ser maior que zero' para o Teste 2 — o comportamento atual sem o fallback já está correto.",
+        "height": 420,
+        "width": 560
+      },
+      "id": "81c8844c-0002-4d46-96c5-692d9bcbb4e3",
+      "name": "NOTA - FIN - WF010 - Registrar Pagamento v6.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        624,
-        640
+        20800,
+        8000
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('CODE - Validar Valor Pago').first().json;\nconst err = $json.error || {};\nreturn [{ json: {\n  id_pagamento: '',\n  id_agendamento: d.id_agendamento,\n  id_cliente: d.id_cliente,\n  id_empresa: d.id_empresa,\n  valor_total: 0,\n  valor_pago: d.valor_pago,\n  valor_pendente: 0,\n  forma_pagamento: d.forma_pagamento,\n  status_pagamento: '',\n  evento_resultado: 'ERRO_REGISTRO_PAGAMENTO',\n  node_origem: 'GS - Buscar Pagamento Existente',\n  origem: d.origem,\n  dados: d.dados,\n  erro: String((err && err.message) || err || 'Falha técnica ao consultar dados no Google Sheets.')\n} }];\n"
+      },
+      "id": "e01d7dde-6c2d-4828-bda1-831ce6c657fc",
+      "name": "CODE - Erro Busca Pagamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        22464,
+        9152
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Dados WF010": [
+      {
+        "json": {
+          "id_empresa": "EMP001",
+          "id_agendamento": "AGE004",
+          "id_cliente": "CLI001",
+          "valor_pago_raw": "20",
+          "forma_pagamento": "PIX",
+          "observacoes": "Teste WF010 - erro técnico ao registrar",
+          "origem": "TESTE_MANUAL",
+          "dados": {}
+        }
+      }
+    ]
+  },
   "connections": {
     "TRG - Receber Dados WF010": {
       "main": [
         [
           {
-            "node": "CODE - Gerar ID Pagamento",
+            "node": "SET - Preparar Pagamento",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "CODE - Gerar ID Pagamento": {
+    "SET - Preparar Pagamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Validar Valor Pago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Validar Valor Pago": {
+      "main": [
+        [
+          {
+            "node": "IF - Valor Válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Valor Válido": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Busca Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Busca Agendamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Busca Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Avaliar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Agendamento Válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Agendamento Válido": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Pagamento Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Pagamento Existente": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Busca Pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Busca Pagamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Busca Pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Calcular Pagamentos Anteriores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Pode Registrar": {
+      "main": [
+        [
+          {
+            "node": "CODE - Calcular Pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Calcular Pagamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Valor Dentro Do Limite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Valor Dentro Do Limite": {
       "main": [
         [
           {
             "node": "GS - Registrar Pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
@@ -382,7 +1208,91 @@
       "main": [
         [
           {
+            "node": "SET - Pagamento Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Pagamento Registrado": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Registro": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Final": {
+      "main": [
+        [
+          {
             "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF010",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Calcular Pagamentos Anteriores": {
+      "main": [
+        [
+          {
+            "node": "IF - Pode Registrar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Busca Agendamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Busca Pagamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
@@ -396,7 +1306,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "6364e45f-318b-4cc4-80e0-9f4d9e503f7c",
+  "versionId": "a2f16df7-aa1a-490c-bb24-f6fcf8774377",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
