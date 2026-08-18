@@ -24,7 +24,8 @@
               "name": "intencao"
             },
             {
-              "name": "confianca"
+              "name": "confianca",
+              "type": "number"
             },
             {
               "name": "servico"
@@ -58,8 +59,8 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        320,
-        992
+        -80,
+        2144
       ]
     },
     {
@@ -109,6 +110,12 @@
               "type": "string"
             },
             {
+              "id": "a16",
+              "name": "dados",
+              "value": "={{ $json.dados || {} }}",
+              "type": "object"
+            },
+            {
               "id": "a8",
               "name": "data",
               "value": "={{ $json.data  }}",
@@ -143,211 +150,31 @@
               "name": "phone_number_id",
               "value": "={{ $json.phone_number_id  }}",
               "type": "string"
+            },
+            {
+              "id": "a14",
+              "name": "mensagem_texto",
+              "value": "={{ $json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "a15",
+              "name": "origem",
+              "value": "={{ $json.origem }}",
+              "type": "string"
             }
           ]
         },
+        "includeOtherFields": true,
         "options": {}
       },
-      "id": "e1f03dcf-b93d-4554-ad92-4bb30c1d0459",
-      "name": "SET - Normalizar Intenção",
+      "id": "1a3ac8af-9bff-42e2-9011-bfa9625a749d",
+      "name": "SET - Normalizar Intenção1",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        576,
-        992
-      ]
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "v21QzUiS7NVGnyio",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/v21QzUiS7NVGnyio",
-          "cachedResultName": "My project — AGE - WF004 - Consultar Disponibilidade"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "id_empresa": "={{ $json.id_empresa }}",
-            "id_cliente": "={{ $json.id_cliente }}",
-            "telefone_cliente": "={{ $json.telefone_cliente }}",
-            "nome_cliente": "={{ $json.nome_cliente }}",
-            "servico": "={{ $json.servico }}",
-            "data": "={{ $json.data }}",
-            "hora_inicio": "={{ $json.hora }}",
-            "periodo": "={{ $json.periodo }}",
-            "profissional": "={{ $json.profissional }}",
-            "resposta_cliente": "={{ $json.resposta_cliente }}",
-            "origem": "={{ $json.origem }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "id_empresa",
-              "displayName": "id_empresa",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "id_cliente",
-              "displayName": "id_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "telefone_cliente",
-              "displayName": "telefone_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "nome_cliente",
-              "displayName": "nome_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "servico",
-              "displayName": "servico",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "data",
-              "displayName": "data",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "hora_inicio",
-              "displayName": "hora_inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "periodo",
-              "displayName": "periodo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "id_profissional",
-              "displayName": "id_profissional",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "profissional",
-              "displayName": "profissional",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "id_agendamento",
-              "displayName": "id_agendamento",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "google_event_id",
-              "displayName": "google_event_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "origem",
-              "displayName": "origem",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "resposta_cliente",
-              "displayName": "resposta_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "motivo_cancelamento",
-              "displayName": "motivo_cancelamento",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "2a7752bc-f54c-4a6a-b45e-963ed5e8a99e",
-      "name": "EXEC - WF004",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [
-        1104,
-        928
+        80,
+        2144
       ]
     },
     {
@@ -363,7 +190,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "data": "={{ $json.data }}",
-            "hora_inicio": "={{ $json.hora }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
             "periodo": "={{ $json.periodo }}",
             "profissional": "={{ $json.profissional }}",
             "resposta_cliente": "={{ $json.resposta_cliente }}",
@@ -376,189 +203,8 @@
             "mensagem_texto": "={{ $json.mensagem_texto }}",
             "intencao": "={{ $json.intencao }}",
             "confianca": "={{ $json.confianca }}",
-            "servico": "={{ $json.servico }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "id_empresa",
-              "displayName": "id_empresa",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "id_cliente",
-              "displayName": "id_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "telefone_cliente",
-              "displayName": "telefone_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "nome_cliente",
-              "displayName": "nome_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "mensagem_texto",
-              "displayName": "mensagem_texto",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "intencao",
-              "displayName": "intencao",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "confianca",
-              "displayName": "confianca",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "servico",
-              "displayName": "servico",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "data",
-              "displayName": "data",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "hora_inicio",
-              "displayName": "hora_inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "periodo",
-              "displayName": "periodo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "profissional",
-              "displayName": "profissional",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "resposta_cliente",
-              "displayName": "resposta_cliente",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "phone_number_id",
-              "displayName": "phone_number_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "origem",
-              "displayName": "origem",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "fa2b16cb-8816-4d1c-88a3-2f2fb007aef4",
-      "name": "EXEC - WF005",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [
-        1104,
-        736
-      ]
-    },
-    {
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "value": "YlXbA5Zjjsf22saf",
-          "mode": "list",
-          "cachedResultUrl": "/workflow/YlXbA5Zjjsf22saf",
-          "cachedResultName": "My project — AGE - WF006 - Reagendar"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "origem": "={{ $json.origem }}",
-            "phone_number_id": "={{ $json.phone_number_id }}",
-            "resposta_cliente": "={{ $json.resposta_cliente }}",
-            "profissional": "={{ $json.profissional }}",
-            "periodo": "={{ $json.periodo }}",
-            "hora_inicio": "={{ $json.hora }}",
-            "data": "={{ $json.data }}",
             "servico": "={{ $json.servico }}",
-            "confianca": "={{ $json.confianca }}",
-            "intencao": "={{ $json.intencao }}",
-            "mensagem_texto": "={{ $json.mensagem_texto }}",
-            "nome_cliente": "={{ $json.nome_cliente }}",
-            "telefone_cliente": "={{ $json.telefone_cliente }}",
-            "id_cliente": "={{ $json.id_cliente }}",
-            "id_empresa": "={{ $json.id_empresa }}"
+            "dados": "={{ $json.dados }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -628,6 +274,15 @@
             {
               "id": "servico",
               "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -705,13 +360,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "293e079b-980a-4510-acd4-f8f6a00e65bb",
-      "name": "EXEC - WF006",
+      "id": "6ca0b9a1-e793-45e6-b741-114f0be9378d",
+      "name": "EXEC - WF5",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1104,
-        1072
+        608,
+        1888
       ]
     },
     {
@@ -734,8 +389,9 @@
             "intencao": "={{ $json.intencao }}",
             "confianca": "={{ $json.confianca }}",
             "servico": "={{ $json.servico }}",
+            "dados": "={{ $json.dados }}",
             "data": "={{ $json.data }}",
-            "hora_inicio": "={{ $json.hora }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
             "periodo": "={{ $json.periodo }}",
             "profissional": "={{ $json.profissional }}",
             "resposta_cliente": "={{ $json.resposta_cliente }}",
@@ -817,6 +473,15 @@
               "type": "string"
             },
             {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
               "id": "data",
               "displayName": "data",
               "required": false,
@@ -887,13 +552,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "c9bdd03a-389a-4860-907d-3c43d47fb4c3",
-      "name": "EXEC - WF007",
+      "id": "333d0c38-eb4c-45cf-a03e-c6320165574d",
+      "name": "EXEC - WF7",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1104,
-        1264
+        608,
+        2416
       ]
     },
     {
@@ -909,16 +574,17 @@
           "mappingMode": "defineBelow",
           "value": {
             "origem": "={{ $json.origem }}",
-            "phone_number_id": "={{ $json.phone_number_id }}",
+            "phone_number_id": "={{ $('SET - Normalizar Intenção1').first().json.phone_number_id }}",
             "resposta_cliente": "={{ $json.resposta_cliente }}",
             "profissional": "={{ $json.profissional }}",
             "periodo": "={{ $json.periodo }}",
-            "hora_inicio": "={{ $json.hora }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
             "data": "={{ $json.data }}",
             "servico": "={{ $json.servico }}",
-            "confianca": "={{ $json.confianca }}",
-            "intencao": "={{ $json.intencao }}",
-            "mensagem_texto": "={{ $json.mensagem_texto }}",
+            "dados": "={{ $('SET - Normalizar Intenção1').first().json.dados }}",
+            "confianca": "={{ Number($('SET - Normalizar Intenção1').first().json.confianca || 0) }}",
+            "intencao": "={{ $('SET - Normalizar Intenção1').first().json.intencao }}",
+            "mensagem_texto": "={{ $('SET - Normalizar Intenção1').first().json.mensagem_texto }}",
             "nome_cliente": "={{ $json.nome_cliente }}",
             "telefone_cliente": "={{ $json.telefone_cliente }}",
             "id_cliente": "={{ $json.id_cliente }}",
@@ -933,7 +599,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "id_cliente",
@@ -942,7 +609,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "telefone_cliente",
@@ -951,7 +619,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "nome_cliente",
@@ -960,7 +629,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "mensagem_texto",
@@ -969,7 +639,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "intencao",
@@ -978,7 +649,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "confianca",
@@ -987,7 +659,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "number",
+              "removed": false
             },
             {
               "id": "servico",
@@ -996,7 +669,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "data",
@@ -1005,7 +679,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "hora_inicio",
@@ -1014,7 +689,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "periodo",
@@ -1023,7 +699,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "profissional",
@@ -1032,7 +709,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "resposta_cliente",
@@ -1041,7 +719,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "phone_number_id",
@@ -1050,7 +729,8 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
               "id": "origem",
@@ -1059,7 +739,28 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -1069,28 +770,13 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "0838a604-f856-4517-ae32-7afd93dcbdcc",
-      "name": "EXEC - WF012",
+      "id": "6a764fa4-1fa9-48bd-a843-511e0a05133b",
+      "name": "EXEC - WF12",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1104,
-        1456
-      ]
-    },
-    {
-      "parameters": {
-        "content": "## WF003 v5.0\n\nRoteador puro: sem IA e sem Google Sheets.",
-        "height": 88,
-        "width": 520
-      },
-      "id": "c51ed1c3-ae56-4d84-93e6-d76cc1ab9154",
-      "name": "NOTA - WF003 v5.0",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        1216,
-        592
+        608,
+        2608
       ]
     },
     {
@@ -1205,11 +891,411 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        800,
-        992
+        304,
+        2144
       ],
-      "id": "de5756a2-0b7c-4b83-934b-c21db9c68875",
-      "name": "Switch"
+      "id": "d4f305c0-bf57-4924-acb5-4f66e19703f7",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "YlXbA5Zjjsf22saf",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/YlXbA5Zjjsf22saf",
+          "cachedResultName": "My project — AGE - WF006 - Reagendar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "origem": "={{ $json.origem }}",
+            "phone_number_id": "={{ $json.phone_number_id }}",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "profissional": "={{ $json.profissional }}",
+            "periodo": "={{ $json.periodo }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
+            "data": "={{ $json.data }}",
+            "servico": "={{ $json.servico }}",
+            "dados": "={{ $json.dados }}",
+            "confianca": "={{ $json.confianca }}",
+            "intencao": "={{ $json.intencao }}",
+            "mensagem_texto": "={{ $json.mensagem_texto }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "id_empresa": "={{ $json.id_empresa }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mensagem_texto",
+              "displayName": "mensagem_texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "intencao",
+              "displayName": "intencao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "confianca",
+              "displayName": "confianca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "phone_number_id",
+              "displayName": "phone_number_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "588dffa4-5b1c-49b4-a975-ab3325d6d525",
+      "name": "EXEC - WF6",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        2224
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "v21QzUiS7NVGnyio",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/v21QzUiS7NVGnyio",
+          "cachedResultName": "My project — AGE - WF004 - Consultar Disponibilidade"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "servico": "={{ $json.servico }}",
+            "dados": "={{ $json.dados }}",
+            "data": "={{ $json.data }}",
+            "hora_inicio": "={{ $json.hora_inicio }}",
+            "periodo": "={{ $json.periodo }}",
+            "profissional": "={{ $json.profissional }}",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "origem": "={{ $json.origem }}",
+            "id_profissional": "={{ $json.id_profissional || $json.dados?.id_profissional || '' }}",
+            "id_agendamento": "={{ $json.id_agendamento || '' }}",
+            "google_event_id": "={{ $json.google_event_id || '' }}",
+            "motivo_cancelamento": "={{ $json.motivo_cancelamento || '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_empresa",
+              "displayName": "id_empresa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_cliente",
+              "displayName": "id_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone_cliente",
+              "displayName": "telefone_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome_cliente",
+              "displayName": "nome_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_profissional",
+              "displayName": "id_profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "profissional",
+              "displayName": "profissional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "google_event_id",
+              "displayName": "google_event_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "origem",
+              "displayName": "origem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resposta_cliente",
+              "displayName": "resposta_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo_cancelamento",
+              "displayName": "motivo_cancelamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "00f94f85-026d-4632-8ca2-42d1d2b5cae5",
+      "name": "EXEC - WF4",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        2080
+      ]
     }
   ],
   "pinData": {},
@@ -1218,57 +1304,68 @@
       "main": [
         [
           {
-            "node": "SET - Normalizar Intenção",
+            "node": "SET - Normalizar Intenção1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SET - Normalizar Intenção": {
+    "SET - Normalizar Intenção1": {
       "main": [
         [
           {
-            "node": "Switch",
+            "node": "Switch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Switch": {
+    "Switch1": {
       "main": [
         [
           {
-            "node": "EXEC - WF005",
+            "node": "EXEC - WF5",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "EXEC - WF004",
+            "node": "EXEC - WF4",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "EXEC - WF006",
+            "node": "EXEC - WF6",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "EXEC - WF007",
+            "node": "EXEC - WF7",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "EXEC - WF012",
+            "node": "EXEC - WF12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF4": {
+      "main": [
+        [
+          {
+            "node": "EXEC - WF12",
             "type": "main",
             "index": 0
           }
@@ -1282,7 +1379,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "dd10b8bb-d4c2-4e72-86bf-d69134607493",
+  "versionId": "1200a908-a5ef-4018-b247-bdbbd2d568dc",
   "meta": {
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
   },
