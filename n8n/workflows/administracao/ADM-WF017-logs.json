@@ -35,96 +35,26 @@
           ]
         }
       },
-      "id": "4507f72c-aca5-4eb0-bf84-e9d6e663fc8f",
+      "id": "0d6f5b71-b36a-4c30-ab41-95dfa6385f34",
       "name": "TRG - Receber Evento de Log",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -1568,
-        976
+        -512,
+        1584
       ]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "a1",
-              "name": "ID_LOG",
-              "value": "={{ 'LOG'+Date.now().toString().slice(-6) }}",
-              "type": "string"
-            },
-            {
-              "id": "a2",
-              "name": "DATA_HORA",
-              "value": "={{ $now.toISO() }}",
-              "type": "string"
-            },
-            {
-              "id": "a3",
-              "name": "ID_EMPRESA",
-              "value": "={{ $json.id_empresa || 'EMP001' }}",
-              "type": "string"
-            },
-            {
-              "id": "a4",
-              "name": "WORKFLOW",
-              "value": "={{ $json.workflow || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a5",
-              "name": "NODE",
-              "value": "={{ $json.node || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a6",
-              "name": "TIPO",
-              "value": "={{ String($json.tipo || 'INFO').toUpperCase() }}",
-              "type": "string"
-            },
-            {
-              "id": "a7",
-              "name": "EVENTO",
-              "value": "={{ $json.evento || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a8",
-              "name": "STATUS",
-              "value": "={{ String($json.status || 'PROCESSADO').toUpperCase() }}",
-              "type": "string"
-            },
-            {
-              "id": "a9",
-              "name": "MENSAGEM",
-              "value": "={{ $json.mensagem || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "a10",
-              "name": "DADOS",
-              "value": "={{ JSON.stringify($json.dados || {}) }}",
-              "type": "string"
-            },
-            {
-              "id": "a11",
-              "name": "EXECUTION_ID",
-              "value": "={{ $json.execution_id || $execution.id || '' }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Normaliza o campo \"dados\" para aceitar workflows diferentes sem quebrar:\n// - todos os chamadores atuais (WF001-WF016) já enviam \"dados\" como uma string JSON\n//   pré-serializada (JSON.stringify(...) do lado de quem chama);\n// - se um chamador futuro enviar um objeto puro, serializa aqui;\n// - se vier vazio/nulo, grava '{}' (nunca deixa a coluna DADOS quebrada ou com \"undefined\").\nconst raw = $json.dados;\nlet dadosStr;\nif (raw === undefined || raw === null || raw === '') {\n  dadosStr = '{}';\n} else if (typeof raw === 'string') {\n  dadosStr = raw;\n} else {\n  try { dadosStr = JSON.stringify(raw); } catch (e) { dadosStr = String(raw); }\n}\n\nreturn [{ json: {\n  ID_LOG: `LOG${Date.now()}${Math.random().toString(36).slice(2, 8)}`,\n  DATA_HORA: $now.toISO(),\n  // Nunca assume uma empresa real por padrão: se o chamador não informar id_empresa,\n  // isso é uma falha de integração que deve ficar visível na planilha, não escondida\n  // atrás de um valor plausível como 'EMP001'.\n  ID_EMPRESA: $json.id_empresa || 'NAO_INFORMADO',\n  WORKFLOW: $json.workflow || '',\n  NODE: $json.node || '',\n  // Mesmo raciocínio: um TIPO ausente não deve virar silenciosamente 'INFO'\n  // (isso mascararia um evento potencialmente crítico que o chamador esqueceu de classificar).\n  TIPO: String($json.tipo || 'NAO_INFORMADO').toUpperCase(),\n  EVENTO: $json.evento || '',\n  // Mesmo raciocínio: um STATUS ausente não deve virar silenciosamente 'PROCESSADO'\n  // (pareceria sucesso mesmo quando o chamador não informou nada).\n  STATUS: String($json.status || 'NAO_INFORMADO').toUpperCase(),\n  MENSAGEM: $json.mensagem || '',\n  DADOS: dadosStr,\n  EXECUTION_ID: $json.execution_id || $execution.id || ''\n} }];\n"
       },
-      "id": "ada85148-7fb9-4180-a96b-dff619b578f8",
-      "name": "SET - Preparar Log",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "id": "2a8f6311-3865-461e-ae3a-26443ddfe3c3",
+      "name": "CODE - Preparar Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -1296,
-        976
+        -240,
+        1584
       ]
     },
     {
@@ -139,8 +69,10 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": 1780172632,
-          "mode": "list"
+          "value": 332914668,
+          "mode": "list",
+          "cachedResultName": "LOGS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=332914668"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -151,8 +83,8 @@
             "WORKFLOW": "={{ $json.WORKFLOW }}",
             "NODE": "={{ $json.NODE }}",
             "TIPO": "={{ $json.TIPO }}",
-            "STATUS": "={{ $json.STATUS }}",
             "EVENTO": "={{ $json.EVENTO }}",
+            "STATUS": "={{ $json.STATUS }}",
             "MENSAGEM": "={{ $json.MENSAGEM }}",
             "DADOS": "={{ $json.DADOS }}",
             "EXECUTION_ID": "={{ $json.EXECUTION_ID }}"
@@ -264,62 +196,138 @@
         },
         "options": {}
       },
-      "id": "ee9d07ac-5485-4b32-b403-fa0e5ff815d4",
+      "id": "1b48d3b6-6cda-461b-bbb4-1195513f0611",
       "name": "GS - Registrar Log",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -1056,
-        976
+        0,
+        1584
       ],
+      "alwaysOutputData": false,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
-      "parameters": {},
-      "id": "df22c6eb-06c3-4f8c-9f74-70db74d63b36",
-      "name": "OUT - Log Registrado",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
+      "parameters": {
+        "jsCode": "const prep = $('CODE - Preparar Log').first().json;\nreturn [{ json: {\n  log_registrado: true,\n  id_log: prep.ID_LOG,\n  data_hora: prep.DATA_HORA,\n  erro: ''\n} }];\n"
+      },
+      "id": "a8031e66-435f-48e3-ad44-24ff2a64deaa",
+      "name": "CODE - Confirmar Log Registrado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -816,
-        976
+        240,
+        1488
       ]
     },
     {
       "parameters": {
-        "content": "## WF017 v5.0\n\nGrava exclusivamente na aba LOGS.",
-        "height": 280,
-        "width": 520
+        "jsCode": "const prep = $('CODE - Preparar Log').first().json;\nconst err = $json.error || {};\nreturn [{ json: {\n  log_registrado: false,\n  id_log: prep.ID_LOG,\n  data_hora: prep.DATA_HORA,\n  erro: String((err && err.message) || err || 'Falha técnica ao gravar o log na aba LOGS.')\n} }];\n"
       },
-      "id": "3623e7f2-ba1c-4002-9240-b60979feaab3",
-      "name": "NOTA - WF017 v5.0",
+      "id": "4a75e3e5-ce8e-4dac-bf72-60ced0ff5ff3",
+      "name": "CODE - Erro Registrar Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        1696
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "log_registrado",
+              "type": "boolean",
+              "value": "={{ $json.log_registrado }}"
+            },
+            {
+              "id": "s2",
+              "name": "id_log",
+              "type": "string",
+              "value": "={{ $json.id_log }}"
+            },
+            {
+              "id": "s3",
+              "name": "data_hora",
+              "type": "string",
+              "value": "={{ $json.data_hora }}"
+            },
+            {
+              "id": "s4",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $json.erro }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a6b55579-73aa-449b-9905-5f18141f4ce5",
+      "name": "SET - Preparar Saída WF017",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## WF017 v6.0\n\nGrava exclusivamente na aba LOGS. Workflow central de logs de todo o BeautyFlow (chamado por WF001-WF016).\n\nCorreções desta revisão:\n- GS - Registrar Log agora trata erro tecnico explicitamente (alwaysOutputData + onError continueErrorOutput) - uma falha ao gravar o log NUNCA mais derruba/lança exceção no workflow chamador. O WF017 sempre retorna { log_registrado, id_log, data_hora, erro }, nunca lança.\n- \"dados\" normalizado: todos os chamadores atuais já enviam JSON pré-serializado (string); o Code node agora detecta o tipo em vez de fazer JSON.stringify() sobre uma string já serializada (o que corrompia o campo DADOS com aspas escapadas em dobro).\n- ID_LOG agora usa timestamp + entropia aleatória (mesmo padrão de WF008/WF010), evitando colisão sob alto volume de chamadas.\n- ID_EMPRESA, TIPO e STATUS não assumem mais valores plausíveis de sucesso (EMP001/INFO/PROCESSADO) quando o chamador não informa o campo - usam 'NAO_INFORMADO', deixando a falha de integração visível na planilha em vez de mascará-la.",
+        "height": 380,
+        "width": 640
+      },
+      "id": "733dc2a6-c913-43b2-bc8d-478bf7d4ca29",
+      "name": "NOTA - WF017 v6.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -672,
-        576
+        -528,
+        1104
       ]
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "TRG - Receber Evento de Log": [
+      {
+        "json": {
+          "id_empresa": "EMP001",
+          "workflow": "TESTE-WF017",
+          "node": "TRG - Teste Manual",
+          "tipo": "INFO",
+          "status": "PROCESSADO",
+          "mensagem": "Teste manual do WF017",
+          "dados": {
+            "id_cliente": "CLI001",
+            "teste": true,
+            "origem": "teste_manual"
+          }
+        }
+      }
+    ]
+  },
   "connections": {
     "TRG - Receber Evento de Log": {
       "main": [
         [
           {
-            "node": "SET - Preparar Log",
+            "node": "CODE - Preparar Log",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "SET - Preparar Log": {
+    "CODE - Preparar Log": {
       "main": [
         [
           {
@@ -334,7 +342,36 @@
       "main": [
         [
           {
-            "node": "OUT - Log Registrado",
+            "node": "CODE - Confirmar Log Registrado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Registrar Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Confirmar Log Registrado": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF017",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Registrar Log": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF017",
             "type": "main",
             "index": 0
           }
@@ -348,7 +385,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "ce846acf-a8d4-47d4-818c-7e426fdc11e9",
+  "versionId": "5ab284da-39a5-45af-8a7e-42bd9ecab0cf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
