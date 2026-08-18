@@ -1,91 +1,68 @@
-# ATD-WF001 — Receber WhatsApp
+# WF001 — ATD - WF001 - Receber WhatsApp
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`ATD-WF001-receber-whatsapp.json`](../../workflows/atendimento/ATD-WF001-receber-whatsapp.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `ATD-WF001` |
-| Workflow | Receber WhatsApp |
-| Arquivo n8n | `ATD-WF001-receber-whatsapp.json` |
-| Status | Versionado no repositório |
-| Trigger | Webhook da Meta/WhatsApp Cloud API (GET para validação e POST para eventos). |
-| Última revisão desta documentação | 18/08/2026 |
+Receber eventos da WhatsApp Cloud API, responder ao endpoint de challenge usado na configuração do webhook e encaminhar mensagens válidas para o atendimento com IA.
 
-## Objetivo
+## 2. Identificação técnica
 
-Ser a porta de entrada do BeautyFlow para mensagens recebidas pelo WhatsApp. O workflow valida o evento, normaliza o payload da Meta e encaminha somente o contexto necessário para o atendimento inteligente.
+- **Workflow:** `ATD - WF001 - Receber WhatsApp`
+- **ID funcional:** `WF001`
+- **Arquivo JSON:** `ATD-WF001-receber-whatsapp.json`
+- **Status `active` no JSON versionado:** `true`
+- **Gatilho:** Dois Webhooks públicos no caminho `beautyflow-whatsapp`: GET para o challenge da Meta e POST para recebimento de eventos do WhatsApp.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `hub.mode`, `hub.verify_token` e `hub.challenge` na validação do webhook.
-- Payload de mensagens da WhatsApp Cloud API no POST.
-- Dados extraídos: telefone, nome, texto, tipo da mensagem, `phone_number_id`, identificador da mensagem e timestamp.
+## 3. Entradas
 
-## Fluxo principal
+- GET: query string recebida pela verificação da Meta; o node de resposta utiliza `hub.challenge`.
+- POST: payload da WhatsApp Cloud API no formato `entry[0].changes[0].value`, incluindo `messages`, `contacts` e `metadata` quando presentes.
 
-1. Recebe a chamada do webhook da Meta.
-2. Responde ao desafio de verificação quando a chamada é de validação do webhook.
-3. Extrai a primeira mensagem válida do payload recebido.
-4. Normaliza telefone, nome, texto, identificadores e origem.
-5. Descarta/encerra eventos que não representam uma mensagem utilizável.
-6. Monta o contrato interno do BeautyFlow.
-7. Executa o `ATD-WF002 — IA Atendimento` e aguarda o processamento.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. `Webhook - Validar Meta` recebe GET e encaminha para `RESP - Challenge Meta`.
+2. `RESP - Challenge Meta` devolve HTTP 200 em texto com `hub.challenge` ou string vazia.
+3. `Webhook - Receber WhatsApp` recebe POST e responde imediatamente com `{"status":"EVENT_RECEIVED"}`.
+4. `CODE - Normalizar Payload` extrai a primeira mensagem, contato e metadados do evento.
+5. Quando existe mensagem, normaliza telefone, nome, tipo, texto, timestamp e `phone_number_id`; o JSON atual atribui `id_empresa = EMP001`.
+6. `IF - Evento Válido` impede o encaminhamento quando o evento não contém mensagem.
+7. Eventos válidos são enviados para `EXEC - WF002 - IA Atendimento`.
 
-```text
-ATD-WF001 → WhatsApp Cloud API / Meta → ATD-WF002 — IA Atendimento
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Apenas a primeira mensagem do primeiro `entry/change` é tratada pela normalização atual.
+- `telefone_cliente` é normalizado para dígitos.
+- `nome_cliente` usa `Cliente` quando o contato não fornece nome.
+- `mensagem_texto` é preenchida a partir de `text.body` quando o tipo é texto.
+- Eventos sem mensagem são marcados como `evento_valido = false` e não seguem para o WF002.
+- O GET atual responde ao challenge, mas o JSON exportado **não possui condição explícita que compare `hub.verify_token` ou `hub.mode`** antes da resposta.
+- O identificador de empresa está fixado como `EMP001` na normalização do POST.
 
-- WhatsApp Cloud API / Meta
-- ATD-WF002 — IA Atendimento
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- WhatsApp Cloud API / Meta (Webhook).
+- WF002 — IA Atendimento.
 
-- O WF001 não deve conter regra de negócio de agenda, cliente ou financeiro.
-- O payload externo deve ser convertido para um contrato interno estável antes de chamar outros workflows.
-- O telefone deve ser sanitizado para reduzir diferenças de formatação.
-- O `phone_number_id` precisa ser preservado para que os workflows de comunicação saibam por qual número responder.
-- Eventos sem mensagem válida não devem seguir para IA.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- GET: challenge em texto com HTTP 200.
+- POST: resposta de recebimento `EVENT_RECEIVED`; internamente, item normalizado enviado ao WF002 quando válido.
 
-- `id_empresa`, `mensagem_id`, `telefone_cliente`, `nome_cliente`, `tipo_mensagem`, `mensagem_texto`, `timestamp`, `phone_number_id` e `origem`.
-- Encaminhamento do contexto para o WF002.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Payload sem mensagem é tratado como evento inválido, sem chamada ao WF002.
+- O JSON não implementa um ramo explícito de HTTP 403 para token de verificação incorreto.
 
-- Payload inesperado deve terminar de forma controlada, sem criar dados indevidos.
-- Falhas técnicas devem ser registradas no padrão de logs do projeto quando houver contexto suficiente.
-- Nunca registrar token da Meta ou credenciais completas em logs.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- Não há chamada direta ao WF017 neste workflow.
+- Não há Google Sheets neste workflow.
 
-- Chama: `ATD-WF002`.
-- É chamado por: Meta/WhatsApp Cloud API.
-- Logs centralizados: `ADM-WF017`, quando aplicável.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Validar o GET do webhook com token correto.
-- [ ] Validar uma mensagem de texto real recebida no POST.
-- [ ] Validar evento sem mensagem e confirmar que não chama o WF002.
-- [ ] Validar telefone com caracteres de formatação.
-- [ ] Validar propagação correta de `phone_number_id`.
-
-## Cuidados na manutenção
-
-Evite adicionar consultas ao Google Sheets diretamente neste workflow. Ele deve continuar pequeno, rápido e dedicado à recepção/normalização do WhatsApp.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `ATD-WF001-receber-whatsapp.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
