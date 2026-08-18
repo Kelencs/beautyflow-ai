@@ -1,94 +1,65 @@
-# COM-WF012 — Confirmação / Envio WhatsApp
+# WF012 — COM - WF012 - Confirmação
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`COM-WF012-confirmacao.json`](../../workflows/comunicacao/COM-WF012-confirmacao.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `COM-WF012` |
-| Workflow | Confirmação / Envio WhatsApp |
-| Arquivo n8n | `COM-WF012-confirmacao.json` |
-| Status | Versionado no repositório |
-| Trigger | Subworkflow central de comunicação chamado por outros workflows. |
-| Última revisão desta documentação | 18/08/2026 |
+Centralizar o envio de mensagens de texto pela WhatsApp Cloud API, registrar cada tentativa em MENSAGENS e produzir log operacional.
 
-## Objetivo
+## 2. Identificação técnica
 
-Centralizar o envio de mensagens de texto pelo WhatsApp Cloud API, validar os dados do destinatário, registrar a mensagem e devolver um resultado padronizado.
+- **Workflow:** `COM - WF012 - Confirmação`
+- **ID funcional:** `WF012`
+- **Arquivo JSON:** `COM-WF012-confirmacao.json`
+- **Status `active` no JSON versionado:** `true`
+- **Gatilho:** `Execute Workflow Trigger`; serviço central de envio de mensagens WhatsApp usado por vários workflows.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa`, `id_cliente`, telefone, nome e `phone_number_id`.
-- `resposta_cliente` ou texto já preparado.
-- Contexto opcional: intenção, confiança, serviço, data, horário, profissional, `id_agendamento`, origem e `dados`.
+## 3. Entradas
 
-## Fluxo principal
+- `id_empresa`, `id_cliente`, `telefone_cliente`, `nome_cliente`, `mensagem_texto`, `intencao`, `confianca`, `servico`, `data`, `hora_inicio`, `periodo`, `profissional`, `resposta_cliente`, `phone_number_id`, `origem`, `id_agendamento`, `dados`.
 
-1. Sanitiza e valida telefone.
-2. Valida presença de `phone_number_id`.
-3. Escolhe a mensagem pronta (`resposta_cliente`) ou fallback controlado.
-4. Monta o payload da WhatsApp Cloud API.
-5. Envia a mensagem pelo endpoint da Meta.
-6. Captura o identificador retornado pelo WhatsApp.
-7. Registra a saída na aba `MENSAGENS` com direção, conteúdo e status.
-8. Retorna o status ao workflow chamador.
-9. Registra eventos técnicos no WF017 quando necessário.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. `CODE - Montar Mensagem` normaliza telefone e dados; `id_empresa` usa fallback `EMP001`.
+2. Valida a presença de telefone e `phone_number_id` antes de enviar.
+3. A mensagem usa prioritariamente `resposta_cliente`; sem conteúdo, aplica mensagem genérica de recebimento.
+4. O node HTTP envia texto para `https://graph.facebook.com/v21.0/{phone_number_id}/messages`.
+5. O resultado da API é convertido em sucesso `ENVIADA` ou `ERRO_WHATSAPP`; falhas de validação retornam `ERRO_VALIDACAO`.
+6. Os ramos convergem e uma linha é gravada em `MENSAGENS`, incluindo status/erro e indicador de processamento.
+7. WF017 registra log e o SET final devolve status de envio e contexto.
 
-```text
-COM-WF012 → WhatsApp Cloud API / Meta → Google Sheets: MENSAGENS → ADM-WF017
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Telefone é normalizado para dígitos.
+- Telefone e `phone_number_id` são obrigatórios para envio real.
+- O envio é de mensagem de texto pela WhatsApp Cloud API v21.0.
+- A tentativa é registrada em `MENSAGENS` tanto para sucesso quanto para falha.
+- O JSON atual usa `EMP001` como fallback quando `id_empresa` não é informado.
 
-- WhatsApp Cloud API / Meta
-- Google Sheets: `MENSAGENS`
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- WhatsApp Cloud API / Meta.
+- Google Sheets: `MENSAGENS`.
+- WF017 — Logs.
 
-- Todos os envios automatizados do BeautyFlow devem preferir este workflow em vez de implementar HTTP direto em cada fluxo.
-- Telefone e `phone_number_id` são obrigatórios para envio.
-- O registro em `MENSAGENS` deve indicar direção `ENVIADA` e status real do processamento.
-- Não gravar credencial/token da Meta na planilha ou logs.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Campos principais: `status`, `enviado`, `whatsapp_message_id`, `erro` e o contexto recebido.
+- Status principais: `ENVIADA`, `ERRO_WHATSAPP`, `ERRO_VALIDACAO`.
 
-- Status de envio.
-- ID da mensagem do WhatsApp quando disponível.
-- Registro persistido em `MENSAGENS`.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Falha de validação impede o POST à Meta.
+- Erro retornado pela API é capturado e persistido em MENSAGENS/log.
 
-- Falha HTTP deve retornar falha real ao chamador.
-- Telefone/`phone_number_id` ausente deve ser bloqueio de validação, sem HTTP.
-- Registro de mensagem deve refletir erro quando o envio falhar.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- WF012 concentra o HTTP de WhatsApp para WF005, WF006, WF007, WF011, WF013, WF014 e WF015, além do fallback do WF003.
 
-- Chamado por: agenda, cobrança, lembrete, pesquisa, follow-up e outros fluxos de comunicação.
-- Logs: `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Envio com `resposta_cliente`.
-- [ ] Envio usando fallback.
-- [ ] Telefone inválido.
-- [ ] `phone_number_id` ausente.
-- [ ] Erro 4xx/5xx da Meta.
-- [ ] Conferir registro correspondente em `MENSAGENS`.
-
-## Cuidados na manutenção
-
-Trate este workflow como um serviço compartilhado. Mudanças no contrato devem ser compatíveis com todos os workflows que enviam WhatsApp.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `COM-WF012-confirmacao.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
