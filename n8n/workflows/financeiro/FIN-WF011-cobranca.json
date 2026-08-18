@@ -7,59 +7,111 @@
           "values": [
             {
               "name": "id_empresa"
-            },
-            {
-              "name": "id_cliente"
-            },
-            {
-              "name": "telefone_cliente"
-            },
-            {
-              "name": "nome_cliente"
-            },
-            {
-              "name": "mensagem_texto"
-            },
-            {
-              "name": "intencao"
-            },
-            {
-              "name": "confianca"
-            },
-            {
-              "name": "servico"
-            },
-            {
-              "name": "data"
-            },
-            {
-              "name": "hora_inicio"
-            },
-            {
-              "name": "periodo"
-            },
-            {
-              "name": "profissional"
-            },
-            {
-              "name": "resposta_cliente"
-            },
-            {
-              "name": "phone_number_id"
-            },
-            {
-              "name": "origem"
             }
           ]
         }
       },
-      "id": "94f1a93a-99df-48e4-a14e-ce6a7eab6b6f",
+      "id": "534b9922-92b2-4091-abbd-7fee48d5a240",
       "name": "TRG - Receber Dados WF011",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        -400,
-        1024
+        15760,
+        5648
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nconst idEmpresa = String(d.id_empresa || '').trim();\nconst empresaValida = idEmpresa.length > 0;\n\nreturn [{ json: {\n  id_empresa: idEmpresa,\n  empresa_valida: empresaValida,\n  evento_resultado: empresaValida ? '' : 'ERRO_COBRANCA',\n  erro: empresaValida ? '' : 'id_empresa é obrigatório e não pode ser vazio para executar a cobrança automática (nunca fazer busca multi-tenant sem ID_EMPRESA).'\n} }];\n"
+      },
+      "id": "781560cb-46b7-4a39-a7cd-8ac7517e607c",
+      "name": "CODE - Validar Empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        15968,
+        5648
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.empresa_valida }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "79237f25-b0dc-4b27-a9a1-ad241913dffe",
+      "name": "IF - Empresa Válida",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16160,
+        5648
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\nconst agora = DateTime.now().setZone('America/Sao_Paulo');\nconst hora = agora.hour + agora.minute / 60;\nconst dentroDoHorario = hora >= 9 && hora < 18;\n\nreturn [{ json: {\n  ...d,\n  dentro_do_horario: dentroDoHorario,\n  hora_atual_sp: agora.toFormat('HH:mm'),\n  agora_iso: agora.toISO(),\n  evento_resultado: dentroDoHorario ? '' : 'FORA_HORARIO_COBRANCA',\n  erro: dentroDoHorario ? '' : `Fora da janela permitida para cobrança automática (09:00-18:00, America/Sao_Paulo). Horário atual: ${agora.toFormat('HH:mm')}.`\n} }];\n"
+      },
+      "id": "2ae98cd6-c36f-45af-b275-16cb573923e1",
+      "name": "CODE - Validar Horário Permitido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16368,
+        5520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.dentro_do_horario }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "719a2b48-3eec-48ff-bccf-188519e602f2",
+      "name": "IF - Dentro Do Horário",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16560,
+        5520
       ]
     },
     {
@@ -78,34 +130,175 @@
           "cachedResultName": "PAGAMENTOS",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=2103767306"
         },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "0acbb62b-9389-4715-a8a8-a9d67cb2f7f4",
-      "name": "GS - Buscar Pagamentos Pendentes",
+      "id": "e83b5783-5da6-4adc-bd2d-45ed91b6aaa3",
+      "name": "GS - Buscar Pagamentos Da Empresa",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -160,
-        1024
+        16784,
+        5360
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "bV94b0kU1RKmLn1F",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "return items;"
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "COBRANCAS",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "34a6b21b-8c60-46f1-8d69-a050bc5fa0d6",
-      "name": "CODE - Montar Cobrança",
+      "id": "4a73e5f7-34ac-41f0-ad8c-aa9e2c8b599a",
+      "name": "GS - Buscar Cobranças Existentes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        16784,
+        5520
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4a77937c-84ce-4134-8dd8-cbe8d3400145",
+      "name": "GS - Buscar Clientes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        16784,
+        5680
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "c1c33159-78aa-441b-b116-4a031e81c49c",
+      "name": "MERGE - Dados Coletados",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        17024,
+        5520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Validar Horário Permitido').first().json;\nconst idEmpresa = ctx.id_empresa;\nconst phoneNumberId = ctx.phone_number_id || '';\n\nconst pagRaw = $items('GS - Buscar Pagamentos Da Empresa').map(i => i.json);\nconst cobRaw = $items('GS - Buscar Cobranças Existentes').map(i => i.json);\nconst cliRaw = $items('GS - Buscar Clientes').map(i => i.json);\n\n// Detecta falha técnica explicitamente pelo campo error de cada item (nunca por\n// contagem de itens: alwaysOutputData:true garante >=1 item mesmo em falha técnica,\n// então \"0 itens\" nunca é um sinal confiável - o mesmo bug já confirmado nos WF008/09/10).\nconst erroPag = pagRaw.find(r => r && r.error);\nconst erroCob = cobRaw.find(r => r && r.error);\nconst erroCli = cliRaw.find(r => r && r.error);\nconst itemComErro = erroPag || erroCob || erroCli;\n\nif (itemComErro) {\n  const origemErro = erroPag ? 'PAGAMENTOS' : (erroCob ? 'COBRANCAS' : 'CLIENTES');\n  const err = itemComErro.error || {};\n  return [{ json: {\n    id_empresa: idEmpresa, id_pagamento: '', id_agendamento: '', id_cliente: '',\n    telefone_cliente: '', nome_cliente: '', phone_number_id: phoneNumberId,\n    valor_pendente: 0, tentativa: 0, precisa_enviar: false, cobranca_enviada: false,\n    origem: 'AUTOMATICO',\n    evento_resultado: 'ERRO_COBRANCA',\n    erro: `Falha técnica ao consultar ${origemErro} no Google Sheets: ${String((err && err.message) || err || 'erro desconhecido')}`\n  } }];\n}\n\nconst pagamentosTodos = pagRaw.filter(r => r && r.ID_PAGAMENTO);\nconst cobrancas = cobRaw.filter(r => r && r.ID_COBRANCA);\nconst clientes = cliRaw.filter(r => r && r.ID_CLIENTE);\n\nif (pagamentosTodos.length === 0) {\n  return [{ json: {\n    id_empresa: idEmpresa, id_pagamento: '', id_agendamento: '', id_cliente: '',\n    telefone_cliente: '', nome_cliente: '', phone_number_id: phoneNumberId,\n    valor_pendente: 0, tentativa: 0, precisa_enviar: false, cobranca_enviada: false,\n    origem: 'AUTOMATICO',\n    evento_resultado: 'PAGAMENTO_NAO_ENCONTRADO',\n    erro: 'Nenhum registro em PAGAMENTOS encontrado para esta empresa.'\n  } }];\n}\n\n// PAGAMENTOS é transacional: cada parcela gera uma nova linha e as linhas antigas\n// permanecem com STATUS=PARCIAL mesmo depois de o agendamento ser totalmente quitado\n// (ex.: PARCIAL 60 -> PARCIAL 30 -> PAGO 0). Por isso a busca (GS - Buscar Pagamentos Da\n// Empresa) não filtra mais por STATUS - agrupamos por ID_AGENDAMENTO e consideramos\n// SOMENTE o registro mais recente (por DATA_HORA) como o estado financeiro atual de cada\n// agendamento, nunca cada linha histórica como uma dívida independente.\nconst porAgendamento = new Map();\nfor (const pag of pagamentosTodos) {\n  const chave = `${pag.ID_EMPRESA || idEmpresa}::${pag.ID_AGENDAMENTO || ('__SEM_AGENDAMENTO_' + pag.ID_PAGAMENTO)}`;\n  const dt = DateTime.fromISO(String(pag.DATA_HORA || ''), { zone: 'America/Sao_Paulo' });\n  const atual = porAgendamento.get(chave);\n  const atualDt = atual ? atual._dt : null;\n  const maisRecente = !atual || (dt.isValid && (!atualDt || !atualDt.isValid || dt > atualDt));\n  if (maisRecente) {\n    porAgendamento.set(chave, { ...pag, _dt: dt });\n  }\n}\n\nconst agora = ctx.agora_iso ? DateTime.fromISO(ctx.agora_iso, { zone: 'America/Sao_Paulo' }) : DateTime.now().setZone('America/Sao_Paulo');\n\nconst resultados = [];\n\n// Map.values() preserva no máximo 1 estado por ID_AGENDAMENTO -> no máximo 1 item de\n// cobrança por agendamento nesta execução, por construção.\nfor (const estadoAtual of porAgendamento.values()) {\n  const idPagamento = estadoAtual.ID_PAGAMENTO;\n  const idAgendamento = estadoAtual.ID_AGENDAMENTO || '';\n  const valorPendente = Number(estadoAtual.VALOR_PENDENTE);\n  const status = String(estadoAtual.STATUS || '').toUpperCase();\n  const cliente = clientes.find(c => String(c.ID_CLIENTE) === String(estadoAtual.ID_CLIENTE)) || null;\n\n  const base = {\n    id_empresa: idEmpresa,\n    id_pagamento: idPagamento,\n    id_agendamento: idAgendamento,\n    id_cliente: estadoAtual.ID_CLIENTE || '',\n    telefone_cliente: cliente ? String(cliente.TELEFONE || '').replace(/\\D/g, '') : '',\n    nome_cliente: cliente ? (cliente.NOME || '') : '',\n    phone_number_id: phoneNumberId,\n    valor_pendente: isNaN(valorPendente) ? 0 : valorPendente,\n    origem: 'AUTOMATICO'\n  };\n\n  // Estado mais recente já quitado (STATUS=PAGO) ou sem saldo pendente: nunca cobrar.\n  if (status === 'PAGO' || !(base.valor_pendente > 0)) {\n    resultados.push({ ...base, precisa_enviar: false, cobranca_enviada: false, tentativa: 0, evento_resultado: 'PAGAMENTO_JA_QUITADO', erro: 'Este agendamento já está quitado (estado financeiro mais recente é PAGO ou VALOR_PENDENTE<=0).' });\n    continue;\n  }\n\n  // Defensivo: estado mais recente não é PAGO nem PARCIAL com saldo (dado inconsistente).\n  if (status !== 'PARCIAL') {\n    resultados.push({ ...base, precisa_enviar: false, cobranca_enviada: false, tentativa: 0, evento_resultado: 'VALOR_PENDENTE_INVALIDO', erro: `Estado financeiro mais recente tem STATUS=\"${estadoAtual.STATUS}\" inesperado (nem PAGO nem PARCIAL); cobrança bloqueada por segurança.` });\n    continue;\n  }\n\n  // Histórico de cobranças controlado por ID_AGENDAMENTO (não por ID_PAGAMENTO): como cada\n  // parcela gera um novo ID_PAGAMENTO, controlar por ID_PAGAMENTO reiniciaria indevidamente\n  // a janela de 24h e o limite de 3 tentativas a cada novo pagamento parcial do mesmo\n  // agendamento. COBRANCAS já possui a coluna ID_AGENDAMENTO (ver GS - Registrar Cobrança).\n  const historico = cobrancas\n    .filter(c => String(c.ID_AGENDAMENTO) === String(idAgendamento))\n    .map(c => ({ ...c, _dt: DateTime.fromISO(String(c.DATA_HORA || ''), { zone: 'America/Sao_Paulo' }) }))\n    .filter(c => c._dt.isValid)\n    .sort((a, b) => b._dt.toMillis() - a._dt.toMillis());\n\n  const tentativasAnteriores = historico.length;\n  const ultimaTentativa = historico[0] || null;\n\n  if (tentativasAnteriores >= 3) {\n    resultados.push({ ...base, precisa_enviar: false, cobranca_enviada: false, tentativa: tentativasAnteriores, evento_resultado: 'LIMITE_COBRANCAS_ATINGIDO', erro: `Limite de 3 cobranças automáticas já atingido para este agendamento (${tentativasAnteriores} tentativas registradas em COBRANCAS).` });\n    continue;\n  }\n\n  if (ultimaTentativa) {\n    const horasDesdeUltima = agora.diff(ultimaTentativa._dt, 'hours').hours;\n    if (horasDesdeUltima < 24) {\n      resultados.push({ ...base, precisa_enviar: false, cobranca_enviada: false, tentativa: tentativasAnteriores, evento_resultado: 'COBRANCA_RECENTE', erro: `Já existe uma cobrança automática enviada nas últimas 24 horas para este agendamento (há ${horasDesdeUltima.toFixed(1)}h).` });\n      continue;\n    }\n  }\n\n  const valorFormatado = base.valor_pendente.toFixed(2).replace('.', ',');\n  const nomeExibicao = base.nome_cliente && base.nome_cliente.trim() ? base.nome_cliente.trim() : 'Cliente';\n  const mensagem = `Olá, ${nomeExibicao}! Identificamos que ainda existe um saldo de R$ ${valorFormatado} referente ao seu atendimento. Caso o pagamento já tenha sido realizado, por favor desconsidere esta mensagem.`;\n\n  resultados.push({\n    ...base,\n    precisa_enviar: true,\n    cobranca_enviada: false,\n    tentativa: tentativasAnteriores + 1,\n    resposta_cliente: mensagem\n  });\n}\n\nreturn resultados.map(r => ({ json: r }));\n"
+      },
+      "id": "d96cfb3c-51a9-418f-ba8a-6af4ee65bd0d",
+      "name": "CODE - Avaliar Cobranças Elegíveis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        1024
+        17232,
+        5520
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.precisa_enviar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "adfc2833-ad5c-4286-b0ce-a55b0e75f618",
+      "name": "IF - Precisa Enviar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        17424,
+        5520
       ]
     },
     {
@@ -119,7 +312,25 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "id_cliente": "={{ $json.id_cliente }}",
+            "telefone_cliente": "={{ $json.telefone_cliente }}",
+            "nome_cliente": "={{ $json.nome_cliente }}",
+            "mensagem_texto": "={{ $json.resposta_cliente }}",
+            "intencao": "COBRANCA",
+            "confianca": "={{ 1 }}",
+            "servico": "",
+            "data": "",
+            "hora_inicio": "",
+            "periodo": "",
+            "profissional": "",
+            "resposta_cliente": "={{ $json.resposta_cliente }}",
+            "phone_number_id": "={{ $json.phone_number_id }}",
+            "origem": "={{ $json.origem }}",
+            "id_agendamento": "={{ $json.id_agendamento }}",
+            "dados": "={{ { id_pagamento: $json.id_pagamento, tentativa: $json.tentativa, valor_pendente: $json.valor_pendente } }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -256,22 +467,329 @@
               "display": true,
               "canBeUsedToMatch": true,
               "type": "string"
+            },
+            {
+              "id": "id_agendamento",
+              "displayName": "id_agendamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dados",
+              "displayName": "dados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "object"
             }
           ],
           "attemptToConvertTypes": false,
-          "convertFieldsToString": true
+          "convertFieldsToString": false
         },
         "options": {
           "waitForSubWorkflow": true
         }
       },
-      "id": "ce1f4721-3fc7-42eb-802c-907c235a9c04",
+      "id": "b8bc0337-30be-49aa-bdf8-db830502d11d",
       "name": "EXEC - WF012 Comunicação",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        320,
-        1024
+        17632,
+        5408
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const envio = $json; // resposta de EXEC - WF012 Comunicação para ESTA cobrança\n\n// Roda em modo \"Run Once for Each Item\" propositalmente: no modo padrão (\"Run Once for\n// All Items\"), $json equivaleria sempre ao primeiro item e este node só devolveria 1\n// resultado mesmo recebendo várias cobranças elegíveis na mesma execução - as demais\n// seriam descartadas silenciosamente. Rodar por item garante que cada cobrança seja\n// processada E que o n8n mantenha o pairedItem correto por item, necessário para\n// CODE - Erro Registro Cobrança localizar a cobrança certa via itemMatching() se o\n// registro em COBRANCAS falhar.\n//\n// NÃO usar $('CODE - Avaliar Cobranças Elegíveis').item/.first() aqui: pairedItem não\n// atravessa de forma confiável o limite de um Execute Workflow (bug real confirmado no\n// WF013). A correção é usar somente os campos que o próprio WF012 já ecoa de volta em\n// $json (id_empresa/id_cliente/id_agendamento/telefone_cliente/nome_cliente/\n// phone_number_id/origem/resposta_cliente) e o pacote dados, que WF011 já envia com\n// id_pagamento/tentativa/valor_pendente.\nconst pacote = envio.dados || {};\nconst cobranca = {\n  id_empresa: envio.id_empresa,\n  id_pagamento: pacote.id_pagamento || '',\n  id_agendamento: envio.id_agendamento,\n  id_cliente: envio.id_cliente,\n  telefone_cliente: envio.telefone_cliente,\n  nome_cliente: envio.nome_cliente,\n  phone_number_id: envio.phone_number_id,\n  valor_pendente: pacote.valor_pendente,\n  tentativa: pacote.tentativa,\n  resposta_cliente: envio.resposta_cliente,\n  origem: envio.origem\n};\n\nconst enviado = envio.enviado === true;\nconst agora = DateTime.now().setZone('America/Sao_Paulo').toISO();\nconst idCobranca = `COB${Date.now()}${Math.random().toString(36).slice(2, 8)}`;\n\nreturn { json: {\n  ...cobranca,\n  ID_COBRANCA: idCobranca,\n  ID_EMPRESA: cobranca.id_empresa,\n  ID_PAGAMENTO: cobranca.id_pagamento,\n  ID_AGENDAMENTO: cobranca.id_agendamento,\n  ID_CLIENTE: cobranca.id_cliente,\n  TELEFONE: cobranca.telefone_cliente,\n  VALOR_PENDENTE: cobranca.valor_pendente,\n  TENTATIVA: cobranca.tentativa,\n  STATUS: enviado ? 'ENVIADA' : 'FALHA',\n  DATA_HORA: agora,\n  WHATSAPP_MESSAGE_ID: envio.whatsapp_message_id || '',\n  OBSERVACOES: enviado ? '' : String(envio.erro || 'Falha ao enviar cobrança via WF012.'),\n  cobranca_enviada: enviado,\n  status_cobranca: enviado ? 'ENVIADA' : 'FALHA_ENVIO',\n  evento_resultado: enviado ? 'COBRANCA_ENVIADA' : 'ERRO_COBRANCA',\n  erro: enviado ? '' : String(envio.erro || 'Falha ao enviar cobrança via WF012.')\n} };\n"
+      },
+      "id": "69f2bff3-5402-4bf0-b7dc-1c244f475dfa",
+      "name": "CODE - Processar Resultado Envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        17824,
+        5408
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1951016506,
+          "mode": "list",
+          "cachedResultName": "COBRANCAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1951016506"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_COBRANCA": "={{ $json.ID_COBRANCA }}",
+            "ID_EMPRESA": "={{ $json.ID_EMPRESA }}",
+            "ID_PAGAMENTO": "={{ $json.ID_PAGAMENTO }}",
+            "ID_AGENDAMENTO": "={{ $json.ID_AGENDAMENTO }}",
+            "ID_CLIENTE": "={{ $json.ID_CLIENTE }}",
+            "TELEFONE": "={{ $json.TELEFONE }}",
+            "VALOR_PENDENTE": "={{ $json.VALOR_PENDENTE }}",
+            "TENTATIVA": "={{ $json.TENTATIVA }}",
+            "STATUS": "={{ $json.STATUS }}",
+            "DATA_HORA": "={{ $json.DATA_HORA }}",
+            "WHATSAPP_MESSAGE_ID": "={{ $json.WHATSAPP_MESSAGE_ID }}",
+            "OBSERVACOES": "={{ $json.OBSERVACOES }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID_COBRANCA",
+              "displayName": "ID_COBRANCA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_PAGAMENTO",
+              "displayName": "ID_PAGAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TELEFONE",
+              "displayName": "TELEFONE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR_PENDENTE",
+              "displayName": "VALOR_PENDENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TENTATIVA",
+              "displayName": "TENTATIVA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_HORA",
+              "displayName": "DATA_HORA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WHATSAPP_MESSAGE_ID",
+              "displayName": "WHATSAPP_MESSAGE_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d3302567-c52c-4976-85e3-254842e1fd9d",
+      "name": "GS - Registrar Cobrança",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        18032,
+        5408
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_empresa }}"
+            },
+            {
+              "id": "s2",
+              "name": "id_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_pagamento }}"
+            },
+            {
+              "id": "s3",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_agendamento }}"
+            },
+            {
+              "id": "s4",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.id_cliente }}"
+            },
+            {
+              "id": "s5",
+              "name": "valor_pendente",
+              "type": "number",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.valor_pendente }}"
+            },
+            {
+              "id": "s6",
+              "name": "cobranca_enviada",
+              "type": "boolean",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.cobranca_enviada }}"
+            },
+            {
+              "id": "s7",
+              "name": "tentativa",
+              "type": "number",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.tentativa }}"
+            },
+            {
+              "id": "s8",
+              "name": "status_cobranca",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.status_cobranca }}"
+            },
+            {
+              "id": "s9",
+              "name": "resposta_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.resposta_cliente }}"
+            },
+            {
+              "id": "s10",
+              "name": "evento_resultado",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.evento_resultado }}"
+            },
+            {
+              "id": "s11",
+              "name": "erro",
+              "type": "string",
+              "value": "={{ $('CODE - Processar Resultado Envio').item.json.erro }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c732c69f-f2bb-4b8a-9219-703031bbeff3",
+      "name": "SET - Cobrança Registrada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        18224,
+        5328
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const envio = $json; // saída de erro de GS - Registrar Cobrança: confirmado em teste\n// real no n8n Cloud que contém APENAS {\"error\": \"...\"} - nenhum outro campo sobrevive\n// à falha do node.\n//\n// NÃO usar $('CODE - Processar Resultado Envio').item (inferência automática de\n// pairedItem): confirmado por teste real que retorna dados errados/undefined na saída\n// de erro deste node. NÃO usar .first() (pegaria sempre a primeira cobrança da\n// execução, misturando dados quando há 2+ cobranças elegíveis em paralelo). A forma\n// correta é itemMatching($itemIndex): usa o índice explícito deste item (dentro da\n// própria lista de erros que chegou a este node) para percorrer a cadeia real de\n// pairedItem até a cobrança de origem exata - funciona de forma confiável porque\n// CODE - Processar Resultado Envio agora roda uma vez por item (\"Run Once for Each\n// Item\", mesma correção), preservando o pairedItem corretamente item a item.\nconst cobranca = $('CODE - Processar Resultado Envio').itemMatching($itemIndex).json;\nconst err = envio.error || {};\n\nreturn { json: {\n  id_empresa: cobranca.id_empresa,\n  id_pagamento: cobranca.id_pagamento,\n  id_agendamento: cobranca.id_agendamento,\n  id_cliente: cobranca.id_cliente,\n  valor_pendente: cobranca.valor_pendente,\n  cobranca_enviada: cobranca.cobranca_enviada,\n  tentativa: cobranca.tentativa,\n  status_cobranca: cobranca.status_cobranca,\n  resposta_cliente: cobranca.resposta_cliente,\n  origem: cobranca.origem,\n  evento_resultado: 'ERRO_COBRANCA',\n  erro: `Cobrança processada (enviada=${cobranca.cobranca_enviada}) mas falhou ao registrar em COBRANCAS: ${String((err && err.message) || err || 'erro desconhecido')}`\n} };\n"
+      },
+      "id": "353ff546-1455-4a14-9e94-41f2c31ddfa5",
+      "name": "CODE - Erro Registro Cobrança",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        18224,
+        5520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items;\n"
+      },
+      "id": "8c0230bc-b999-48da-9caa-b24db26b303d",
+      "name": "CODE - Consolidar Resultado Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        18464,
+        5520
       ]
     },
     {
@@ -285,7 +803,17 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "id_empresa": "={{ $json.id_empresa }}",
+            "workflow": "FIN-WF011",
+            "node": "CODE - Avaliar Cobranças Elegíveis",
+            "tipo": "={{ ['COBRANCA_ENVIADA'].includes($json.evento_resultado) ? 'INFO' : ( ['PAGAMENTO_JA_QUITADO','PAGAMENTO_NAO_ENCONTRADO','COBRANCA_RECENTE','LIMITE_COBRANCAS_ATINGIDO','FORA_HORARIO_COBRANCA'].includes($json.evento_resultado) ? 'AVISO' : 'ERRO' ) }}",
+            "evento": "={{ $json.evento_resultado || 'ERRO_COBRANCA' }}",
+            "status": "={{ $json.evento_resultado === 'COBRANCA_ENVIADA' ? 'SUCESSO' : 'BLOQUEADO' }}",
+            "mensagem": "={{ $json.evento_resultado === 'COBRANCA_ENVIADA' ? ('Cobrança automática enviada com sucesso (tentativa ' + $json.tentativa + ').') : $json.erro }}",
+            "dados": "={{ JSON.stringify({ id_pagamento: $json.id_pagamento, id_agendamento: $json.id_agendamento, id_cliente: $json.id_cliente, valor_pendente: $json.valor_pendente, tentativa: $json.tentativa }) }}",
+            "execution_id": "={{ $execution.id }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -377,28 +905,189 @@
           "waitForSubWorkflow": true
         }
       },
-      "id": "f500025a-b55c-4ec5-9dd0-bde19ebb3f9f",
+      "id": "411c3c23-108f-451e-89fc-cf9b1afda66d",
       "name": "EXEC - WF017 Logs",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        560,
-        1024
+        18704,
+        5520
       ]
     },
     {
       "parameters": {
-        "content": "## FIN - WF011 - Cobrança v5.0\n\nEnvia cobrança apenas quando houver saldo pendente.",
-        "height": 280,
-        "width": 520
+        "assignments": {
+          "assignments": [
+            {
+              "id": "o1",
+              "name": "id_empresa",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.id_empresa || '' }}"
+            },
+            {
+              "id": "o2",
+              "name": "id_pagamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.id_pagamento || '' }}"
+            },
+            {
+              "id": "o3",
+              "name": "id_agendamento",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.id_agendamento || '' }}"
+            },
+            {
+              "id": "o4",
+              "name": "id_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.id_cliente || '' }}"
+            },
+            {
+              "id": "o5",
+              "name": "valor_pendente",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.valor_pendente || 0 }}"
+            },
+            {
+              "id": "o6",
+              "name": "cobranca_enviada",
+              "type": "boolean",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.cobranca_enviada || false }}"
+            },
+            {
+              "id": "o7",
+              "name": "tentativa",
+              "type": "number",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.tentativa || 0 }}"
+            },
+            {
+              "id": "o8",
+              "name": "status_cobranca",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.evento_resultado || $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.status_cobranca || '' }}"
+            },
+            {
+              "id": "o9",
+              "name": "resposta_cliente",
+              "type": "string",
+              "value": "={{ $('CODE - Consolidar Resultado Final').itemMatching($itemIndex).json.resposta_cliente || '' }}"
+            }
+          ]
+        },
+        "options": {}
       },
-      "id": "e06d6dca-7fc1-4763-b312-961142a0a259",
-      "name": "NOTA - FIN - WF011 - Cobrança v5.0",
+      "id": "f00765f1-d245-45fb-bb76-61bdc4a1807e",
+      "name": "SET - Preparar Saída WF011",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        18944,
+        5520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## FIN - WF011 - Cobrança v6.3\n\nCobra automaticamente agendamentos cujo estado financeiro MAIS RECENTE (por ID_AGENDAMENTO) é STATUS=PARCIAL e VALOR_PENDENTE>0.\n\nRegras aprovadas:\n- Nunca cobra STATUS=PAGO nem VALOR_PENDENTE<=0\n- Cobra somente o VALOR_PENDENTE (nunca o VALOR_TOTAL)\n- Máximo 1 cobrança a cada 24h por ID_AGENDAMENTO\n- Máximo 3 tentativas automáticas por ID_AGENDAMENTO\n- No máximo 1 item de cobrança por ID_AGENDAMENTO por execução\n- Só envia entre 09:00-18:00 America/Sao_Paulo (sem Wait; fora da janela apenas não envia)\n- ID_EMPRESA obrigatório no trigger (nunca busca multi-tenant sem ele)\n\nv6.1 (2026-08-13) — bug crítico corrigido: PAGAMENTOS é transacional (cada parcela cria uma nova linha; linhas antigas continuam com STATUS=PARCIAL mesmo depois de o agendamento ser quitado). O código antigo tratava CADA linha PARCIAL como uma dívida independente, podendo gerar cobrança de saldo já quitado (ex.: PARCIAL 60 -> PARCIAL 30 -> PAGO 0 ainda gerava cobrança das 2 linhas PARCIAL antigas). Corrigido: GS - Buscar Pagamentos Da Empresa (renomeado, era 'GS - Buscar Pagamentos Parciais') não filtra mais por STATUS - busca todas as linhas da empresa, e CODE - Avaliar Cobranças Elegíveis agrupa por ID_AGENDAMENTO e considera SOMENTE o registro mais recente (por DATA_HORA) como estado atual. Controle de janela de 24h/limite de 3 tentativas em COBRANCAS trocado de ID_PAGAMENTO para ID_AGENDAMENTO (COBRANCAS já tem essa coluna) - por ID_PAGAMENTO, cada nova parcela reiniciaria indevidamente a janela/limite.\n\nTambém corrigido (auditoria estática, mesmo padrão já visto nos WF008/09/10): GS - Buscar Pagamentos Da Empresa / GS - Buscar Cobranças Existentes / GS - Buscar Clientes / GS - Buscar Empresa tinham alwaysOutputData:true + onError:continueErrorOutput -> mudado para continueRegularOutput; detecção de erro técnico agora é sempre pelo campo $json.error de cada item, nunca por contagem de itens (alwaysOutputData garante >=1 item mesmo em erro). MERGE - Dados Coletados continua legítimo (sync barrier de 3 buscas que sempre disparam), só perdeu o segundo fio redundante por índice.\n\nTambém corrigido: CODE - Processar Resultado Envio usava $('CODE - Avaliar Cobranças Elegíveis').item.json, referência que atravessa o limite do EXEC - WF012 Comunicação (mesma classe de bug real confirmado no WF013 - pairedItem não é confiável nesse limite). Diferente do WF013, WF011 pode ter múltiplas cobranças elegíveis na mesma execução, então .first() teria sido igualmente errado (misturaria dados entre cobranças paralelas). Corrigido usando somente os campos que o próprio WF012 já ecoa em $json (WF011 já empacotava id_pagamento/tentativa/valor_pendente em 'dados') - nenhuma mudança de contrato em WF012 foi necessária.\n\nv6.2 (2026-08-13) — teste real no n8n Cloud (falha simulada em GS - Registrar Cobrança) confirmou: a saída de erro desse node é APENAS {\"error\":\"...\"}, nenhum outro campo sobrevive, e $('CODE - Processar Resultado Envio').item.json (inferência automática de pairedItem) resolvia para dados errados/undefined nesse ramo (saída real mostrou 'enviada=undefined'). Corrigido substituindo .item por itemMatching($itemIndex) - usa o índice explícito do item atual para percorrer a cadeia real de pairedItem, ao contrário de .first() (que sempre pegaria a primeira cobrança, misturando dados quando há 2+ cobranças elegíveis na mesma execução - por isso NÃO foi usado). Para itemMatching funcionar de forma confiável, CODE - Processar Resultado Envio também mudou de \"Run Once for All Items\" (modo em que $json sempre seria o primeiro item e o node só devolveria 1 resultado mesmo recebendo várias cobranças - as demais seriam descartadas silenciosamente) para \"Run Once for Each Item\", garantindo que cada cobrança seja processada e que o pairedItem fique correto item a item. CODE - Erro Registro Cobrança também mudou para \"Run Once for Each Item\" (necessário para itemMatching($itemIndex) fazer sentido). SET - Cobrança Registrada (ramo de sucesso) não foi alterado - não há evidência de que .item quebre nesse ramo, só no de erro; vale reconfirmar num teste real futuro.\n\nv6.3 (2026-08-13) — 2 pendências encontradas na revisão pré-reimportação:\n(1) EXEC - WF012 Comunicação estava com contrato desatualizado do WF012 já validado no n8n Cloud: mensagem_texto agora usa {{ $json.resposta_cliente }} (era \"\"), confianca agora {{ 1 }} (era \"\"), e o campo dados passou de type:\"string\"+convertFieldsToString:true para type:\"object\"+convertFieldsToString:false - CODE - Processar Resultado Envio depende de envio.dados.id_pagamento/tentativa/valor_pendente existirem como objeto real, não string.\n(2) SET - Preparar Saída WF011 usava $('CODE - Consolidar Resultado Final').first() em todos os 9 campos - com 2+ cobranças na mesma execução, TODAS as saídas finais mostrariam sempre os dados da primeira cobrança. Corrigido trocando .first() por .itemMatching($itemIndex) em cada campo. Não foi usado $json diretamente (resposta de EXEC - WF017 Logs, que fica entre o consolidador e este node) porque WF017 só retorna log_registrado/id_log/data_hora/erro - nenhum campo de negócio -, então os dados de cada cobrança só podem vir do consolidador via referência cruzada; itemMatching($itemIndex) foi escolhido em vez de .item (inferência automática, já provada não confiável em .item cruzando limites de Execute Workflow no WF013) e em vez de .first() (sempre pegaria a primeira cobrança). Ainda não confirmado em teste real que itemMatching sobrevive ao salto por EXEC - WF017 Logs especificamente - só simulado.",
+        "height": 460,
+        "width": 620
+      },
+      "id": "5297d5c8-b061-4b17-ae7c-ecb55608912e",
+      "name": "NOTA - FIN - WF011 - Cobrança v6.0",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        496,
-        624
+        15712,
+        4832
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.id_empresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "00f588fc-bc88-4222-913b-a12f422b264e",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        16160,
+        5808
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('CODE - Validar Empresa').first().json;\n\n// Detecta falha técnica pelo campo error do item (nunca por contagem de itens:\n// alwaysOutputData:true garante >=1 item mesmo em erro técnico, o mesmo bug ja\n// confirmado nos WF008/WF009/WF010).\nconst itensBusca = $items('GS - Buscar Empresa').map(i => i.json);\nconst itemComErro = itensBusca.find(r => r && r.error);\nif (itemComErro) {\n  const err = itemComErro.error || {};\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '',\n    evento_resultado: 'ERRO_COBRANCA',\n    erro: `Falha técnica ao consultar EMPRESAS no Google Sheets: ${String((err && err.message) || err || 'erro desconhecido')}`\n  } }];\n}\n\nconst rows = itensBusca.filter(r => r && r.ID_EMPRESA);\n\nif (rows.length === 0) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '',\n    evento_resultado: 'EMPRESA_NAO_ENCONTRADA',\n    erro: 'Empresa não encontrada na aba EMPRESAS para o id_empresa informado.'\n  } }];\n}\n\nconst empresa = rows[0];\nconst phoneNumberId = String(empresa.WHATSAPP_PHONE_NUMBER_ID || '').trim();\n\nif (!phoneNumberId) {\n  return [{ json: {\n    ...ctx, pode_prosseguir: false, phone_number_id: '',\n    evento_resultado: 'WHATSAPP_NAO_CONFIGURADO',\n    erro: 'WHATSAPP_PHONE_NUMBER_ID não está configurado para esta empresa em EMPRESAS.'\n  } }];\n}\n\nreturn [{ json: {\n  ...ctx, pode_prosseguir: true, phone_number_id: phoneNumberId, evento_resultado: ''\n} }];\n"
+      },
+      "id": "f3aed9e1-3e13-453e-a0c3-1b79f8e5036a",
+      "name": "CODE - Avaliar WhatsApp Empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16368,
+        5808
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "i1",
+              "leftValue": "={{ $json.pode_prosseguir }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "101c2397-b1e9-420c-9512-f84204fdc1a2",
+      "name": "IF - Empresa E WhatsApp OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        16560,
+        5808
       ]
     }
   ],
@@ -408,29 +1097,188 @@
       "main": [
         [
           {
-            "node": "GS - Buscar Pagamentos Pendentes",
+            "node": "CODE - Validar Empresa",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GS - Buscar Pagamentos Pendentes": {
+    "CODE - Validar Empresa": {
       "main": [
         [
           {
-            "node": "CODE - Montar Cobrança",
+            "node": "IF - Empresa Válida",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "CODE - Montar Cobrança": {
+    "IF - Empresa Válida": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar WhatsApp Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar WhatsApp Empresa": {
+      "main": [
+        [
+          {
+            "node": "IF - Empresa E WhatsApp OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Empresa E WhatsApp OK": {
+      "main": [
+        [
+          {
+            "node": "CODE - Validar Horário Permitido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Validar Horário Permitido": {
+      "main": [
+        [
+          {
+            "node": "IF - Dentro Do Horário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Dentro Do Horário": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Pagamentos Da Empresa",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Cobranças Existentes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GS - Buscar Clientes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Pagamentos Da Empresa": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Cobranças Existentes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Clientes": {
+      "main": [
+        [
+          {
+            "node": "MERGE - Dados Coletados",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "MERGE - Dados Coletados": {
+      "main": [
+        [
+          {
+            "node": "CODE - Avaliar Cobranças Elegíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Avaliar Cobranças Elegíveis": {
+      "main": [
+        [
+          {
+            "node": "IF - Precisa Enviar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Precisa Enviar": {
       "main": [
         [
           {
             "node": "EXEC - WF012 Comunicação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
             "type": "main",
             "index": 0
           }
@@ -441,7 +1289,80 @@
       "main": [
         [
           {
+            "node": "CODE - Processar Resultado Envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Processar Resultado Envio": {
+      "main": [
+        [
+          {
+            "node": "GS - Registrar Cobrança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Registrar Cobrança": {
+      "main": [
+        [
+          {
+            "node": "SET - Cobrança Registrada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Registro Cobrança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - Cobrança Registrada": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Registro Cobrança": {
+      "main": [
+        [
+          {
+            "node": "CODE - Consolidar Resultado Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Consolidar Resultado Final": {
+      "main": [
+        [
+          {
             "node": "EXEC - WF017 Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EXEC - WF017 Logs": {
+      "main": [
+        [
+          {
+            "node": "SET - Preparar Saída WF011",
             "type": "main",
             "index": 0
           }
@@ -455,7 +1376,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "4bb27132-582b-453a-b36a-bfef047bdc61",
+  "versionId": "62fd4917-756b-4eed-a12d-79a901d0a076",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
