@@ -1,88 +1,101 @@
-# Administração
+# Administração — WF016–WF018
 
-## Visão Geral
+> **Sincronização:** 18/08/2026  
+> **Fonte de verdade:** JSONs desta pasta.
 
-A pasta **Administracao** reúne todos os workflows responsáveis pela manutenção, monitoramento, auditoria e integridade do sistema BeautyFlow AI.
+## Objetivo
 
-Esses fluxos não interagem diretamente com o cliente, mas garantem estabilidade, rastreabilidade e segurança da plataforma.
+Executar processos técnicos de backup, logging e retenção controlada.
 
----
+Esses workflows não são fluxos conversacionais do cliente.
 
-# Objetivos
+## Workflows
 
-- Registrar logs do sistema
-- Executar backups automáticos
-- Limpar dados temporários
-- Monitorar falhas
-- Auxiliar auditorias
+| ID | Função |
+|---|---|
+| WF016 | Backup |
+| WF017 | Logs |
+| WF018 | Limpeza / retenção de LOGS |
 
----
-
-# Workflows
-
-| Código | Workflow | Objetivo |
-|---------|----------|----------|
-| ADM-WF016 | Backup | Backup automático dos dados |
-| ADM-WF017 | Logs | Registro de eventos do sistema |
-| ADM-WF018 | Limpeza | Remoção de dados temporários |
-
----
-
-# Dependências
-
-- Google Sheets
-- n8n
-- Google Drive (Backup)
-- Gemini
-- WhatsApp Cloud API
-
----
-
-# Fluxo Geral
+## Dependências
 
 ```text
-Sistema
-
-↓
-
-Executa Workflow
-
-↓
-
-Registra Log
-
-↓
-
-Executa Backup
-
-↓
-
-Limpeza Programada
+WF016 ──► WF017
+WF018 ──► WF017
 ```
 
----
+WF017 é o logger central utilizado pelos workflows que explicitamente o chamam.
 
-# Boas práticas
+WF001, WF002 e WF003 **não chamam WF017 diretamente** no estado atual.
 
-- Nunca apagar registros de LOG.
-- Sempre registrar erros.
-- Executar backup antes de grandes alterações.
-- Validar execução periódica.
+## Integrações diretas
 
----
+### WF016
+- Google Drive;
+- WF017.
 
-# Estrutura
+WF016 não usa node Google Sheets diretamente para realizar o backup; ele copia o arquivo da planilha no Drive.
 
-```
-administracao/
+### WF017
+- Google Sheets (`LOGS`).
 
-├── README.md
-├── ADM-WF016-Backup.json
-├── ADM-WF017-Logs.json
-└── ADM-WF018-Limpeza.json
-```
+### WF018
+- Google Sheets (`LOGS`);
+- WF017.
 
----
+**Gemini e WhatsApp não são dependências diretas deste módulo.**
 
-Versão: 5.0
-Projeto: BeautyFlow AI
+## WF016 — Backup
+
+Comportamento atual:
+
+- possui Schedule de 02:00 no JSON;
+- cria cópia integral da planilha no Google Drive;
+- aplica retenção a backups elegíveis com mais de 30 dias;
+- a limpeza deve ocorrer somente conforme a lógica implementada;
+- o JSON exportado pode estar `active:false`, o que não prova o estado atual do Cloud.
+
+Regras globais: RN062–RN063.
+
+## WF017 — Logs
+
+Responsabilidades:
+
+- normalizar evento;
+- registrar log central;
+- devolver resultado ao chamador;
+- evitar recursão quando o próprio logger falhar.
+
+Regra global: RN064.
+
+Não exigir que "todo workflow" obrigatoriamente chame WF017: a arquitetura deve refletir o JSON real.
+
+## WF018 — Retenção de LOGS
+
+Comportamento atual:
+
+- possui Schedule de 03:00 no JSON;
+- identifica registros de `LOGS` com mais de 90 dias conforme critérios implementados;
+- remove somente linhas elegíveis;
+- preserva segurança de `row_number`/ordem conforme o workflow;
+- registra resultado pelo WF017;
+- o JSON exportado pode estar `active:false`.
+
+Regra global: RN065.
+
+## Política correta de exclusão
+
+É incorreto documentar:
+
+> nunca apagar logs  
+> nunca apagar backups
+
+A regra correta é:
+
+> nunca excluir dados fora das políticas de retenção implementadas, testadas e autorizadas.
+
+## Documentação
+
+- `n8n/documentacao/administracao/`
+- `docs/04-regras-de-negocio/`
+- `tests/Casos-de-Teste/CT016...CT018`
