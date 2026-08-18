@@ -1,96 +1,69 @@
-# AGE-WF006 — Reagendar
+# WF006 — AGE - WF006 - Reagendar
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`AGE-WF006-reagendar.json`](../../workflows/agenda/AGE-WF006-reagendar.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `AGE-WF006` |
-| Workflow | Reagendar |
-| Arquivo n8n | `AGE-WF006-reagendar.json` |
-| Status | Versionado no repositório |
-| Trigger | Subworkflow após intenção de reagendamento. |
-| Última revisão desta documentação | 18/08/2026 |
+Localizar um agendamento existente, validar a janela de alteração, consultar nova disponibilidade e executar o reagendamento quando os requisitos do fluxo atual são atendidos.
 
-## Objetivo
+## 2. Identificação técnica
 
-Alterar data/horário de um agendamento existente com validação de elegibilidade e de nova disponibilidade, mantendo Google Sheets e Google Calendar sincronizados.
+- **Workflow:** `AGE - WF006 - Reagendar`
+- **ID funcional:** `WF006`
+- **Arquivo JSON:** `AGE-WF006-reagendar.json`
+- **Status `active` no JSON versionado:** `true`
+- **Gatilho:** `Execute Workflow Trigger`; normalmente acionado pelo WF003 na intenção `REAGENDAR`.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa` e `id_agendamento`.
-- Nova `data`, `hora_inicio`, período e/ou profissional.
-- Dados do cliente e `phone_number_id` para confirmação.
+## 3. Entradas
 
-## Fluxo principal
+- Contexto de empresa/cliente, `id_agendamento` opcional, telefone, data/hora novas, profissional, `google_event_id`, `phone_number_id`, origem e demais dados conversacionais.
 
-1. Busca o agendamento da empresa pelo identificador informado.
-2. Valida se o agendamento existe e pode ser reagendado.
-3. Aplica a regra de limite de reagendamento definida no projeto.
-4. Executa o WF004 para verificar o novo horário.
-5. Atualiza o evento correspondente no Google Calendar.
-6. Atualiza os campos do agendamento na aba `AGENDAMENTOS`.
-7. Registra a alteração/timestamp necessário.
-8. Aciona o WF012 para comunicar o novo horário.
-9. Registra o resultado via WF017.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Busca agendamentos `AGENDADO` da empresa e busca cliente por telefone.
+2. `CODE - Localizar Agendamento` prioriza `id_agendamento`; sem ele, resolve por `id_cliente`/telefone e usa data para desambiguar quando necessário.
+3. Busca a empresa em `EMPRESAS`.
+4. `CODE - Validar Prazo` calcula o tempo até o agendamento e compara com `TEMPO_CANCELAMENTO_MIN` da empresa.
+5. Dentro do prazo permitido, chama WF004 para consultar nova disponibilidade.
+6. `CODE - Selecionar Novo Horário` valida a hora solicitada contra a lista real do WF004 ou seleciona o primeiro horário disponível.
+7. Se não houver `google_event_id`, retorna `SEM_GOOGLE_EVENT_ID` e não segue para atualização automática.
+8. Com ID de evento, aciona `GC - Atualizar Evento` e depois atualiza `AGENDAMENTOS` no Google Sheets.
+9. Os ramos convergem, WF012 comunica o cliente e WF017 registra log; o SET final prepara a saída.
 
-```text
-AGE-WF006 → Google Sheets: AGENDAMENTOS → Google Calendar → AGE-WF004
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Prioridade de localização: ID do agendamento; depois cliente; data é usada como critério de desambiguação quando há múltiplos candidatos.
+- O prazo de reagendamento reutiliza o campo `TEMPO_CANCELAMENTO_MIN` da empresa.
+- Novo horário precisa constar na disponibilidade produzida pelo WF004.
+- Sem `google_event_id`, a automação não atualiza o agendamento e sinaliza necessidade de tratamento.
+- O calendário configurado é **BeautyFlow - Studio Bella**.
+- No JSON exportado, o node `GC - Atualizar Evento` possui `updateFields: {}`. Esta documentação não presume campos de Calendar que não aparecem configurados no arquivo.
 
-- Google Sheets: `AGENDAMENTOS`
-- Google Calendar
-- AGE-WF004
-- COM-WF012
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `AGENDAMENTOS`, `CLIENTES`, `EMPRESAS`.
+- WF004 — Consultar Disponibilidade.
+- Google Calendar.
+- WF012 — Comunicação.
+- WF017 — Logs.
 
-- Regra RN014 do projeto: no máximo um reagendamento por agendamento.
-- Novo horário deve ser validado antes da alteração.
-- Agendamento deve pertencer ao mesmo `ID_EMPRESA` recebido.
-- Não alterar agendamento cancelado/concluído quando a regra de negócio não permitir.
-- Preservar vínculo com o evento correto do Google Calendar.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Status de negócio incluem localização não encontrada/múltipla, prazo bloqueado, indisponibilidade, ausência de Google Event ID e sucesso `REAGENDADO`.
 
-- Status de reagendamento e dados atualizados.
-- Resposta de confirmação ao cliente.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Condições de negócio bloqueiam a atualização antes dos nodes externos correspondentes.
+- Falhas técnicas de atualização são consolidadas no fluxo de erro previsto pelo JSON.
 
-- Agendamento não encontrado é erro de negócio, não erro técnico.
-- Novo horário indisponível não deve alterar dados existentes.
-- Falhas parciais entre Sheets e Calendar precisam ser registradas e tratadas de forma explícita.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- O JSON atual não implementa uma regra separada de “apenas um reagendamento”; a documentação deve refletir somente as validações presentes.
 
-- Chamado por: `ATD-WF003`.
-- Chama: `AGE-WF004`, `COM-WF012`, `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Primeiro reagendamento válido.
-- [ ] Tentativa de segundo reagendamento.
-- [ ] Agendamento inexistente.
-- [ ] Novo horário indisponível.
-- [ ] Falha no Calendar.
-- [ ] Falha no Sheets após alteração do Calendar.
-
-## Cuidados na manutenção
-
-Se a forma de registrar a quantidade/histórico de reagendamentos mudar no JSON, atualize esta documentação e os testes da RN014.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `AGE-WF006-reagendar.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
