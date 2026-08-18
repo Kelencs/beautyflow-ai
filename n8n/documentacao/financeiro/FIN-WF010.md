@@ -1,95 +1,62 @@
-# FIN-WF010 — Registrar Pagamento
+# WF010 — FIN - WF010 - Registrar Pagamento
 
-> Documentação técnica do BeautyFlow AI — n8n
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`FIN-WF010-registrar-pagamento.json`](../../workflows/financeiro/FIN-WF010-registrar-pagamento.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-## Identificação
+## 1. Objetivo
 
-| Campo | Valor |
-|---|---|
-| Código | `FIN-WF010` |
-| Workflow | Registrar Pagamento |
-| Arquivo n8n | `FIN-WF010-registrar-pagamento.json` |
-| Status | Versionado e validado em testes |
-| Trigger | Subworkflow para registrar recebimento de um agendamento. |
-| Última revisão desta documentação | 18/08/2026 |
+Registrar pagamentos como histórico transacional, validar o valor e recalcular o estado financeiro do agendamento a partir dos pagamentos acumulados.
 
-## Objetivo
+## 2. Identificação técnica
 
-Validar e registrar uma transação de pagamento, relacioná-la ao agendamento/cliente e calcular corretamente o estado financeiro sem sobrescrever o histórico transacional.
+- **Workflow:** `FIN - WF010 - Registrar Pagamento`
+- **ID funcional:** `WF010`
+- **Arquivo JSON:** `FIN-WF010-registrar-pagamento.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** `Execute Workflow Trigger` para registrar uma nova transação de pagamento.
 
-## Entradas principais
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-- `id_empresa`, `id_agendamento`, `id_cliente`.
-- `valor_pago_raw`.
-- `forma_pagamento`, `observacoes`, `origem` e `dados`.
+## 3. Entradas
 
-## Fluxo principal
+- Contexto contendo `id_empresa`, `id_agendamento`, `id_cliente`, valor pago (campo bruto/normalizado), forma de pagamento, observações, origem e `dados`.
 
-1. Normaliza o payload de entrada.
-2. Valida se o valor pago é numérico e maior que zero.
-3. Busca o agendamento correspondente.
-4. Busca pagamentos existentes necessários à consolidação.
-5. Gera identificador da nova transação.
-6. Registra a linha em `PAGAMENTOS`.
-7. Consolida o total pago versus o valor do agendamento.
-8. Retorna situação como pagamento parcial ou quitado conforme o total.
-9. Atualiza os dados correlatos quando previsto.
-10. Registra o resultado no WF017.
+## 4. Fluxo real do workflow
 
-## Fluxo resumido
+1. Valida o valor informado; valor deve ser numérico e maior que zero.
+2. Busca o agendamento relacionado e diferencia vazio legítimo de erro técnico.
+3. Busca pagamentos anteriores do agendamento/empresa e diferencia erro técnico de ausência de histórico.
+4. Calcula o total pago acumulado e o saldo em relação ao valor do agendamento.
+5. Monta uma nova linha transacional em `PAGAMENTOS` com o estado financeiro resultante.
+6. `GS - Registrar Pagamento` adiciona o novo registro; pagamentos anteriores não são sobrescritos.
+7. Consolida sucesso/erros, registra o evento no WF017 e prepara a saída final.
 
-```text
-FIN-WF010 → Google Sheets: AGENDAMENTOS, PAGAMENTOS → ADM-WF017
-```
+## 5. Regras e decisões implementadas
 
-## Integrações
+- Valor pago deve ser número maior que zero; caso contrário retorna `VALOR_INVALIDO`.
+- `PAGAMENTOS` é tratado como histórico transacional: cada pagamento gera nova linha.
+- O estado `PARCIAL`/`PAGO` é calculado considerando o valor do agendamento e o acumulado de pagamentos.
+- Erro técnico do Google Sheets é tratado separadamente de “nenhum registro encontrado”.
 
-- Google Sheets: `AGENDAMENTOS`, `PAGAMENTOS`
-- ADM-WF017
+## 6. Integrações e dependências
 
-## Regras de negócio e proteções
+- Google Sheets: `AGENDAMENTOS`, `PAGAMENTOS`.
+- WF017 — Logs.
 
-- Valor inválido/zero/negativo deve retornar `VALOR_INVALIDO`.
-- `PAGAMENTOS` é histórico transacional: não presumir que uma linha antiga `PARCIAL` representa o estado financeiro atual.
-- Estado financeiro deve ser calculado pelo conjunto/histórico relevante do agendamento.
-- RN003 do projeto: o registro de pagamento deve respeitar a política definida para o dia do atendimento.
-- Todos os registros devem manter `ID_EMPRESA`.
+## 7. Saídas e estados
 
-## Saídas esperadas
+- Resultado financeiro com identificadores, valor recebido/acumulado/pendente e estado do pagamento; validações podem retornar `VALOR_INVALIDO` e erros técnicos retornam status de erro.
 
-- Identificador do pagamento.
-- Valor registrado e total consolidado.
-- Status financeiro, como parcial ou pago.
+## 8. Tratamento de erros e bloqueios
 
-## Tratamento de erros e logs
+- Há tratamento específico para falha de busca de agendamento, falha de busca de pagamentos e falha de registro.
 
-- Erro ao buscar agendamento/pagamentos deve ser técnico, não `não encontrado` artificial.
-- Erro no append não pode resultar em sucesso.
-- Registrar falha no WF017 com contexto do agendamento.
+## 9. Observações do JSON atual
 
-## Dependências entre workflows
+- No arquivo versionado, `active` está `false`.
+- O workflow grava histórico em `PAGAMENTOS`; esta documentação não atribui atualização de AGENDAMENTOS que não esteja explicitamente demonstrada pelo fluxo.
 
-- Pode ser chamado pelo atendimento e futuramente pelo app/gateway.
-- Logs: `ADM-WF017`.
+## 10. Critério de manutenção desta documentação
 
-## Checklist mínimo de teste
-
-- [ ] Pagamento total.
-- [ ] Pagamento parcial.
-- [ ] Segundo pagamento que quita o restante.
-- [ ] Valor zero, negativo e texto inválido.
-- [ ] Agendamento inexistente.
-- [ ] Erro técnico em busca e em append.
-
-## Cuidados na manutenção
-
-Sempre consolide o estado pelo histórico atual. Não filtre apenas linhas `PARCIAL`, pois uma transação posterior pode ter quitado o agendamento.
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
-
+Sempre que `FIN-WF010-registrar-pagamento.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
