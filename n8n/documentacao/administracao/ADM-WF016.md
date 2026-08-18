@@ -1,94 +1,65 @@
+# WF016 — ADM - WF016 - Backup
 
-# ADM-WF016 — Backup
+> **Sincronização:** 18/08/2026  
+> **Fonte da verdade:** [`ADM-WF016-backup.json`](../../workflows/administracao/ADM-WF016-backup.json) no branch `main`.  
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
 
-> Documentação técnica do BeautyFlow AI — n8n
+## 1. Objetivo
 
-## Identificação
+Criar backup integral da planilha BeautyFlow no Google Drive e aplicar retenção de backups antigos.
 
-| Campo | Valor |
-|---|---|
-| Código | `ADM-WF016` |
-| Workflow | Backup |
-| Arquivo n8n | `ADM-WF016-backup.json` |
-| Status | Versionado; workflow administrativo |
-| Trigger | Schedule diário às 02:00 e possibilidade de execução como subworkflow. |
-| Última revisão desta documentação | 18/08/2026 |
+## 2. Identificação técnica
 
-## Objetivo
+- **Workflow:** `ADM - WF016 - Backup`
+- **ID funcional:** `WF016`
+- **Arquivo JSON:** `ADM-WF016-backup.json`
+- **Status `active` no JSON versionado:** `false`
+- **Gatilho:** Dois gatilhos: `Execute Workflow Trigger` e Schedule diário configurado para 02:00.
 
-Criar cópia diária segura da planilha principal do BeautyFlow no Google Drive e aplicar retenção aos backups antigos sem risco de excluir a planilha original.
+> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
 
-## Entradas principais
+## 3. Entradas
 
-- Execução agendada ou manual/subworkflow.
-- Escopo administrativo global.
+- Pode ser acionado como subworkflow; a rotina opera em contexto global (`id_empresa=GLOBAL`) e sobre a planilha principal configurada.
 
-## Fluxo principal
+## 4. Fluxo real do workflow
 
-1. Define o contexto global da execução.
-2. Gera nome do backup com data/hora.
-3. Copia a planilha `BEAUTYFLOW3.1` no Google Drive.
-4. Valida se a cópia foi criada.
-5. Lista arquivos que correspondem ao padrão de backup.
-6. Calcula idade dos backups.
-7. Seleciona somente cópias acima do período de retenção.
-8. Exclui somente backups elegíveis e nunca o arquivo original.
-9. Consolida sucessos/falhas e registra log no WF017.
+1. `CODE - Preparar Backup` gera nome `BEAUTYFLOW3.1-backup-AAAA-MM-DD-HHmm` usando timezone `America/Sao_Paulo`.
+2. `DRIVE - Copiar Planilha` cria uma cópia integral do arquivo Google Sheets no Google Drive.
+3. Valida a criação da cópia e captura o ID do novo arquivo.
+4. Lista arquivos de backup no Drive e filtra apenas os nomes com o prefixo de backup esperado.
+5. Calcula a idade de cada backup e seleciona os com mais de 30 dias.
+6. Exclui os backups expirados, preservando a planilha original.
+7. Consolida o resultado em sucesso, sucesso parcial ou erro.
+8. WF017 registra o evento em logs.
 
-## Fluxo resumido
+## 5. Regras e decisões implementadas
 
-```text
-ADM-WF016 → Google Drive → ADM-WF017
-```
+- Backup é uma cópia do arquivo da planilha, preservando as abas e estrutura do documento copiado.
+- Nome do backup inclui data/hora.
+- Retenção de backups: 30 dias.
+- A limpeza considera somente arquivos com o prefixo de backup previsto; a planilha original não deve ser excluída.
+- O contexto de log utiliza `GLOBAL`, pois a rotina é administrativa da infraestrutura.
 
-## Integrações
+## 6. Integrações e dependências
 
-- Google Drive
-- ADM-WF017
+- Google Drive.
+- WF017 — Logs.
 
-## Regras de negócio e proteções
+## 7. Saídas e estados
 
-- Execução diária prevista às 02:00.
-- Nome do backup deve conter prefixo identificável e timestamp.
-- Retenção atual: 30 dias.
-- Nunca excluir o ID da planilha original.
-- Nunca excluir arquivos que não correspondam claramente ao padrão de backup.
-- Arquivo sem `createdTime` válido não deve ser apagado automaticamente.
+- `BACKUP_CONCLUIDO` quando cópia e limpeza terminam sem falha; `SUCESSO_PARCIAL` quando o backup foi criado, mas houve problema na etapa de limpeza/listagem; `ERRO_BACKUP` quando a cópia falha.
 
-## Saídas esperadas
+## 8. Tratamento de erros e bloqueios
 
-- Resultado da cópia.
-- Quantidade/lista de backups expirados processados.
-- Resumo de falhas de exclusão, se houver.
+- Falha de cópia impede tratar a rotina como concluída.
+- Problemas de retenção podem produzir sucesso parcial sem invalidar a cópia já criada.
 
-## Tratamento de erros e logs
+## 9. Observações do JSON atual
 
-- Falha na cópia deve impedir interpretação de backup concluído.
-- Falha ao listar ou excluir arquivos deve ser registrada no WF017.
-- Exclusões devem ser conservadoras: em dúvida, preservar o arquivo.
+- No arquivo versionado, `active` está `false`; portanto o Schedule existente no JSON não executa automaticamente enquanto o workflow permanecer inativo.
+- Este workflow usa Google Drive; não executa backup por leitura linha a linha do Google Sheets.
 
-## Dependências entre workflows
+## 10. Critério de manutenção desta documentação
 
-- Chamado por: Schedule ou execução administrativa.
-- Logs: `ADM-WF017`.
-
-## Checklist mínimo de teste
-
-- [ ] Criar backup manualmente e confirmar nome/arquivo.
-- [ ] Confirmar que a planilha original nunca entra na lista de exclusão.
-- [ ] Arquivo de backup com menos de 30 dias.
-- [ ] Arquivo de backup com mais de 30 dias.
-- [ ] Arquivo de nome não compatível.
-- [ ] Falha forçada no Google Drive.
-
-## Cuidados na manutenção
-
-Antes de alterar filtro de exclusão ou retenção, teste com arquivos fictícios. Rotinas destrutivas devem preferir falso-negativo (não apagar) a falso-positivo (apagar arquivo válido).
-
-## Convenções do projeto
-
-- Manter isolamento multiempresa por `ID_EMPRESA` em toda leitura/gravação operacional.
-- Diferenciar regra de negócio, resultado vazio legítimo e erro técnico.
-- Evitar mascarar falhas do Google Sheets como “não encontrado”.
-- Usar `ADM-WF017` para auditoria centralizada sempre que o workflow precisar registrar execução/erro.
-- Não versionar credenciais, tokens, API keys ou valores secretos no Git.
+Sempre que `ADM-WF016-backup.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
