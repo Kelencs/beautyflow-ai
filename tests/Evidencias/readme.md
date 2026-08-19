@@ -6,11 +6,11 @@ Esta pasta preserva evidências e consolidações das execuções de teste do Be
 
 Relatórios datados são **históricos imutáveis**.
 
-Não reescrever um relatório antigo para fazê-lo parecer atual. Quando o estado mudar:
+Quando o estado mudar:
 
-1. manter o relatório anterior;
+1. manter relatório anterior;
 2. criar nova consolidação datada;
-3. atualizar a Matriz de Rastreabilidade e o README de testes quando necessário.
+3. atualizar Matriz/README quando necessário.
 
 ## 2. Arquivos oficiais
 
@@ -18,43 +18,43 @@ Não reescrever um relatório antigo para fazê-lo parecer atual. Quando o estad
 
 `BeautyFlow-Documentacao-Testes-Workflows-2026-08-14.md`
 
-Fotografia do estado dos testes em 14/08/2026. Deve permanecer no repositório mesmo quando seus status forem superados por evidências posteriores.
+Fotografia do estado de 14/08/2026.
 
 ### Consolidação atual
 
 `BeautyFlow-Status-Testes-Workflows-2026-08-18.md`
 
-Consolidação posterior, incluindo validações realizadas depois do relatório de 14/08.
+Consolidação posterior, incluindo validações feitas depois do relatório histórico.
 
-## 3. Evidência mínima recomendada
+## 3. Evidência mínima
 
-Cada execução relevante deve registrar, quando disponível:
+Registrar, quando disponível:
 
 - workflow;
 - CT/cenário;
 - data/hora;
 - ambiente;
-- dados sintéticos utilizados;
-- execution ID do n8n;
-- resultado esperado;
-- resultado observado;
-- status final;
+- dados sintéticos;
+- execution ID;
+- esperado;
+- observado;
+- status;
 - print/log;
 - efeito em Sheets/Calendar/Drive/Meta;
-- bug encontrado;
-- correção aplicada;
-- resultado da regressão.
+- bug;
+- correção;
+- regressão.
 
 ## 4. Regras
 
-- Não registrar token, API key ou segredo.
-- Não usar dados pessoais reais quando dados sintéticos forem suficientes.
-- Erro de credencial externa deve ser distinguido de erro da regra funcional.
-- A presença de JSON no Git não constitui evidência de aprovação.
-- Print isolado deve ser acompanhado de contexto suficiente para auditoria.
-- Testes manuais parciais no editor não devem ser apresentados como execução limpa final.
+- não registrar segredos;
+- não usar dados pessoais reais sem necessidade;
+- separar erro externo de erro de regra;
+- JSON no Git não é evidência suficiente;
+- print isolado deve ter contexto;
+- execução parcial não deve ser apresentada como validação final.
 
-## 5. Relação com outros artefatos
+## 5. Relação
 
 ```text
 CT
@@ -65,11 +65,11 @@ Evidência
  ↓
 Status consolidado
  ↓
-Matriz de Rastreabilidade
+Matriz
 ```
 
-A fonte oficial dos casos é `../Casos-de-Teste/`.
+Fonte dos casos: `../Casos-de-Teste/`.
 
-## 6. Arquivo legado
+## 6. Compatibilidade de nome
 
-O arquivo antigo `readme.md` com "r" minúsculo deve ser removido após a inclusão deste `README.md`, para evitar dois índices da mesma pasta.
+O arquivo legado `readme.md` deve ser removido para existir apenas este `README.md`.
