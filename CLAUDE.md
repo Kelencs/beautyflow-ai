@@ -1,701 +1,460 @@
-# CLAUDE.md
+# CLAUDE.md — BeautyFlow AI Development Guide
 
-# BeautyFlow AI Development Guide
+> **Versão:** 3.0  
+> **Sincronização:** 19/08/2026  
+> **Escopo:** repositório `beautyflow-ai`
 
-Versão: 1.0
+## 1. Papel deste arquivo
 
-Projeto: BeautyFlow
+Este arquivo orienta agentes de desenvolvimento que trabalham no BeautyFlow.
 
-Plataforma:
-- n8n Cloud
-- WhatsApp Cloud API
-- Google Workspace
-- Google Sheets
-- Google Calendar
-- PostgreSQL (Futuro)
-- GitHub
+Ele não substitui os artefatos oficiais do projeto.
 
----
+### Fontes oficiais
 
-# Objetivo
+| Tema | Fonte |
+|---|---|
+| Comportamento atual dos workflows | `n8n/workflows/**/*.json` |
+| Documentação técnica n8n | `n8n/documentacao/` |
+| Visão/RF/RNF/RN/UC/US | `docs/` |
+| Arquitetura oficial | `docs/09-arquitetura/` |
+| Modelo de dados | `docs/10-modelo-de-dados/` |
+| QA/evidências | `tests/` |
+| Status técnico | `docs/STATUS-DO-PROJETO.md` |
 
-Você é o desenvolvedor responsável pelo projeto BeautyFlow.
+## 2. Regra fundamental
 
-Sempre considere toda a arquitetura antes de realizar qualquer alteração.
+**Código executável representa o comportamento atual.  
+Requisitos representam a intenção do produto.**
 
-Nunca altere apenas um workflow sem verificar os impactos nos demais.
-
-Todo desenvolvimento deve preservar a integridade da arquitetura.
-
----
-
-# Sobre o Projeto
-
-BeautyFlow é uma plataforma SaaS para automação de atendimentos de salões de beleza.
-
-O sistema realiza:
-
-- Atendimento automático via WhatsApp
-- Agendamento
-- Reagendamento
-- Cancelamento
-- Cadastro de clientes
-- Atualização cadastral
-- Gestão financeira
-- Comunicação automática
-- Pesquisas de satisfação
-- Logs
-- Backup
-- Administração
+Se houver divergência, não alterar silenciosamente o requisito para fazê-lo coincidir com o código. Classificar como gap e propor a correção apropriada.
 
 ---
 
-# Tecnologias
+# 3. Estado atual
 
-## Automação
+## Núcleo operacional
 
-n8n Cloud
+WF001–WF018 estão versionados.
 
----
+Stack atual:
 
-## IA
+- n8n Cloud;
+- WhatsApp Cloud API / Meta;
+- Google Gemini;
+- Google Sheets;
+- Google Calendar;
+- Google Drive;
+- GitHub.
 
-Gemini
+## BeautyFlow App
 
----
+### Implementado — Fase 0A
 
-## Banco atual
+- Next.js scaffold;
+- NestJS scaffold;
+- `libs/shared-types`;
+- estrutura de monorepo/workspaces.
 
-Google Sheets
+### Planejado
 
----
+- Supabase Auth/Postgres;
+- `usuarios`;
+- `auditoria_app`;
+- `convites`;
+- `onboarding_empresas`;
+- RolesGuard;
+- APP-WF019;
+- EMP-WF021;
+- módulos e telas operacionais.
 
-## Banco futuro
-
-PostgreSQL
-
----
-
-## Comunicação
-
-WhatsApp Cloud API
-
----
-
-## Agenda
-
-Google Calendar
-
----
-
-## Versionamento
-
-GitHub
+Não documentar componentes planejados como se já estivessem implementados.
 
 ---
 
-# Estrutura do Projeto
+# 4. Estratégia de dados
 
-BeautyFlow/
+## Atual
 
-arquitetura/
+Google Sheets é a persistência operacional dos WF001–WF018.
 
-backend/
+Abas:
 
-frontend/
+- AGENDAMENTOS
+- CLIENTES
+- COBRANCAS
+- DISPONIBILIDADES
+- EMPRESAS
+- FOLLOWUPS
+- IA_MEMORIA
+- LEMBRETES
+- LOGS
+- MENSAGENS
+- PAGAMENTOS
+- PESQUISAS
+- PROFISSIONAIS
+- SERVICOS
 
-database/
+## App planejado
 
-docs/
+Supabase/Postgres será usado inicialmente para dados da camada App e identidade.
 
-n8n/
+## Futuro
 
-tests/
+Migração operacional completa para PostgreSQL é futura.
 
-prompts/
-
-scripts/
-
-assets/
-
----
-
-# Estrutura dos Workflows
-
-ATD
-
-WF001 Receber WhatsApp
-
-WF002 IA Atendimento
-
-WF003 Identificar Intenção
+Não executar scripts aspiracionais como se fossem migrations aprovadas.
 
 ---
 
-AGE
+# 5. Arquitetura dos workflows
 
-WF004 Consultar Disponibilidade
-
-WF005 Criar Agendamento
-
-WF006 Reagendar
-
-WF007 Cancelar
-
----
-
-CLI
-
-WF008 Cadastrar Cliente
-
-WF009 Atualizar Cliente
-
----
-
-FIN
-
-WF010 Registrar Pagamento
-
-WF011 Cobrança
-
----
-
-COM
-
-WF012 Confirmação
-
-WF013 Lembrete
-
-WF014 Pesquisa
-
-WF015 Follow-up
-
----
-
-ADM
-
-WF016 Backup
-
-WF017 Logs
-
-WF018 Limpeza
-
----
-
-# Ordem da Execução
-
-Cliente
-
-↓
-
+```text
 WhatsApp
-
-↓
-
+  ↓
 WF001
-
-↓
-
+  ↓
 WF002
-
-↓
-
+  ├── WF008 quando necessário
+  ↓
 WF003
+  ├── WF005 — AGENDAR
+  ├── WF004 — CONSULTAR_DISPONIBILIDADE
+  ├── WF006 — REAGENDAR
+  ├── WF007 — CANCELAR
+  └── WF012 — OUTRO/fallback
+```
 
-↓
+Dependências atuais:
 
-Selecionar módulo
+```text
+WF004 ───────────────────────────────► WF017
+WF005 ──► WF004 ──► WF012 ──────────► WF017
+WF006 ──► WF004 ──► WF012 ──────────► WF017
+WF007 ─────────────► WF012 ──────────► WF017
+WF008 ───────────────────────────────► WF017
+WF009 ───────────────────────────────► WF017
+WF010 ───────────────────────────────► WF017
+WF011 ─────────────► WF012 ──────────► WF017
+WF012 ───────────────────────────────► WF017
+WF013 ─────────────► WF012 ──────────► WF017
+WF014 ─────────────► WF012 ──────────► WF017
+WF015 ─────────────► WF012 ──────────► WF017
+WF016 ───────────────────────────────► WF017
+WF018 ───────────────────────────────► WF017
+```
 
-↓
-
-Agenda
-
-↓
-
-Clientes
-
-↓
-
-Financeiro
-
-↓
-
-Comunicação
-
-↓
-
-Logs
-
-↓
-
-Resposta
-
----
-
-# Fluxo de Dependências
-
-WF001 chama WF002
-
-WF002 chama WF003
-
-WF003 decide qual workflow será executado.
-
-Nunca alterar esta arquitetura sem autorização.
+WF001, WF002 e WF003 não chamam WF017 diretamente.
 
 ---
 
-# Regras Obrigatórias
+# 6. Gaps conhecidos que não devem ser apagados
 
-Sempre analisar todo o projeto.
+Até que código/testes mudem:
 
-Nunca editar apenas um arquivo sem verificar dependências.
+1. WF001 usa `id_empresa: 'EMP001'`.
+2. WF001 responde ao challenge sem comparação explícita do verify token no JSON atual.
+3. Alguns fluxos usam fallback `EMP001`.
+4. WF004–WF007 possuem Calendar configurado diretamente.
+5. RN014 continua gap no WF006.
+6. WF008 possui gap semântico de primeiro/último atendimento.
+7. origem/default de `ACEITA_MARKETING` precisa de revisão.
+8. WF013–WF015 não possuem Schedule/Cron interno.
+9. WF014 envia pesquisa, mas não processa nota/comentário.
+10. WF016/WF018 implementam retenção; não existe regra de “nunca excluir”.
+11. `active` no JSON não comprova estado atual no Cloud.
+12. hardening multiempresa ainda é necessário.
 
-Nunca apagar arquivos.
-
-Nunca apagar workflows.
-
-Nunca alterar IDs.
-
-Nunca alterar credenciais.
-
-Nunca alterar nomes das tabelas.
-
-Nunca alterar nomes das colunas.
-
-Nunca alterar regras de negócio sem documentação.
-
-Nunca remover logs.
-
-Nunca remover backups.
-
-Nunca modificar arquivos SQL sem verificar impactos.
+Não “resolver” esses pontos mudando apenas a documentação.
 
 ---
 
-# Padrão de Desenvolvimento
+# 7. Regras ao alterar workflows
 
-Sempre seguir:
+Antes:
 
-Clean Code
+1. identificar chamadores;
+2. identificar dependências;
+3. ler JSON;
+4. ler doc individual;
+5. revisar RN/RF/UC/US;
+6. revisar CT/evidência;
+7. verificar integrações;
+8. verificar multi-item/pairedItem.
 
-SOLID
+Depois:
 
-DRY
-
-KISS
-
-YAGNI
-
-Sempre preferir soluções simples.
-
----
-
-# Convenção de Nomes
-
-Workflow
-
-ATD-WF001
-
-AGE-WF004
-
-CLI-WF008
-
-FIN-WF010
-
-COM-WF012
-
-ADM-WF016
+1. testar caminho normal;
+2. testar bloqueios;
+3. testar erro técnico;
+4. executar regressão;
+5. exportar JSON;
+6. atualizar documentação;
+7. atualizar CT/evidência/matriz;
+8. revisar segredos;
+9. commit/PR.
 
 ---
 
-Nodes
+# 8. Regras n8n
 
-Sempre utilizar nomes descritivos.
+## Erro técnico x vazio legítimo
 
-Exemplo
+Nunca tratar falha externa como “não encontrado” apenas porque o retorno está vazio.
 
-Buscar Cliente
+Revisar:
 
-Consultar Agenda
+- `alwaysOutputData`;
+- `onError`;
+- branch de erro;
+- Code/IF de avaliação.
 
-Criar Evento
+## Multi-item
 
-Enviar WhatsApp
+Validar:
 
-Atualizar Planilha
+- 0 itens;
+- 1 item;
+- 2+ itens;
+- erro global sem `pairedItem`, quando aplicável.
 
-Registrar Log
+Preservar correlação de:
 
-Evitar
+- `ID_EMPRESA`;
+- `ID_CLIENTE`;
+- `ID_AGENDAMENTO`;
+- IDs transacionais;
+- tentativa;
+- valor;
+- telefone;
+- contexto.
 
-Function
+## Execute Workflow
 
-Node1
+Definir conscientemente se executa por lote ou por item.
 
-HTTP1
+## Logging
 
-Edit Fields
+WF017 é logger central **dos workflows que o chamam**.
 
-Google
+Não adicionar WF017 apenas para uniformizar documentação.
 
----
-
-# Organização
-
-Cada Workflow deve possuir:
-
-Trigger
-
-↓
-
-Validação
-
-↓
-
-Busca
-
-↓
-
-Processamento
-
-↓
-
-Atualização
-
-↓
-
-Log
-
-↓
-
-Resposta
+Não deixar o logger substituir o resultado funcional do chamador.
 
 ---
 
-# Antes de alterar qualquer Workflow
+# 9. Integrações
 
-Verificar:
+## WhatsApp
 
-Quem chama este workflow.
+- entrada direta: WF001;
+- saída direta: WF012.
 
-Quem depende dele.
+Outros workflows delegam envio ao WF012.
 
-Quais tabelas utiliza.
+## Gemini
 
-Quais APIs utiliza.
+Uso atual: WF002.
 
-Quais credenciais utiliza.
+Não trocar provedor sem decisão arquitetural.
 
-Quais workflows serão impactados.
+Não permitir que IA invente horário/preço/dado operacional.
 
----
+## Calendar
 
-# Google Sheets
+Uso direto: WF004–WF007.
 
-Banco atual.
+Não documentar resolução dinâmica multiempresa antes de implementá-la.
 
-Nunca alterar:
+## Sheets
 
-Nome das abas
+Persistência operacional atual.
 
-Nome das colunas
+Não alterar estrutura física sem análise de impacto.
 
-Ordem das colunas
+## Drive
 
-Tipos de dados
-
----
-
-# Google Calendar
-
-Nunca alterar:
-
-Calendar ID
-
-Timezone
-
-Eventos existentes
+WF016 realiza backup.
 
 ---
 
-# WhatsApp
+# 10. Regras globais críticas
 
-Nunca alterar:
+Consultar `docs/04-regras-de-negocio/README.md`.
 
-Webhook
+Destaques:
 
-Verify Token
+- RN009 — intervalo por serviço;
+- RN011 — antecedência configurável;
+- RN014 — gap de limite de reagendamento;
+- RN037 — consentimento;
+- RN041–RN045 — pagamentos;
+- RN046–RN051 — cobrança;
+- RN052–RN054 — pesquisa;
+- RN055–RN061 — follow-up;
+- RN062–RN065 — backup/logs/retenção.
 
-Phone Number ID
-
-Access Token
-
----
-
-# Credenciais
-
-Nunca criar credenciais novas sem necessidade.
-
-Sempre reutilizar as existentes.
-
-Nunca gravar tokens em arquivos.
-
-Nunca gravar senhas.
-
-Nunca gravar API Keys.
+Não usar numerações antigas em documentação nova.
 
 ---
 
-# Banco PostgreSQL
+# 11. Financeiro
 
-Quando iniciar a migração:
+Pagamentos são transacionais.
 
-Nunca remover compatibilidade com Google Sheets.
+Não introduzir `UNIQUE(id_agendamento)` em modelo futuro sem reconciliar com múltiplas transações.
 
-Sempre manter camada de abstração.
-
----
-
-# Documentação
-
-Sempre atualizar:
-
-Casos de Uso
-
-User Stories
-
-Backlog
-
-Modelo de Dados
-
-Testes
-
-README
-
-Sempre que alterar um workflow.
+Cobrança deve usar o estado financeiro mais recente e nunca cobrar linha histórica PARCIAL quando já existe estado PAGO.
 
 ---
 
-# Testes
+# 12. Comunicação
 
-Antes de concluir:
-
-Validar JSON
-
-Validar Expressões
-
-Validar Credenciais
-
-Validar APIs
-
-Validar Google Calendar
-
-Validar Google Sheets
-
-Validar WhatsApp
-
-Validar IA
+- WF012: envio centralizado WhatsApp;
+- WF013: lembretes, sem Cron interno;
+- WF014: envia pesquisa, não captura avaliação;
+- WF015: follow-up/reengajamento, não campanhas genéricas.
 
 ---
 
-# Logs
+# 13. Administração
 
-Todo Workflow deve registrar:
+WF016 pode remover backups conforme política de retenção.
 
-Data
+WF018 pode remover logs conforme política de retenção.
 
-Hora
+Portanto são proibidas exclusões **fora da política**, não toda exclusão.
 
-Workflow
-
-Cliente
-
-Telefone
-
-Ação
-
-Status
-
-Erro
-
-Tempo de execução
+WF017 deve evitar recursão do próprio logger.
 
 ---
 
-# Tratamento de Erros
+# 14. BeautyFlow App
 
-Todo Workflow deve possuir:
+Arquitetura aprovada:
 
-Try
+```text
+Browser
+  ↓
+Next.js
+  ↓
+NestJS
+  ├── Supabase Auth/Postgres (planejado)
+  ↓
+APP-WF019 (planejado)
+  ↓
+n8n
+```
 
-Catch
+Frontend não deve chamar n8n diretamente.
 
-Log
-
-Resposta amigável
-
----
-
-# Performance
-
-Evitar loops desnecessários.
-
-Evitar consultas repetidas.
-
-Evitar múltiplos HTTP Requests.
-
-Reutilizar dados.
+Autorização deve ser server-side.
 
 ---
 
-# Segurança
+# 15. Multiempresa
 
-Nunca expor:
+Objetivo: isolamento por `ID_EMPRESA`.
 
-Tokens
+Antes de produção SaaS:
 
-Senhas
+- remover defaults inseguros;
+- resolver recursos por empresa;
+- testar cross-tenant;
+- validar backend/RLS quando implementados.
 
-Secrets
-
-Client Secret
-
-Private Key
-
-Access Token
-
-JWT
+Nunca introduzir novo fallback silencioso de tenant.
 
 ---
 
-# Commits
+# 16. Segurança
 
-Sempre utilizar:
+Nunca expor/versionar:
 
-feat:
+- tokens;
+- passwords;
+- API keys;
+- client secrets;
+- private keys;
+- JWTs;
+- Supabase Secret Key.
 
-fix:
-
-refactor:
-
-docs:
-
-test:
-
-perf:
-
-build:
-
-Exemplo
-
-feat(agenda): adiciona validação de horário
-
-fix(clientes): corrige atualização cadastral
-
-docs(workflows): atualiza documentação
+Usar dados sintéticos em exemplos/testes.
 
 ---
 
-# Pull Requests
+# 17. Testes
 
-Sempre descrever:
+Fonte oficial: `tests/`.
 
-Objetivo
+```text
+WF001 ↔ CT001
+...
+WF018 ↔ CT018
+```
 
-Arquivos alterados
+Status implementado ≠ status validado.
 
-Impactos
-
-Testes realizados
-
-Checklist
-
----
-
-# Antes de finalizar
-
-Sempre responder:
-
-Arquivos alterados.
-
-Workflows alterados.
-
-Riscos encontrados.
-
-Melhorias sugeridas.
-
-Impactos identificados.
-
-Testes recomendados.
+Correção crítica exige regressão.
 
 ---
 
-# Nunca Fazer
+# 18. Documentação
 
-Nunca apagar workflows.
+Ao alterar comportamento:
 
-Nunca apagar documentação.
+- atualizar doc individual do workflow;
+- README do módulo;
+- `n8n/README.md` se arquitetura global mudar;
+- RF/RNF/RN/UC/US se necessário;
+- CT/evidência;
+- Matriz;
+- `docs/STATUS-DO-PROJETO.md` quando necessário.
 
-Nunca alterar estrutura do projeto.
+Arquitetura oficial: `docs/09-arquitetura/`.
 
-Nunca modificar banco sem necessidade.
-
-Nunca alterar integrações.
-
-Nunca remover logs.
-
-Nunca alterar IDs.
-
-Nunca duplicar workflows.
-
-Nunca quebrar compatibilidade.
+Não usar `docs/arquitetura/` como fonte nova.
 
 ---
 
-# Sempre Fazer
+# 19. Banco e SQL
 
-Analisar arquitetura completa.
+`database/` é material legado/aspiracional.
 
-Manter documentação atualizada.
+Para mudanças:
 
-Explicar alterações.
-
-Gerar código limpo.
-
-Preservar compatibilidade.
-
-Utilizar boas práticas.
-
-Atualizar testes.
-
-Gerar commits organizados.
+1. consultar `docs/10-modelo-de-dados/`;
+2. verificar dados reais dos workflows;
+3. não executar SQL documental como migration;
+4. criar migrations reais apenas na fase correspondente.
 
 ---
 
-# Objetivo Principal
+# 20. Definition of Done
 
-O objetivo do BeautyFlow é tornar-se uma plataforma SaaS escalável.
+- [ ] requisito aprovado respeitado;
+- [ ] código/JSON versionado;
+- [ ] testes aplicáveis passam;
+- [ ] erro técnico considerado;
+- [ ] multi-item considerado;
+- [ ] segurança revisada;
+- [ ] documentação atualizada;
+- [ ] CT/evidência atualizados;
+- [ ] matriz revisada;
+- [ ] gaps remanescentes explícitos.
 
-Toda alteração deve considerar:
+---
 
-Escalabilidade
+# 21. Regra final para agentes
 
-Performance
+Ao encontrar inconsistência:
 
-Segurança
+1. não adivinhar;
+2. consultar fonte oficial;
+3. distinguir comportamento atual de intenção;
+4. declarar gap;
+5. propor menor alteração segura;
+6. analisar impacto;
+7. preservar evidência e rastreabilidade.
 
-Baixo acoplamento
-
-Alta coesão
-
-Facilidade de manutenção
-
-Versionamento
-
-Documentação
-
-Qualidade de código
-
-Experiência do usuário
-
-Nunca comprometer estes princípios.
+BeautyFlow AI © 2026
