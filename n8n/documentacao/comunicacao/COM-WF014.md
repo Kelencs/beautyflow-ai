@@ -1,66 +1,83 @@
-# WF014 — COM - WF014 - Pesquisa
+# COM-WF014 — Pesquisa de Satisfação
 
-> **Sincronização:** 18/08/2026  
-> **Fonte da verdade:** [`COM-WF014-pesquisa.json`](../../workflows/comunicacao/COM-WF014-pesquisa.json) no branch `main`.  
-> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
+> Documentação técnica do BeautyFlow AI — n8n
 
-## 1. Objetivo
+## Identificação
 
-Enviar pesquisa pós-atendimento na janela definida após o término do serviço, evitando duplicidade e registrando o resultado.
+| Campo | Valor |
+|---|---|
+| Código | `COM-WF014` |
+| Workflow | Pesquisa de Satisfação |
+| Arquivo n8n | `COM-WF014-pesquisa.json` |
+| Status | 🟡 Versionado; validação consolidada parcial |
+| Trigger | Subworkflow |
+| Última revisão | 19/08/2026 |
 
-## 2. Identificação técnica
+## Objetivo
 
-- **Workflow:** `COM - WF014 - Pesquisa`
-- **ID funcional:** `WF014`
-- **Arquivo JSON:** `COM-WF014-pesquisa.json`
-- **Status `active` no JSON versionado:** `false`
-- **Gatilho:** `Execute Workflow Trigger`; não existe Schedule/Cron no JSON atual.
+Identificar atendimentos concluídos elegíveis, enviar pesquisa de satisfação e impedir duplicidade de pesquisas já enviadas com sucesso.
 
-> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
+## Orquestração
 
-## 3. Entradas
+WF014 **não possui Schedule/Cron interno no JSON atual**. A execução periódica depende de mecanismo externo.
 
-- `id_empresa` obrigatório.
+## Janela atual
 
-## 4. Fluxo real do workflow
+A elegibilidade implementada considera atendimento cuja `HORA_FIM` esteja aproximadamente entre **1 e 4 horas antes da execução**.
 
-1. Valida a empresa e a configuração de WhatsApp em `EMPRESAS`.
-2. Consulta `AGENDAMENTOS`, `PESQUISAS`, `CLIENTES`, `PROFISSIONAIS` e `SERVICOS` da empresa.
-3. Calcula o término real do atendimento usando data e `HORA_FIM`.
-4. Seleciona apenas atendimentos dentro da janela pós-atendimento configurada.
-5. Valida cliente/telefone e os dados necessários para personalizar a pesquisa.
-6. Aplica idempotência usando registros já enviados em `PESQUISAS`.
-7. Envia a mensagem pelo WF012.
-8. Registra o resultado em `PESQUISAS`, consolida, chama WF017 e prepara a saída.
+Se essa janela mudar no código, atualizar RN052, CT014 e esta documentação.
 
-## 5. Regras e decisões implementadas
+## Fluxo
 
-- `id_empresa` é obrigatório.
-- Janela de elegibilidade atual: de 1 a 4 horas após o fim do atendimento (`HORA_FIM`).
-- O código avalia o fim do atendimento; eventos futuros ou ainda não encerrados não são elegíveis.
-- Idempotência bloqueia nova pesquisa quando já existe registro enviado para o agendamento; tentativa com falha não deve equivaler a envio concluído.
-- O envio é delegado ao WF012, sem HTTP direto à Meta.
+1. Valida `id_empresa`.
+2. Consulta configuração da empresa.
+3. Busca atendimentos concluídos.
+4. Aplica janela de 1h–4h.
+5. Verifica `PESQUISAS`.
+6. Bloqueia pesquisa já enviada.
+7. Monta mensagem.
+8. Envia via WF012.
+9. Registra pesquisa conforme resultado.
+10. Registra log via WF017.
 
-## 6. Integrações e dependências
+```text
+WF014
+ ├── EMPRESAS
+ ├── AGENDAMENTOS
+ ├── PESQUISAS
+ ├── WF012
+ └── WF017
+```
 
-- Google Sheets: `EMPRESAS`, `AGENDAMENTOS`, `PESQUISAS`, `CLIENTES`, `PROFISSIONAIS`, `SERVICOS`.
-- WF012 — Comunicação.
-- WF017 — Logs.
+## Escopo funcional
 
-## 7. Saídas e estados
+WF014 **envia** a pesquisa.
 
-- Resultados típicos: `PESQUISA_ENVIADA`, `PESQUISA_JA_ENVIADA`, `AGENDAMENTO_NAO_ELEGIVEL`, `ERRO_PESQUISA`, além de bloqueios de empresa/WhatsApp.
+Ele não captura/processa nota ou comentário recebido. A captura da resposta é requisito separado de backlog.
 
-## 8. Tratamento de erros e bloqueios
+## Regras globais
 
-- Erros técnicos nas consultas são tratados como erro, não como ausência de elegíveis.
-- Sem empresa ou `WHATSAPP_PHONE_NUMBER_ID`, o processamento é bloqueado.
+- **RN052** — janela pós-atendimento;
+- **RN053** — idempotência da pesquisa;
+- **RN054** — preservar dados relacionados.
 
-## 9. Observações do JSON atual
+## Status de teste
 
-- No arquivo versionado, `active` está `false`.
-- O workflow depende de um chamador/agendador externo para execução periódica.
+A lógica principal e cenários relevantes já foram exercitados, mas a consolidação oficial mantém WF014 como **parcialmente validado** enquanto o cenário técnico pendente não for fechado com evidência final.
 
-## 10. Critério de manutenção desta documentação
+## Proteções
 
-Sempre que `COM-WF014-pesquisa.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
+- falha WhatsApp não pode virar `PESQUISA_ENVIADA`;
+- falha Sheets deve permanecer erro técnico;
+- tentativa falha não deve bloquear retry futuro;
+- `ID_EMPRESA` deve ser preservado.
+
+## Checklist
+
+- [ ] Fora da janela.
+- [ ] Elegível 1h–4h.
+- [ ] Pesquisa já enviada.
+- [ ] Falha WhatsApp.
+- [ ] Erro técnico de busca.
+- [ ] Erro de registro.
+- [ ] Regressão final do cenário técnico pendente.
