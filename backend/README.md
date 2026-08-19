@@ -1,19 +1,35 @@
 # BeautyFlow App — Backend
 
-NestJS + TypeScript. Workspace `@beautyflow/backend` do monorepo BeautyFlow App — API consumida pelo frontend, que por sua vez fala com o n8n através de um gateway (fase futura, ver plano de arquitetura).
+NestJS + TypeScript. Workspace `@beautyflow/backend`.
 
-Arquitetura completa: [docs/arquitetura/beautyflow-app-arquitetura.md](../docs/arquitetura/beautyflow-app-arquitetura.md).
+Arquitetura oficial: `docs/09-arquitetura/`.
+
+## Status
+
+**Fase 0A — fundação/scaffold.**
+
+Implementado:
+- projeto NestJS;
+- estrutura mínima AppModule/AppController/AppService;
+- integração com monorepo/shared-types;
+- scripts de build/lint/test/dev.
+
+Ainda não implementado:
+- Supabase/Auth;
+- RolesGuard;
+- módulos completos de domínio;
+- APP-WF019;
+- EMP-WF021;
+- gateway operacional para n8n.
 
 ## Desenvolvimento
-
-Rodar a partir da raiz do monorepo (garante que `libs/shared-types` esteja linkado):
 
 ```bash
 npm install
 npm run dev:backend
 ```
 
-API disponível em [http://localhost:3001](http://localhost:3001) (`PORT` em `.env`, ver `.env.example`).
+API local: `http://localhost:3001`
 
 ## Scripts
 
@@ -24,6 +40,17 @@ npm run lint --workspace=@beautyflow/backend
 npm run test --workspace=@beautyflow/backend
 ```
 
-## Status (Fase 0A)
+## Fronteira aprovada
 
-Scaffold inicial apenas (`AppModule`/`AppController`/`AppService` padrão do Nest CLI) — sem Supabase, autenticação, guards, ou módulos de domínio (`agenda`, `clientes`, `financeiro` etc.) ainda. Ver `.env.example` para as variáveis previstas a partir da Fase 0B.
+```text
+Frontend Next.js
+      ↓
+Backend NestJS
+      ├── Supabase/Auth (planejado)
+      ↓
+APP-WF019 (planejado)
+      ↓
+n8n / dados operacionais
+```
+
+O frontend não deve acessar n8n diretamente.
