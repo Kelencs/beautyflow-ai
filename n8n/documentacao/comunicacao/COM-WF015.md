@@ -1,73 +1,88 @@
-# WF015 — COM - WF015 - Follow-up
+# COM-WF015 — Follow-up / Reativação
 
-> **Sincronização:** 18/08/2026  
-> **Fonte da verdade:** [`COM-WF015-follow-up.json`](../../workflows/comunicacao/COM-WF015-follow-up.json) no branch `main`.  
-> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado. Regras ou intenções arquiteturais que não aparecem no workflow atual não são tratadas como implementadas.
+> Documentação técnica do BeautyFlow AI — n8n
 
-## 1. Objetivo
+## Identificação
 
-Reengajar clientes inativos em janelas de aproximadamente 30 e 45 dias, respeitando marketing, agendamentos futuros, ciclo de inatividade e idempotência.
+| Campo | Valor |
+|---|---|
+| Código | `COM-WF015` |
+| Workflow | Follow-up / Reativação |
+| Arquivo n8n | `COM-WF015-follow-up.json` |
+| Status | Versionado e validado em testes |
+| Trigger | Subworkflow executado por mecanismo externo |
+| Última revisão | 19/08/2026 |
 
-## 2. Identificação técnica
+## Objetivo
 
-- **Workflow:** `COM - WF015 - Follow-up`
-- **ID funcional:** `WF015`
-- **Arquivo JSON:** `COM-WF015-follow-up.json`
-- **Status `active` no JSON versionado:** `false`
-- **Gatilho:** `Execute Workflow Trigger`; não existe Schedule/Cron no JSON atual.
+Reengajar clientes inativos elegíveis, respeitando consentimento, agendamento futuro, janelas de inatividade e idempotência por tentativa/ciclo.
 
-> `active` acima representa o valor exportado no arquivo do Git. Ele não é usado neste documento como evidência de teste nem como confirmação do estado do workflow no n8n Cloud.
+## Orquestração
 
-## 3. Entradas
+WF015 **não possui Schedule/Cron interno no JSON atual**.
 
-- `id_empresa` obrigatório.
+## Fluxo
 
-## 4. Fluxo real do workflow
+1. Valida empresa/configuração.
+2. Busca clientes.
+3. Busca agendamentos.
+4. Deriva o último atendimento real.
+5. Bloqueia agendamento futuro.
+6. Valida `ACEITA_MARKETING`.
+7. Determina tentativa.
+8. Consulta `FOLLOWUPS`.
+9. Monta mensagem.
+10. Envia via WF012.
+11. Registra follow-up.
+12. Registra logs via WF017.
 
-1. Valida `id_empresa`, busca a empresa e verifica configuração de WhatsApp/timezone.
-2. Consulta `CLIENTES`, `AGENDAMENTOS` e `FOLLOWUPS` da empresa.
-3. Para cada cliente apto, deriva o último atendimento **real** a partir de `AGENDAMENTOS`, ignorando cancelados e usando atendimentos já encerrados.
-4. Bloqueia cliente que possua agendamento futuro não cancelado.
-5. Calcula a tentativa de reengajamento conforme dias desde o último atendimento real.
-6. Aplica idempotência por ciclo de inatividade e tentativa.
-7. Envia cada follow-up elegível pelo WF012.
-8. Registra o resultado em `FOLLOWUPS`; os ramos de erro/sucesso preservam correlação multi-item.
-9. Consolida resultados, registra logs no WF017 e prepara a saída final.
+## Regras globais
 
-## 5. Regras e decisões implementadas
+- **RN055** — cliente elegível;
+- **RN056** — último atendimento pelo histórico;
+- **RN057** — agendamento futuro bloqueia;
+- **RN058** — tentativa 1: 30–33 dias;
+- **RN059** — tentativa 2: 45–48 dias;
+- **RN060** — máximo de 2 tentativas por ciclo;
+- **RN061** — idempotência.
 
-- `id_empresa` é obrigatório.
-- Somente clientes com `STATUS=ATIVO` e `ACEITA_MARKETING=SIM` são elegíveis.
-- O último atendimento é derivado de `AGENDAMENTOS`; `CLIENTES.ULTIMO_ATENDIMENTO` não é usado como fonte da decisão.
-- Agendamento futuro com status diferente de `CANCELADO` bloqueia follow-up.
-- Tentativa 1: entre 30 e 33 dias após o último atendimento real.
-- Tentativa 2: entre 45 e 48 dias.
-- Máximo de 2 tentativas por ciclo de inatividade.
-- Um novo atendimento real altera a chave do ciclo e permite um novo ciclo futuro.
-- Idempotência usa empresa + cliente + último atendimento + tentativa; somente follow-up efetivamente enviado bloqueia repetição correspondente.
-- Envio é sempre via WF012.
+A antiga referência `RN008` para o limite de tentativas não deve ser utilizada.
 
-## 6. Integrações e dependências
+## Consentimento
 
-- Google Sheets: `EMPRESAS`, `CLIENTES`, `AGENDAMENTOS`, `FOLLOWUPS`.
-- WF012 — Comunicação.
-- WF017 — Logs.
+WF015 exige `ACEITA_MARKETING=SIM`.
 
-## 7. Saídas e estados
+A origem/default desse campo no processo de cadastro permanece como gap conhecido e deve ser corrigida na origem, não escondida nesta documentação.
 
-- Resultados cobrem follow-up enviado, já enviado, cliente não elegível, cliente com agendamento futuro e `ERRO_FOLLOWUP`, além de bloqueios de empresa/WhatsApp.
+## Múltiplos itens
 
-## 8. Tratamento de erros e bloqueios
+O fluxo foi ajustado/testado para preservar correlação por cliente/candidato, inclusive em erro global de registro e execuções consecutivas.
 
-- Falhas técnicas de busca são separadas de “nenhum cliente elegível”.
-- Falha global ao registrar follow-up é expandida/correlacionada para os candidatos correspondentes antes da consolidação.
+## Saídas
 
-## 9. Observações do JSON atual
+Resultado por candidato:
+- enviado;
+- bloqueado;
+- não elegível;
+- erro técnico.
 
-- No arquivo versionado, `active` está `false`.
-- Existe dependência funcional do campo `ACEITA_MARKETING`; o WF008 atual cria novos clientes com esse campo em `SIM`.
-- O JSON não possui Schedule/Cron e depende de acionamento externo periódico.
+## Proteções
 
-## 10. Critério de manutenção desta documentação
+- erro de busca não pode virar simples "não elegível";
+- falha no envio não pode registrar sucesso;
+- preservar `phone_number_id`;
+- não misturar itens/runs;
+- não duplicar envio HTTP da Meta: usar WF012.
 
-Sempre que `COM-WF015-follow-up.json` for alterado, este arquivo deve ser revisado na mesma mudança. Em caso de divergência, o JSON versionado é a referência para o comportamento implementado, e a documentação deve ser atualizada para refletir o fluxo real.
+## Checklist
+
+- [ ] Tentativa 1.
+- [ ] Tentativa 2.
+- [ ] Máximo RN060.
+- [ ] Agendamento futuro.
+- [ ] Sem consentimento.
+- [ ] Duplicidade.
+- [ ] Multi-item.
+- [ ] Erro de busca.
+- [ ] Erro global no registro.
+- [ ] Execuções consecutivas sem contaminação.
