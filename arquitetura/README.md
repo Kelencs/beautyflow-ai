@@ -1,7 +1,13 @@
-# Arquitetura
+# Arquitetura — Índice de Compatibilidade
 
-Documento de arquitetura aprovado do **BeautyFlow App** (frontend Next.js + backend NestJS + Supabase), incluindo modelo de dados novo, fluxo de onboarding, estratégia de integração com o n8n e fases de entrega:
+A **fonte oficial de arquitetura do BeautyFlow** é:
 
-- [docs/arquitetura/beautyflow-app-arquitetura.md](../docs/arquitetura/beautyflow-app-arquitetura.md)
+`docs/09-arquitetura/`
 
-Para a arquitetura de automação existente (n8n + Google Sheets + WhatsApp), ver o [README](../README.md) na raiz do repositório e [docs/09-arquitetura](../docs/09-arquitetura/).
+Esta pasta da raiz é mantida apenas como ponto de navegação/compatibilidade e não deve receber novas decisões arquiteturais.
+
+Consulte:
+- `docs/09-arquitetura/README.md`;
+- `docs/09-arquitetura/06-status-de-implementacao.md`.
+
+`docs/arquitetura/` também permanece apenas por compatibilidade documental. Novas decisões devem ser registradas em `docs/09-arquitetura/`.
