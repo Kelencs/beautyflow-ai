@@ -7,6 +7,27 @@
 :root {
   --background: #fafafa;
   --foreground: #18181b;
+
+  /*
+   * Paleta comercial "BeautyFlow" (Landing Page — Fase 2), prefixada com `bf-` de
+   * propósito: é a identidade visual da página pública de vendas (frontend/src/app/
+   * page.tsx + frontend/src/components/landing/), não a paleta do App autenticado
+   * (que continua zinc/violet do Tailwind, sem alteração). Mantida aditiva aqui, no
+   * mesmo mecanismo `@theme inline` já usado por --background/--foreground, em vez de
+   * introduzir um segundo sistema de tokens.
+   */
+  --bf-primary: #5b3df5;
+  --bf-primary-hover: #4930d8;
+  --bf-lilac: #8b7cff;
+  --bf-lilac-light: #f1eeff;
+  --bf-rose: #f2a7c3;
+  --bf-rose-light: #fff1f6;
+  --bf-bg: #fafafc;
+  --bf-surface: #ffffff;
+  --bf-heading: #17172a;
+  --bf-text: #4f4f60;
+  --bf-text-muted: #777789;
+  --bf-border: #ececf3;
 }
 
 @theme inline {
@@ -14,6 +35,19 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-bf-primary: var(--bf-primary);
+  --color-bf-primary-hover: var(--bf-primary-hover);
+  --color-bf-lilac: var(--bf-lilac);
+  --color-bf-lilac-light: var(--bf-lilac-light);
+  --color-bf-rose: var(--bf-rose);
+  --color-bf-rose-light: var(--bf-rose-light);
+  --color-bf-bg: var(--bf-bg);
+  --color-bf-surface: var(--bf-surface);
+  --color-bf-heading: var(--bf-heading);
+  --color-bf-text: var(--bf-text);
+  --color-bf-text-muted: var(--bf-text-muted);
+  --color-bf-border: var(--bf-border);
 }
 
 body {

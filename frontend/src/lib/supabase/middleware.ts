@@ -3,13 +3,18 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Rotas acessíveis sem sessão. Tudo que não começar com um destes prefixos exige
- * usuário autenticado — inclusive `/` (que apenas redireciona para `/agenda`) e
- * qualquer módulo futuro do grupo `(app)`, sem precisar manter uma lista separada.
+ * usuário autenticado — qualquer módulo futuro do grupo `(app)`, sem precisar manter uma
+ * lista separada. `/` é pública à parte (ver `isPublicRoute`): é a landing page comercial
+ * (frontend/src/app/page.tsx), nunca deve exigir login — mas, como o restante do fluxo
+ * pré-autenticação, redireciona para `/agenda` quando já existe sessão (ver mais abaixo).
  */
 const PUBLIC_ROUTE_PREFIXES = ["/login", "/auth"];
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  return (
+    pathname === "/" ||
+    PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  );
 }
 
 /**
@@ -56,7 +61,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname === "/login" && user) {
+  if ((pathname === "/login" || pathname === "/") && user) {
     const agendaUrl = request.nextUrl.clone();
     agendaUrl.pathname = "/agenda";
     agendaUrl.search = "";
