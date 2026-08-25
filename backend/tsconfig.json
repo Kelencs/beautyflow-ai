@@ -14,10 +14,6 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
-    "paths": {
-      "@beautyflow/shared-types": ["../libs/shared-types/src/index.ts"],
-      "@beautyflow/shared-types/*": ["../libs/shared-types/src/*"]
-    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

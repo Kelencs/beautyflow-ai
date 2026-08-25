@@ -6,13 +6,18 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "prebuild": "npm run build --workspace=@beautyflow/shared-types",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prestart": "npm run build --workspace=@beautyflow/shared-types",
     "start": "nest start",
+    "prestart:dev": "npm run build --workspace=@beautyflow/shared-types",
     "start:dev": "nest start --watch",
+    "prestart:debug": "npm run build --workspace=@beautyflow/shared-types",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "pretest": "npm run build --workspace=@beautyflow/shared-types",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -20,9 +25,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@beautyflow/shared-types": "*",
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@supabase/supabase-js": "^2.112.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
