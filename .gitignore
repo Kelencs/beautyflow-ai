@@ -32,3 +32,6 @@ Thumbs.db
 
 # --- Vercel (deploy futuro do frontend) ---
 frontend/.vercel
+
+# --- Claude Code (config local de tooling, não faz parte do produto) ---
+.claude/
