@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,6 +12,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * Serif editorial só para títulos da landing (`font-serif`, mapeado em globals.css) — o
+ * App autenticado nunca usa essa classe, então continua 100% Geist/sans, sem alteração.
+ */
+const editorialSerif = Playfair_Display({
+  variable: "--font-editorial-serif",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "BeautyFlow",
   description: "Plataforma de gestão e automação de atendimentos para salões de beleza.",
@@ -21,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${editorialSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

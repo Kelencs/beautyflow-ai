@@ -1,56 +1,74 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Menu, Sparkles, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "#como-funciona", label: "Como funciona" },
-  { href: "#recursos", label: "Recursos" },
+  { href: "#funcionalidades", label: "Funcionalidades" },
+  { href: "#integracoes", label: "Integrações" },
   { href: "#para-quem-e", label: "Para quem é" },
-  { href: "#planos", label: "Planos" },
-  { href: "#faq", label: "FAQ" },
+  { href: "#faq", label: "Dúvidas" },
 ];
 
 /**
- * Navegação completa (âncoras reais das seções) + menu responsivo no mobile. "Entrar"
- * continua indo para /login (cliente já cadastrado). "Quero uma demonstração" (Fase 3:
- * renomeado de "Conhecer o BeautyFlow") é a ação para quem ainda não tem conta — sem
- * formulário/WhatsApp comercial ainda no projeto, aponta para a âncora `#demonstracao`
- * (a própria seção de CTA final, ver LandingCTA.tsx), nunca para /login: um visitante
- * novo não deve ser encaminhado direto para uma tela de login que ele não pode usar.
+ * Link direto para o WhatsApp comercial do BeautyFlow (número fornecido pelo usuário),
+ * com mensagem inicial pré-preenchida — nunca um formulário intermediário. Usado pelo
+ * CTA principal do Header (desktop e menu mobile); mesma constante duplicada em
+ * LandingHero.tsx e LandingCTA.tsx (arquivos landing são intencionalmente
+ * autocontidos neste projeto, sem um módulo de constantes compartilhado).
+ */
+const WHATSAPP_URL =
+  "https://wa.me/5534984320076?text=Olá%21%20Conheci%20o%20BeautyFlow%20e%20gostaria%20de%20saber%20mais%20sobre%20a%20plataforma.";
+
+/**
+ * Nav reflete as seções reais da página: Funcionalidades, Integrações, Para quem é,
+ * Dúvidas (FAQ). "Entrar" vai para /login; "Quero uma demonstração" abre o WhatsApp em
+ * nova aba (não é mais uma âncora interna — ver LandingCTA.tsx/LandingHero.tsx para o
+ * mesmo padrão).
  */
 export function LandingHeader() {
   const [menuAberto, setMenuAberto] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-bf-border bg-white/80 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-20 border-b border-bf-border/30 bg-white/85 backdrop-blur">
+      <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center gap-4 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2" onClick={() => setMenuAberto(false)}>
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-bf-primary text-white">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
+          <Image
+            src="/brand/beautyflow-icon.png"
+            alt="BeautyFlow"
+            width={38}
+            height={38}
+            priority
+            className="h-7 w-7 lg:h-9 lg:w-9"
+          />
+          <span className="font-serif text-lg font-semibold tracking-tight">
+            <span className="text-bf-heading">Beauty</span>
+            <span className="text-bf-rose">Flow</span>
           </span>
-          <span className="text-base font-semibold tracking-tight text-bf-heading">BeautyFlow</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-bf-text lg:flex">
+        <nav className="hidden items-center justify-center gap-7 text-sm font-medium text-bf-text lg:flex">
           {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="transition hover:text-bf-heading">
+            <a key={link.href} href={link.href} className="transition hover:text-bf-wine">
               {link.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center justify-end gap-3 lg:flex">
           <Link
             href="/login"
-            className="text-sm font-semibold text-bf-text transition hover:text-bf-heading"
+            className="text-sm font-semibold text-bf-text transition hover:text-bf-wine"
           >
             Entrar
           </Link>
           <a
-            href="#demonstracao"
-            className="inline-flex items-center justify-center rounded-lg bg-bf-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-bf-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bf-primary"
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-full bg-bf-wine px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-bf-wine-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bf-wine"
           >
             Quero uma demonstração
           </a>
@@ -62,7 +80,7 @@ export function LandingHeader() {
           aria-expanded={menuAberto}
           aria-controls="menu-mobile-landing"
           aria-label={menuAberto ? "Fechar menu" : "Abrir menu"}
-          className="flex h-10 w-10 items-center justify-center rounded-lg border border-bf-border text-bf-heading transition hover:bg-bf-lilac-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bf-primary lg:hidden"
+          className="col-start-3 flex h-10 w-10 items-center justify-center justify-self-end rounded-lg border border-bf-border text-bf-heading transition hover:bg-bf-blush focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bf-wine lg:hidden"
         >
           {menuAberto ? (
             <X className="h-5 w-5" aria-hidden="true" />
@@ -82,7 +100,7 @@ export function LandingHeader() {
               key={link.href}
               href={link.href}
               onClick={() => setMenuAberto(false)}
-              className="rounded-lg px-3 py-3 text-sm font-medium text-bf-text transition hover:bg-bf-lilac-light hover:text-bf-heading"
+              className="rounded-lg px-3 py-3 text-sm font-medium text-bf-text transition hover:bg-bf-blush hover:text-bf-wine"
             >
               {link.label}
             </a>
@@ -91,14 +109,16 @@ export function LandingHeader() {
             <Link
               href="/login"
               onClick={() => setMenuAberto(false)}
-              className="rounded-lg px-3 py-3 text-center text-sm font-semibold text-bf-text transition hover:bg-bf-lilac-light hover:text-bf-heading"
+              className="rounded-lg px-3 py-3 text-center text-sm font-semibold text-bf-text transition hover:bg-bf-blush hover:text-bf-wine"
             >
               Entrar
             </Link>
             <a
-              href="#demonstracao"
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setMenuAberto(false)}
-              className="rounded-lg bg-bf-primary px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-bf-primary-hover"
+              className="rounded-full bg-bf-wine px-3 py-3 text-center text-sm font-semibold text-white transition hover:bg-bf-wine-dark"
             >
               Quero uma demonstração
             </a>
