@@ -1,3 +1,4 @@
+import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import { AGENDA_MOCK_RECORDS } from '../agenda/agenda.mock-data';
 import { AgendaService } from '../agenda/agenda.service';
@@ -8,6 +9,7 @@ import { ComunicacaoService } from '../comunicacao/comunicacao.service';
 import { deslocarDiasISO, getHojeBrasilISO } from '../dashboard/dashboard-date.util';
 import { FINANCEIRO_MOCK_RECORDS } from '../financeiro/financeiro.mock-data';
 import { FinanceiroService } from '../financeiro/financeiro.service';
+import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { PROFISSIONAIS_MOCK_RECORDS } from '../profissionais/profissionais.mock-data';
 import { RelatoriosService } from './relatorios.service';
 
@@ -39,12 +41,18 @@ describe('RelatoriosService', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
+      // ConfigModule/N8nGatewayClient: ClientesService agora depende dos dois (ver
+      // clientes.service.ts) — DATA_SOURCE_CLIENTES fica ausente aqui, então
+      // ClientesService continua no modo mock de sempre; RelatoriosService em si não
+      // muda nenhuma regra.
+      imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true })],
       providers: [
         RelatoriosService,
         AgendaService,
         ClientesService,
         FinanceiroService,
         ComunicacaoService,
+        N8nGatewayClient,
       ],
     }).compile();
 
@@ -56,9 +64,9 @@ describe('RelatoriosService', () => {
   });
 
   describe('obterRelatorio', () => {
-    it('owner recebe o total de atendimentos da própria empresa (agosto/2026)', () => {
+    it('owner recebe o total de atendimentos da própria empresa (agosto/2026)', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       const agendaEsperada = agendaService.listar(owner, agosto).data;
       expect(resultado.resumo.totalAtendimentos).toBe(agendaEsperada.length);
@@ -73,9 +81,9 @@ describe('RelatoriosService', () => {
       );
     });
 
-    it('valorPrevisto exclui agendamentos CANCELADO', () => {
+    it('valorPrevisto exclui agendamentos CANCELADO', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       const agendaEsperada = agendaService.listar(owner, agosto).data;
       const somaEsperada = agendaEsperada
@@ -86,9 +94,9 @@ describe('RelatoriosService', () => {
       expect(resultado.resumo.atendimentosCancelados).toBeGreaterThan(0);
     });
 
-    it('valorRecebido/valorPendente vêm do Financeiro, restritos ao universo de atendimentos da Agenda', () => {
+    it('valorRecebido/valorPendente vêm do Financeiro, restritos ao universo de atendimentos da Agenda', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       const agendaIds = new Set(
         agendaService.listar(owner, agosto).data.map((item) => item.idAgendamento),
@@ -111,9 +119,9 @@ describe('RelatoriosService', () => {
       expect(resultado.resumo.valorPendente).toBe(financeiroEsperado.resumo.pendente);
     });
 
-    it('REGRESSÃO: recebido + pendente sempre bate com valorPrevisto quando não há registros órfãos', () => {
+    it('REGRESSÃO: recebido + pendente sempre bate com valorPrevisto quando não há registros órfãos', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       // Com a integridade dos mocks corrigida, todo agendamento não cancelado tem
       // exatamente um registro financeiro correspondente — recebido+pendente bate com
@@ -123,7 +131,7 @@ describe('RelatoriosService', () => {
       );
     });
 
-    it('REGRESSÃO: reproduz o teste manual reportado (preset 7 dias) com os valores corretos pós-correção de integridade', () => {
+    it('REGRESSÃO: reproduz o teste manual reportado (preset 7 dias) com os valores corretos pós-correção de integridade', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       // Achado P1-1: a janela era literal ('2026-08-18' a '2026-08-24') porque coincidia
       // com o intervalo hoje-6..hoje da época em que este teste foi escrito. Agora que
@@ -132,7 +140,7 @@ describe('RelatoriosService', () => {
       // "hoje-6 a hoje" continua capturando exatamente o mesmo conjunto de 6 registros,
       // em qualquer dia real de execução — os valores esperados abaixo NÃO mudam.
       const seteDias = { dataInicio: deslocarDiasISO(hoje, -6), dataFim: hoje };
-      const resultado = service.obterRelatorio(owner, seteDias);
+      const resultado = await service.obterRelatorio(owner, seteDias);
 
       // Antes da correção de integridade, AGD006 (hoje-6) e AGD008 (hoje-5) eram órfãos
       // (existiam só no Financeiro) e ficavam de fora da Agenda — o preset de 7 dias
@@ -149,10 +157,10 @@ describe('RelatoriosService', () => {
       expect(resultado.resumo.valorRecebido + resultado.resumo.valorPendente).toBe(540);
     });
 
-    it('pagamento PARCIAL continua contabilizado corretamente em valorRecebido e valorPendente (AGD002)', () => {
+    it('pagamento PARCIAL continua contabilizado corretamente em valorRecebido e valorPendente (AGD002)', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       const seteDias = { dataInicio: deslocarDiasISO(hoje, -6), dataFim: hoje };
-      const resultado = service.obterRelatorio(owner, seteDias);
+      const resultado = await service.obterRelatorio(owner, seteDias);
 
       const agd002 = financeiroService
         .listar(owner, seteDias)
@@ -167,32 +175,30 @@ describe('RelatoriosService', () => {
       expect(resultado.resumo.valorPendente).toBeGreaterThanOrEqual(40);
     });
 
-    it('comunicacoesEnviadas/comFalha vêm exatamente do resumo do ComunicacaoService', () => {
+    it('comunicacoesEnviadas/comFalha vêm exatamente do resumo do ComunicacaoService', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       const comunicacaoEsperada = comunicacaoService.listar(owner, agosto).resumo;
       expect(resultado.resumo.comunicacoesEnviadas).toBe(comunicacaoEsperada.enviadas);
       expect(resultado.resumo.comunicacoesComFalha).toBe(comunicacaoEsperada.comFalha);
     });
 
-    it('clientesNovos conta somente clientes com clienteDesde dentro do período', () => {
+    it('clientesNovos conta somente clientes com clienteDesde dentro do período', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
-      const clientesEsperados = clientesService
-        .listar(owner)
-        .data.filter(
-          (cliente) =>
-            cliente.clienteDesde >= agosto.dataInicio && cliente.clienteDesde <= agosto.dataFim,
-        ).length;
+      const clientesEsperados = (await clientesService.listar(owner)).data.filter(
+        (cliente) =>
+          cliente.clienteDesde >= agosto.dataInicio && cliente.clienteDesde <= agosto.dataFim,
+      ).length;
 
       expect(resultado.resumo.clientesNovos).toBe(clientesEsperados);
     });
 
-    it('taxaConfirmacao e taxaCancelamento seguem a fórmula documentada (confirmados|cancelados / total)', () => {
+    it('taxaConfirmacao e taxaCancelamento seguem a fórmula documentada (confirmados|cancelados / total)', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
       const {
         totalAtendimentos,
         atendimentosConfirmados,
@@ -205,9 +211,9 @@ describe('RelatoriosService', () => {
       expect(taxaCancelamento).toBeCloseTo(atendimentosCancelados / totalAtendimentos);
     });
 
-    it('EMP001 nunca recebe dados de EMP002 (ranking de profissionais/serviços)', () => {
+    it('EMP001 nunca recebe dados de EMP002 (ranking de profissionais/serviços)', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       expect(resultado.desempenhoProfissionais.some((item) => item.nome === 'Rafael Torres')).toBe(
         false,
@@ -217,9 +223,9 @@ describe('RelatoriosService', () => {
       );
     });
 
-    it('ranking de serviços/profissionais soma quantidade e valorPrevisto corretamente e ordena por quantidade desc', () => {
+    it('ranking de serviços/profissionais soma quantidade e valorPrevisto corretamente e ordena por quantidade desc', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       for (let i = 1; i < resultado.desempenhoProfissionais.length; i += 1) {
         expect(
@@ -236,13 +242,13 @@ describe('RelatoriosService', () => {
       expect(totalPorProfissionais).toBe(totalNaoCancelado);
     });
 
-    it('profissional recebe métricas de Agenda/Financeiro restritas ao próprio idProfissional', () => {
+    it('profissional recebe métricas de Agenda/Financeiro restritas ao próprio idProfissional', async () => {
       const profissional = usuario({
         idEmpresa: 'EMP001',
         perfil: 'profissional',
         idProfissional: 'PROF001',
       });
-      const resultado = service.obterRelatorio(profissional, agosto);
+      const resultado = await service.obterRelatorio(profissional, agosto);
 
       const agendaEsperada = agendaService.listar(profissional, agosto).data;
       expect(resultado.resumo.totalAtendimentos).toBe(agendaEsperada.length);
@@ -252,9 +258,9 @@ describe('RelatoriosService', () => {
       expect(resultado.desempenhoProfissionais.length).toBeLessThanOrEqual(1);
     });
 
-    it('platform_admin (sem id_empresa) recebe relatório seguro/vazio, nunca cross-tenant', () => {
+    it('platform_admin (sem id_empresa) recebe relatório seguro/vazio, nunca cross-tenant', async () => {
       const admin = usuario({ idEmpresa: null, idProfissional: null, perfil: 'platform_admin' });
-      const resultado = service.obterRelatorio(admin, agosto);
+      const resultado = await service.obterRelatorio(admin, agosto);
 
       expect(resultado.resumo.totalAtendimentos).toBe(0);
       expect(resultado.resumo.valorPrevisto).toBe(0);
@@ -263,10 +269,10 @@ describe('RelatoriosService', () => {
       expect(resultado.desempenhoProfissionais).toEqual([]);
     });
 
-    it('período sem nenhum dado retorna resumo zerado e série temporal zerada, não erro', () => {
+    it('período sem nenhum dado retorna resumo zerado e série temporal zerada, não erro', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       const periodoVazio = { dataInicio: '2020-01-01', dataFim: '2020-01-01' };
-      const resultado = service.obterRelatorio(owner, periodoVazio);
+      const resultado = await service.obterRelatorio(owner, periodoVazio);
 
       expect(resultado.resumo.totalAtendimentos).toBe(0);
       expect(resultado.resumo.taxaConfirmacao).toBe(0);
@@ -280,10 +286,10 @@ describe('RelatoriosService', () => {
       });
     });
 
-    it('serieTemporal tem uma entrada por dia do período, em ordem cronológica', () => {
+    it('serieTemporal tem uma entrada por dia do período, em ordem cronológica', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       const periodo = { dataInicio: '2026-08-01', dataFim: '2026-08-05' };
-      const resultado = service.obterRelatorio(owner, periodo);
+      const resultado = await service.obterRelatorio(owner, periodo);
 
       expect(resultado.serieTemporal.map((item) => item.data)).toEqual([
         '2026-08-01',
@@ -294,24 +300,24 @@ describe('RelatoriosService', () => {
       ]);
     });
 
-    it('a soma diária de atendimentos na série temporal bate com totalAtendimentos do resumo', () => {
+    it('a soma diária de atendimentos na série temporal bate com totalAtendimentos do resumo', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       const somaSerie = resultado.serieTemporal.reduce((soma, dia) => soma + dia.atendimentos, 0);
       expect(somaSerie).toBe(resultado.resumo.totalAtendimentos);
     });
 
-    it('o período de resposta reflete exatamente o período consultado', () => {
+    it('o período de resposta reflete exatamente o período consultado', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       expect(resultado.periodo).toEqual(agosto);
     });
 
-    it('a resposta nunca expõe idEmpresa/idProfissional em nenhuma seção', () => {
+    it('a resposta nunca expõe idEmpresa/idProfissional em nenhuma seção', async () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
-      const resultado = service.obterRelatorio(owner, agosto);
+      const resultado = await service.obterRelatorio(owner, agosto);
 
       expect(resultado.resumo).not.toHaveProperty('idEmpresa');
       for (const item of [

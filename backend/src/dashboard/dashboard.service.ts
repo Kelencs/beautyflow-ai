@@ -67,7 +67,17 @@ export class DashboardService {
    * (clientes/serviços/profissionais ativos) seguem a mesma regra "vê a empresa toda"
    * já documentada em cada respectivo *Service.
    */
-  obterResumo(user: AuthenticatedUser, dataReferenciaISO?: string): DashboardResponse {
+  /**
+   * Async só por causa de ClientesService.listar() (pode chamar o APP-WF019 via HTTP
+   * quando DATA_SOURCE_CLIENTES=n8n — ver clientes.service.ts) — mudança mecânica de
+   * sincronização, sem nenhuma alteração de regra de negócio deste método. As demais
+   * chamadas (`agendaService`/`servicosService`/`profissionaisService`) continuam
+   * síncronas, exatamente como antes.
+   */
+  async obterResumo(
+    user: AuthenticatedUser,
+    dataReferenciaISO?: string,
+  ): Promise<DashboardResponse> {
     if (!user.idEmpresa) {
       return { resumo: RESUMO_VAZIO, proximoAtendimento: null, proximosAtendimentos: [] };
     }
@@ -75,7 +85,7 @@ export class DashboardService {
     const hoje = dataReferenciaISO ?? getHojeBrasilISO();
 
     const agendaHoje = this.agendaService.listar(user, { dataInicio: hoje, dataFim: hoje }).data;
-    const clientes = this.clientesService.listar(user).data;
+    const clientes = (await this.clientesService.listar(user)).data;
     const servicos = this.servicosService.listar(user).data;
     const profissionais = this.profissionaisService.listar(user).data;
 

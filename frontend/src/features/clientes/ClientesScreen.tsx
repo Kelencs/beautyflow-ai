@@ -35,7 +35,13 @@ function aplicarFiltro(clientes: Cliente[], filtro: FiltroCliente): Cliente[] {
     case "sem-proximo":
       return clientes.filter((cliente) => cliente.proximoAtendimento === null);
     case "recorrentes":
-      return clientes.filter((cliente) => cliente.totalAtendimentos >= MINIMO_ATENDIMENTOS_RECORRENTE);
+      // totalAtendimentos null = ainda não sabemos (modo n8n) — nunca contado como
+      // recorrente (não inventamos que atingiu o mínimo sem essa informação).
+      return clientes.filter(
+        (cliente) =>
+          cliente.totalAtendimentos !== null &&
+          cliente.totalAtendimentos >= MINIMO_ATENDIMENTOS_RECORRENTE,
+      );
     default:
       return clientes;
   }

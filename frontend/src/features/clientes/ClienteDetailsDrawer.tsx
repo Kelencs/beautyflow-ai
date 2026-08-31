@@ -28,7 +28,13 @@ interface ClienteDetailsDrawerProps {
   onClose: () => void;
 }
 
-function formatBRL(value: number): string {
+/**
+ * `null` = a fonte de dados atual ainda não sabe calcular este valor (ex.: modo n8n,
+ * que hoje só lê CLIENTES) — nunca mostrar como "R$ 0,00", que afirmaria um gasto zero
+ * conhecido. "—" é o traço padrão usado no resto da tela para ausência de informação.
+ */
+function formatBRL(value: number | null): string {
+  if (value === null) return "—";
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
@@ -92,7 +98,10 @@ export function ClienteDetailsDrawer({ clienteId, carregando, detalhe, erro, onC
           label: "Total gasto",
           value: formatBRL(detalhe.totalGasto),
           destaque: true,
-          complemento: `${detalhe.totalAtendimentos} atendimento${detalhe.totalAtendimentos === 1 ? "" : "s"}`,
+          complemento:
+            detalhe.totalAtendimentos === null
+              ? "Disponível após integração dos atendimentos."
+              : `${detalhe.totalAtendimentos} atendimento${detalhe.totalAtendimentos === 1 ? "" : "s"}`,
         },
       ]
     : [];
@@ -164,7 +173,12 @@ export function ClienteDetailsDrawer({ clienteId, carregando, detalhe, erro, onC
 
             <div className="border-t border-zinc-100 px-5 py-5">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Histórico recente</h3>
-              {detalhe.historico.length === 0 ? (
+              {detalhe.historico === null ? (
+                // Diferente de "[]" (sabemos que não há atendimentos): aqui a fonte de
+                // dados atual (modo n8n, só CLIENTES) ainda não consegue fornecer
+                // histórico — nunca apresentar isso como "nenhum atendimento".
+                <p className="mt-2 text-sm text-zinc-400">Disponível após integração dos atendimentos.</p>
+              ) : detalhe.historico.length === 0 ? (
                 <p className="mt-2 text-sm text-zinc-400">Nenhum atendimento registrado ainda.</p>
               ) : (
                 <ul className="mt-3 flex flex-col gap-2.5">

@@ -20,7 +20,7 @@ export class RelatoriosController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('dataInicio') dataInicioRaw: unknown,
     @Query('dataFim') dataFimRaw: unknown,
-  ): RelatoriosResponse {
+  ): Promise<RelatoriosResponse> {
     const query = parseRelatoriosQuery(dataInicioRaw, dataFimRaw);
     return this.relatoriosService.obterRelatorio(user, query);
   }

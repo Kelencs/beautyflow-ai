@@ -16,7 +16,7 @@ export class DashboardController {
    * DashboardService.obterResumo, cujo parâmetro de teste não é exposto aqui).
    */
   @Get()
-  obterResumo(@CurrentUser() user: AuthenticatedUser): DashboardResponse {
+  obterResumo(@CurrentUser() user: AuthenticatedUser): Promise<DashboardResponse> {
     return this.dashboardService.obterResumo(user);
   }
 }

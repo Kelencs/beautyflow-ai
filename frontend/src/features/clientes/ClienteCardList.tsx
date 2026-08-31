@@ -8,7 +8,13 @@ interface ClienteCardListProps {
   onSelect: (cliente: Cliente) => void;
 }
 
-function formatBRL(value: number): string {
+/**
+ * `null` = a fonte de dados atual ainda não sabe calcular este valor (ex.: modo n8n,
+ * que hoje só lê CLIENTES) — nunca mostrar como "R$ 0,00", que afirmaria um gasto zero
+ * conhecido. "—" é o traço padrão usado no resto da tela para ausência de informação.
+ */
+function formatBRL(value: number | null): string {
+  if (value === null) return "—";
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
@@ -51,7 +57,9 @@ export function ClienteCardList({ clientes, onSelect }: ClienteCardListProps) {
               <div>
                 <p className="text-zinc-400">Atendimentos</p>
                 <p className="mt-0.5 font-medium text-zinc-700">
-                  {cliente.totalAtendimentos} atendimento{cliente.totalAtendimentos === 1 ? "" : "s"}
+                  {cliente.totalAtendimentos === null
+                    ? "—"
+                    : `${cliente.totalAtendimentos} atendimento${cliente.totalAtendimentos === 1 ? "" : "s"}`}
                 </p>
               </div>
               <div>

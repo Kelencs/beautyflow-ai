@@ -1,7 +1,9 @@
+import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { AgendaService } from '../agenda/agenda.service';
 import { ClientesService } from '../clientes/clientes.service';
+import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { ProfissionaisService } from '../profissionais/profissionais.service';
 import { ServicosService } from '../servicos/servicos.service';
 import { deslocarDiasISO, getHojeBrasilISO, getHoraAgoraBrasil } from './dashboard-date.util';
@@ -30,19 +32,25 @@ describe('DashboardService', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
+      // ConfigModule/N8nGatewayClient: ClientesService agora depende dos dois (ver
+      // clientes.service.ts) — DATA_SOURCE_CLIENTES fica ausente aqui, então
+      // ClientesService continua no modo mock de sempre; DashboardService em si não
+      // muda nenhuma regra.
+      imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true })],
       providers: [
         DashboardService,
         AgendaService,
         ClientesService,
         ServicosService,
         ProfissionaisService,
+        N8nGatewayClient,
       ],
     }).compile();
     service = moduleRef.get(DashboardService);
   });
 
-  it('owner recebe apenas métricas da própria empresa (hoje-3: 2 agendamentos EMP001, 0 de EMP002 incorporados)', () => {
-    const resultado = service.obterResumo(
+  it('owner recebe apenas métricas da própria empresa (hoje-3: 2 agendamentos EMP001, 0 de EMP002 incorporados)', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
       deslocarDiasISO(hoje, -3),
     );
@@ -57,8 +65,8 @@ describe('DashboardService', () => {
     expect(resultado.resumo.servicosAtivos).toBe(6);
   });
 
-  it('EMP001 nunca incorpora agendamentos/clientes/profissionais/serviços de EMP002', () => {
-    const resultado = service.obterResumo(
+  it('EMP001 nunca incorpora agendamentos/clientes/profissionais/serviços de EMP002', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
       deslocarDiasISO(hoje, -3),
     );
@@ -68,8 +76,8 @@ describe('DashboardService', () => {
     expect(nomes).not.toContain('Larissa Ferreira');
   });
 
-  it('profissional recebe a Agenda filtrada pelo próprio id_profissional (hoje-2, só PROF002 tem agendamento)', () => {
-    const resultado = service.obterResumo(
+  it('profissional recebe a Agenda filtrada pelo próprio id_profissional (hoje-2, só PROF002 tem agendamento)', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'profissional', idProfissional: 'PROF002' }),
       deslocarDiasISO(hoje, -2),
     );
@@ -78,8 +86,8 @@ describe('DashboardService', () => {
     expect(resultado.proximoAtendimento?.profissionalNome).toBe('Carla Souza');
   });
 
-  it('profissional sem agendamento no dia não vê agendamentos de outro profissional da mesma empresa', () => {
-    const resultado = service.obterResumo(
+  it('profissional sem agendamento no dia não vê agendamentos de outro profissional da mesma empresa', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'profissional', idProfissional: 'PROF001' }),
       deslocarDiasISO(hoje, -2),
     );
@@ -87,8 +95,8 @@ describe('DashboardService', () => {
     expect(resultado.resumo.agendamentosHoje).toBe(0);
   });
 
-  it('próximo atendimento correto: primeiro por horário entre os pendentes/confirmados do dia', () => {
-    const resultado = service.obterResumo(
+  it('próximo atendimento correto: primeiro por horário entre os pendentes/confirmados do dia', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
       deslocarDiasISO(hoje, -3),
     );
@@ -107,8 +115,8 @@ describe('DashboardService', () => {
     ]);
   });
 
-  it('nenhum agendamento no dia -> próximo = null e lista vazia', () => {
-    const resultado = service.obterResumo(
+  it('nenhum agendamento no dia -> próximo = null e lista vazia', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
       deslocarDiasISO(hoje, -1),
     );
@@ -118,8 +126,8 @@ describe('DashboardService', () => {
     expect(resultado.proximosAtendimentos).toEqual([]);
   });
 
-  it('a resposta nunca inclui idEmpresa/idProfissional (contrato público)', () => {
-    const resultado = service.obterResumo(
+  it('a resposta nunca inclui idEmpresa/idProfissional (contrato público)', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
       deslocarDiasISO(hoje, -3),
     );
@@ -131,8 +139,8 @@ describe('DashboardService', () => {
     }
   });
 
-  it('platform_admin (sem id_empresa) recebe resumo seguro/vazio, nunca dados cross-tenant', () => {
-    const resultado = service.obterResumo(
+  it('platform_admin (sem id_empresa) recebe resumo seguro/vazio, nunca dados cross-tenant', async () => {
+    const resultado = await service.obterResumo(
       usuario({ idEmpresa: null, idProfissional: null, perfil: 'platform_admin' }),
       deslocarDiasISO(hoje, -3),
     );
@@ -151,8 +159,10 @@ describe('DashboardService', () => {
   // qualquer que ele seja — porque AGD003 (o único agendamento de EMP001 na Agenda para
   // "hoje") agora é gerado com base na mesma `getHojeBrasilISO()` que o Dashboard usa.
   describe('obterResumo sem dataReferenciaISO (caminho real de produção — nunca uma data fixa)', () => {
-    it('usa o dia real de hoje em América/São Paulo: AGD003 (PENDENTE, R$70) é o único agendamento de hoje no mock', () => {
-      const resultado = service.obterResumo(usuario({ idEmpresa: 'EMP001', perfil: 'owner' }));
+    it('usa o dia real de hoje em América/São Paulo: AGD003 (PENDENTE, R$70) é o único agendamento de hoje no mock', async () => {
+      const resultado = await service.obterResumo(
+        usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
+      );
 
       expect(resultado.resumo.agendamentosHoje).toBe(1);
       expect(resultado.resumo.confirmadosHoje).toBe(0);
@@ -160,9 +170,11 @@ describe('DashboardService', () => {
       expect(resultado.resumo.previstoHoje).toBe(70);
     });
 
-    it('encontra o próximo atendimento de hoje quando ainda não passou do horário (AGD003, 14:30); não retorna nada já ocorrido', () => {
+    it('encontra o próximo atendimento de hoje quando ainda não passou do horário (AGD003, 14:30); não retorna nada já ocorrido', async () => {
       const horaAgora = getHoraAgoraBrasil();
-      const resultado = service.obterResumo(usuario({ idEmpresa: 'EMP001', perfil: 'owner' }));
+      const resultado = await service.obterResumo(
+        usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
+      );
 
       if (horaAgora < '14:30') {
         expect(resultado.proximoAtendimento?.idAgendamento).toBe('AGD003');

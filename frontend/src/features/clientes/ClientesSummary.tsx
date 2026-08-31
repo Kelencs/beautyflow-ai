@@ -19,7 +19,12 @@ export function ClientesSummary({ clientes, todayIso }: ClientesSummaryProps) {
     const desde = parseISODate(cliente.clienteDesde);
     return desde.getFullYear() === hoje.getFullYear() && desde.getMonth() === hoje.getMonth();
   }).length;
-  const recorrentes = clientes.filter((cliente) => cliente.totalAtendimentos >= MINIMO_ATENDIMENTOS_RECORRENTE).length;
+  // totalAtendimentos null = ainda não sabemos (modo n8n) — nunca contado como
+  // recorrente (não inventamos que atingiu o mínimo sem essa informação).
+  const recorrentes = clientes.filter(
+    (cliente) =>
+      cliente.totalAtendimentos !== null && cliente.totalAtendimentos >= MINIMO_ATENDIMENTOS_RECORRENTE,
+  ).length;
 
   const cards = [
     { label: "Total de clientes", value: String(clientes.length) },

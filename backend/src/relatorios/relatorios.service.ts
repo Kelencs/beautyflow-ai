@@ -79,7 +79,17 @@ export class RelatoriosService {
     private readonly comunicacaoService: ComunicacaoService,
   ) {}
 
-  obterRelatorio(user: AuthenticatedUser, query: RelatoriosQuery): RelatoriosResponse {
+  /**
+   * Async só por causa de ClientesService.listar() (pode chamar o APP-WF019 via HTTP
+   * quando DATA_SOURCE_CLIENTES=n8n — ver clientes.service.ts) — mudança mecânica de
+   * sincronização, sem nenhuma alteração de regra de negócio deste método. As demais
+   * chamadas (`agendaService`/`financeiroService`/`comunicacaoService`) continuam
+   * síncronas, exatamente como antes.
+   */
+  async obterRelatorio(
+    user: AuthenticatedUser,
+    query: RelatoriosQuery,
+  ): Promise<RelatoriosResponse> {
     const periodo = { dataInicio: query.dataInicio, dataFim: query.dataFim };
 
     if (!user.idEmpresa) {
@@ -93,7 +103,7 @@ export class RelatoriosService {
     }
 
     const agenda = this.agendaService.listar(user, periodo).data;
-    const clientes = this.clientesService.listar(user).data;
+    const clientes = (await this.clientesService.listar(user)).data;
     const financeiro = this.financeiroService.listar(user, periodo);
     const comunicacao = this.comunicacaoService.listar(user, periodo);
 

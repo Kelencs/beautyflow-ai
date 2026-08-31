@@ -1,0 +1,366 @@
+{
+  "name": "APP - WF019 - Gateway App",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "beautyflow-app",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "e94d3e35-901f-4c91-877e-3f912a5ae772",
+      "name": "Webhook - Gateway App",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        672,
+        1536
+      ],
+      "webhookId": "97a18b8d-72cb-4d05-813d-5cbb7be7d844",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURAR_CREDENCIAL_HEADER_AUTH",
+          "name": "BeautyFlow Gateway Key (configurar manualmente)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida nesta Fase 1 — qualquer outra vira INVALID_OPERATION.\n// Não criar branches vazios de Agenda/Financeiro/etc. aqui (ver sticky note desta\n// workflow): adicionar a próxima operação exige voltar a este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
+      },
+      "id": "f6375890-a627-40e3-bf78-711eb5b04a8d",
+      "name": "CODE - Validar Envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "474377bc-1c37-4b70-93c3-139ece097ffe",
+      "name": "IF - Envelope Válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1152,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174621667,
+          "mode": "list",
+          "cachedResultName": "CLIENTES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1174621667"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "16ecb04b-ccc1-4ad5-9e03-7deb980b7a52",
+      "name": "GS - Buscar Clientes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        1408
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7307eb30-1c25-44c4-a445-610fef9cfa81",
+      "name": "IF - Erro Técnico Ao Buscar Clientes",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CLIENTES sozinha não tem \"próximo atendimento\" nem totais de atendimento/gasto\n// (dependeriam de AGENDAMENTOS/PAGAMENTOS, fora do escopo desta Fase 1) — por isso o\n// shape de integração devolvido aqui não inclui esses campos; o NestJS os preenche com\n// um valor neutro documentado (ver clientes.service.ts, toClienteFromIntegracao).\n// Nunca inclui ID_EMPRESA nem colunas técnicas do Sheets.\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nconst linhas = $input.all().map((item) => item.json);\n\n// alwaysOutputData garante um item mesmo quando a busca é 0 linhas legitimamente — esse\n// placeholder não tem ID_CLIENTE, então é descartado aqui (não vira um cliente falso).\nconst clientes = linhas\n  .filter((row) => row && row.ID_CLIENTE)\n  .map((row) => ({\n    idCliente: String(row.ID_CLIENTE),\n    nome: row.NOME || '',\n    telefone: row.TELEFONE || '',\n    email: row.EMAIL || null,\n    dataNascimento: row.DATA_NASCIMENTO || null,\n    status: row.STATUS === 'INATIVO' ? 'INATIVO' : 'ATIVO',\n    clienteDesde: row.DATA_CADASTRO ? String(row.DATA_CADASTRO).slice(0, 10) : null,\n    ultimoAtendimento: row.ULTIMO_ATENDIMENTO ? String(row.ULTIMO_ATENDIMENTO).slice(0, 10) : null,\n    observacoes: row.OBSERVACOES || null,\n  }));\n\nreturn [{ json: { clientes, requestId } }];"
+      },
+      "id": "caa790fa-1dfc-42a1-a362-2c68c75c89db",
+      "name": "CODE - Normalizar Clientes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1328
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const requestId = $('CODE - Validar Envelope').first().json.requestId;\nreturn [{ json: {\n  erro_codigo: 'UPSTREAM_ERROR',\n  erro_mensagem: 'Não foi possível consultar os clientes no momento.',\n  requestId,\n} }];"
+      },
+      "id": "de843cb6-0377-440b-a219-fcfb43a80e6d",
+      "name": "CODE - Erro Upstream",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true, data: $json.clientes, meta: { requestId: $json.requestId } } }];"
+      },
+      "id": "0b60d626-a219-4a31-9b6f-e21d4fe77164",
+      "name": "CODE - Montar Sucesso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        1328
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Alimentado por duas origens mutuamente exclusivas (envelope inválido OU falha técnica\n// ao buscar CLIENTES) — ambas conectadas diretamente na mesma entrada deste node (não\n// um Merge; ver sticky note desta workflow para o motivo). Nunca expõe stack, payload\n// bruto do Sheets, credencial ou API key — só code/message já decididos antes.\nreturn [{ json: {\n  ok: false,\n  error: { code: $json.erro_codigo, message: $json.erro_mensagem },\n  meta: { requestId: $json.requestId },\n} }];"
+      },
+      "id": "de1a1d49-1b25-49cf-a900-77ac7ed2e705",
+      "name": "CODE - Montar Erro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "2567686e-eae8-4255-8785-a197ca615003",
+      "name": "RESPOND - Resultado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2352,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## APP-WF019 — Gateway App v1.1 (Fase 1)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Só conhece `clientes.listar`\nnesta fase — qualquer outra operação recebida devolve `INVALID_OPERATION`. Não chamar\nWF001-WF018 a partir daqui.\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS.\n\n**Convergência sem Merge**: `CODE - Montar Erro` e `RESPOND - Resultado` recebem 2\nconexões diretas cada (branches mutuamente exclusivos) — nunca um `n8n-nodes-base.merge`\npara isso (bug conhecido do projeto: Merge com `numberInputs` trava quando só um dos\nbranches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
+        "height": 620,
+        "width": 640
+      },
+      "id": "68a3a5a8-6e0a-4e0a-9c0e-1a2b3c4d5e6f",
+      "name": "NOTA - WF019 v1.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        672,
+        1040
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Gateway App": {
+      "main": [
+        [
+          {
+            "node": "CODE - Validar Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Validar Envelope": {
+      "main": [
+        [
+          {
+            "node": "IF - Envelope Válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Envelope Válido": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Clientes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Clientes": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Clientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Clientes": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Normalizar Clientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Clientes": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Upstream": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Montar Sucesso": {
+      "main": [
+        [
+          {
+            "node": "RESPOND - Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Montar Erro": {
+      "main": [
+        [
+          {
+            "node": "RESPOND - Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "01f3fbad-22d8-4f8f-be72-45b539e06d76",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "4gvaicjXEZDgCcO7",
+  "tags": []
+}

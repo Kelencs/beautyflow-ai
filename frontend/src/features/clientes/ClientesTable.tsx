@@ -7,7 +7,13 @@ interface ClientesTableProps {
   onSelect: (cliente: Cliente) => void;
 }
 
-function formatBRL(value: number): string {
+/**
+ * `null` = a fonte de dados atual ainda não sabe calcular este valor (ex.: modo n8n,
+ * que hoje só lê CLIENTES) — nunca mostrar como "R$ 0,00", que afirmaria um gasto zero
+ * conhecido. "—" é o traço padrão usado no resto da tela para ausência de informação.
+ */
+function formatBRL(value: number | null): string {
+  if (value === null) return "—";
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
@@ -59,7 +65,9 @@ export function ClientesTable({ clientes, onSelect }: ClientesTableProps) {
               <td className="px-4 py-3 text-zinc-600">
                 {cliente.proximoAtendimento ? formatDateNumericBR(parseISODate(cliente.proximoAtendimento)) : "—"}
               </td>
-              <td className="px-4 py-3 text-right tabular-nums text-zinc-600">{cliente.totalAtendimentos}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-zinc-600">
+                {cliente.totalAtendimentos ?? "—"}
+              </td>
               <td className="px-4 py-3 text-right tabular-nums font-semibold text-zinc-900">
                 {formatBRL(cliente.totalGasto)}
               </td>
