@@ -68,11 +68,11 @@ export class DashboardService {
    * já documentada em cada respectivo *Service.
    */
   /**
-   * Async só por causa de ClientesService.listar() (pode chamar o APP-WF019 via HTTP
-   * quando DATA_SOURCE_CLIENTES=n8n — ver clientes.service.ts) — mudança mecânica de
-   * sincronização, sem nenhuma alteração de regra de negócio deste método. As demais
-   * chamadas (`agendaService`/`servicosService`/`profissionaisService`) continuam
-   * síncronas, exatamente como antes.
+   * Async por causa de ClientesService.listar() E ServicosService.listar() (cada um pode
+   * chamar o APP-WF019 via HTTP, quando DATA_SOURCE_CLIENTES/DATA_SOURCE_SERVICOS=n8n —
+   * ver clientes.service.ts/servicos.service.ts) — mudança mecânica de sincronização, sem
+   * nenhuma alteração de regra de negócio deste método. `agendaService`/
+   * `profissionaisService` continuam síncronas, exatamente como antes.
    */
   async obterResumo(
     user: AuthenticatedUser,
@@ -86,7 +86,7 @@ export class DashboardService {
 
     const agendaHoje = this.agendaService.listar(user, { dataInicio: hoje, dataFim: hoje }).data;
     const clientes = (await this.clientesService.listar(user)).data;
-    const servicos = this.servicosService.listar(user).data;
+    const servicos = (await this.servicosService.listar(user)).data;
     const profissionais = this.profissionaisService.listar(user).data;
 
     const confirmadosHoje = agendaHoje.filter((item) => item.status === 'CONFIRMADO').length;

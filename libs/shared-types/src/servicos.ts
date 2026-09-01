@@ -2,13 +2,19 @@
  * Contrato de GET /servicos e GET /servicos/:id (backend NestJS). Mesmo espírito de
  * agenda.ts/clientes.ts: camelCase, sem ids internos de tenant.
  *
- * Schema real da aba SERVICOS (confirmado nos workflows n8n existentes — AGE-WF004/005/
- * 006/007): ID_EMPRESA, ID_SERVICO, NOME, STATUS, DURACAO_MIN, VALOR, e também
- * TEMPO_INTERVALO_MIN (intervalo/buffer entre atendimentos, usado só no cálculo de
- * disponibilidade do WF004 — não faz parte deste contrato porque não foi pedido e não é
- * um dado de catálogo exibido ao usuário). Não existe coluna de descrição na planilha
- * real hoje; `descricao` aqui é um campo do domínio já preparado para quando a aba
- * ganhar essa coluna — nos mocks do backend vem preenchido para dar contexto visual.
+ * Schema real da aba SERVICOS (confirmado diretamente pela planilha): ID_SERVICO,
+ * ID_EMPRESA, NOME, CATEGORIA, DESCRICAO, DURACAO_MIN, TEMPO_INTERVALO_MIN, VALOR,
+ * STATUS, DATA_CADASTRO, ULTIMA_ATUALIZACAO.
+ *
+ * `descricao` **existe** na planilha real (`DESCRICAO`) — uma premissa anterior deste
+ * projeto de que a coluna não existia estava errada e foi corrigida; o valor vem
+ * normalizado (trim, vazio/ausente vira `null`) via APP-WF019 quando a fonte é `n8n`.
+ *
+ * `CATEGORIA`, `TEMPO_INTERVALO_MIN` (intervalo/buffer entre atendimentos, usado só no
+ * cálculo de disponibilidade do WF004), `DATA_CADASTRO` e `ULTIMA_ATUALIZACAO` existem
+ * na planilha mas **não fazem parte deste contrato** — decisão de escopo (não foram
+ * pedidos como dado de catálogo exibido ao usuário), não um gap a corrigir. Adicioná-los
+ * ao contrato público é decisão de produto para uma fase futura, não desta tarefa.
  */
 export type StatusServico = "ATIVO" | "INATIVO";
 

@@ -5,8 +5,8 @@
  * frontend. Só mudam se essa fronteira mudar.
  */
 
-/** Operações reconhecidas pelo APP-WF019 nesta fase — só existe `clientes.listar`. */
-export type N8nGatewayOperation = 'clientes.listar';
+/** Operações reconhecidas pelo APP-WF019 nesta fase (Fase 2: + `servicos.listar`). */
+export type N8nGatewayOperation = 'clientes.listar' | 'servicos.listar';
 
 /**
  * Código de erro técnico do envelope. `AUTH_FAILED` nunca aparece dentro de um envelope
@@ -90,4 +90,28 @@ export interface N8nGatewayClienteIntegracao {
   clienteDesde: string | null;
   ultimoAtendimento: string | null;
   observacoes: string | null;
+}
+
+/**
+ * Shape de integração de um serviço, já normalizado pelo APP-WF019 a partir da aba
+ * SERVICOS — nunca inclui `ID_EMPRESA` nem colunas técnicas. Schema real confirmado:
+ * `ID_SERVICO`, `ID_EMPRESA`, `NOME`, `CATEGORIA`, `DESCRICAO`, `DURACAO_MIN`,
+ * `TEMPO_INTERVALO_MIN`, `VALOR`, `STATUS`, `DATA_CADASTRO`, `ULTIMA_ATUALIZACAO`.
+ * `CATEGORIA`, `TEMPO_INTERVALO_MIN`, `DATA_CADASTRO` e `ULTIMA_ATUALIZACAO` existem na
+ * planilha mas não fazem parte do contrato público `Servico` — decisão de escopo (não
+ * foram pedidos, não é dado de catálogo exibido ao usuário), nem chegam a ser lidos pelo
+ * workflow. `descricao` **existe** na aba real (uma premissa anterior errada dizia que
+ * não existia) — vem já normalizada pelo WF019 (`trim()`, vazio/ausente vira `null`,
+ * nunca fabricada/substituída pelo nome). `duracaoMinutos`/`valor` já chegam validados
+ * como number finito e não-negativo — o WF019 recusa a operação inteira (não apenas
+ * descarta a linha) quando algum valor não normaliza (ver `CODE - Normalizar Serviços`),
+ * então nunca chegam aqui como NaN/negativo.
+ */
+export interface N8nGatewayServicoIntegracao {
+  idServico: string;
+  nome: string;
+  descricao: string | null;
+  status: string;
+  duracaoMinutos: number;
+  valor: number;
 }

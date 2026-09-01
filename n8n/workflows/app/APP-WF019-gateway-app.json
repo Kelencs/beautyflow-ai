@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida nesta Fase 1 — qualquer outra vira INVALID_OPERATION.\n// Não criar branches vazios de Agenda/Financeiro/etc. aqui (ver sticky note desta\n// workflow): adicionar a próxima operação exige voltar a este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
+        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida nesta Fase 1 — qualquer outra vira INVALID_OPERATION.\n// Não criar branches vazios de Agenda/Financeiro/etc. aqui (ver sticky note desta\n// workflow): adicionar a próxima operação exige voltar a este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar', 'servicos.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
       },
       "id": "f6375890-a627-40e3-bf78-711eb5b04a8d",
       "name": "CODE - Validar Envelope",
@@ -69,6 +69,73 @@
       "position": [
         1152,
         1536
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c1",
+                    "leftValue": "={{ $json.operacao }}",
+                    "rightValue": "clientes.listar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "clientes.listar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c2",
+                    "leftValue": "={{ $json.operacao }}",
+                    "rightValue": "servicos.listar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "servicos.listar"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "id": "b9d7ee76-cbdb-4c5b-b5c5-87a66c663475",
+      "name": "SWITCH - Operação",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1152,
+        1728
       ]
     },
     {
@@ -163,7 +230,131 @@
     },
     {
       "parameters": {
-        "jsCode": "const requestId = $('CODE - Validar Envelope').first().json.requestId;\nreturn [{ json: {\n  erro_codigo: 'UPSTREAM_ERROR',\n  erro_mensagem: 'Não foi possível consultar os clientes no momento.',\n  requestId,\n} }];"
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1181056974,
+          "mode": "list",
+          "cachedResultName": "SERVICOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1181056974"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "383dcd42-aab9-43cc-a918-d83eef71d1f1",
+      "name": "GS - Buscar Serviços",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        1728
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0122d378-61d4-4d1e-b2d9-d2fd56966324",
+      "name": "IF - Erro Técnico Ao Buscar Serviços",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SERVICOS: schema real confirmado (corrigido nesta tarefa) — ID_SERVICO, ID_EMPRESA,\n// NOME, CATEGORIA, DESCRICAO, DURACAO_MIN, TEMPO_INTERVALO_MIN, VALOR, STATUS,\n// DATA_CADASTRO, ULTIMA_ATUALIZACAO. DESCRICAO EXISTE na aba real (premissa anterior de\n// que não existia estava errada) e agora é mapeada. CATEGORIA, TEMPO_INTERVALO_MIN,\n// DATA_CADASTRO e ULTIMA_ATUALIZACAO existem na fonte mas NÃO fazem parte do contrato\n// público `Servico` — deliberadamente nunca lidas/mapeadas aqui (decisão de escopo, não\n// erro: adicioná-las ao contrato é decisão de produto fora desta tarefa). Nunca inclui\n// ID_EMPRESA nem colunas técnicas do Sheets.\n//\n// Hardening (v1.3): ID_SERVICO, NOME, STATUS, DURACAO_MIN e VALOR são obrigatórios.\n// STATUS só aceita exatamente 'ATIVO'/'INATIVO' (trim+uppercase, nunca outro valor vira\n// 'ATIVO' por default — isso mascararia dado corrompido da fonte). Se QUALQUER serviço\n// real da empresa tiver um desses campos inválido, a operação INTEIRA falha com\n// UPSTREAM_ERROR — nunca devolve uma lista parcial silenciosamente incompleta.\n//\n// Hardening (v1.4): distingue o placeholder LEGÍTIMO do alwaysOutputData (item sem\n// NENHUM campo operacional de serviço presente — busca realmente vazia) de uma linha\n// real corrompida que tem algum campo preenchido mas ID_SERVICO vazio/ausente. O\n// segundo caso NUNCA é tratado como \"nenhum serviço\" — é dado inválido, mesma falha de\n// operação inteira das demais validações.\n//\n// Correção v1.5: DESCRICAO é mapeada (valor preenchido -> string normalizada/trim; vazio\n// ou ausente -> null; nunca fabricada, nunca substituída pelo NOME). DESCRICAO é\n// OPCIONAL — vazia/ausente nunca falha a operação (diferente de NOME/STATUS/\n// DURACAO_MIN/VALOR) — mas conta como \"campo operacional presente\" na distinção\n// placeholder x linha corrompida (v1.4), já que também é um dado real da linha.\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nconst linhas = $input.all().map((item) => item.json);\n\nconst STATUS_VALIDOS = new Set(['ATIVO', 'INATIVO']);\n\nfunction campoPresente(valor) {\n  if (valor === undefined || valor === null) return false;\n  if (typeof valor === 'string' && valor.trim() === '') return false;\n  return true;\n}\n\nfunction normalizarValorMonetario(valor) {\n  if (typeof valor === 'number') return valor;\n  let texto = String(valor == null ? '' : valor).trim().replace(/^R\\$\\s*/i, '');\n  if (texto.includes('.') && texto.includes(',')) {\n    texto = texto.replace(/\\./g, '').replace(',', '.');\n  } else if (texto.includes(',')) {\n    texto = texto.replace(',', '.');\n  }\n  return Number(texto);\n}\n\nlet existeInvalido = false;\nconst servicos = [];\n\nfor (const row of linhas) {\n  if (!row) continue;\n\n  const temIdServico = campoPresente(row.ID_SERVICO);\n  const temOutroCampo =\n    campoPresente(row.NOME) ||\n    campoPresente(row.STATUS) ||\n    campoPresente(row.DURACAO_MIN) ||\n    campoPresente(row.VALOR) ||\n    campoPresente(row.DESCRICAO);\n\n  if (!temIdServico && !temOutroCampo) {\n    // Placeholder real do alwaysOutputData: busca legitimamente vazia — não é erro, não\n    // é um serviço. Ignorado.\n    continue;\n  }\n\n  if (!temIdServico) {\n    // Linha real (tem algum campo operacional preenchido) mas sem ID_SERVICO — dado\n    // corrompido da fonte, nunca \"nenhum serviço\".\n    existeInvalido = true;\n    continue;\n  }\n\n  const nome = typeof row.NOME === 'string' ? row.NOME.trim() : '';\n  const status = typeof row.STATUS === 'string' ? row.STATUS.trim().toUpperCase() : '';\n  const duracaoMinutos = Number(row.DURACAO_MIN);\n  const valor = normalizarValorMonetario(row.VALOR);\n  const descricaoBruta = typeof row.DESCRICAO === 'string' ? row.DESCRICAO.trim() : '';\n  const descricao = descricaoBruta ? descricaoBruta : null;\n\n  if (\n    !nome ||\n    !STATUS_VALIDOS.has(status) ||\n    !Number.isFinite(duracaoMinutos) ||\n    duracaoMinutos < 0 ||\n    !Number.isFinite(valor) ||\n    valor < 0\n  ) {\n    existeInvalido = true;\n    continue;\n  }\n\n  servicos.push({ idServico: String(row.ID_SERVICO), nome, status, duracaoMinutos, valor, descricao });\n}\n\nif (existeInvalido) {\n  // Mensagem genérica de propósito — nunca expõe qual linha/ID_SERVICO/ID_EMPRESA/\n  // planilha está com o dado inválido.\n  return [{ json: {\n    erro_codigo: 'UPSTREAM_ERROR',\n    erro_mensagem: 'Um ou mais serviços cadastrados possuem dados inválidos.',\n    requestId,\n  } }];\n}\n\nreturn [{ json: { servicos, requestId } }];"
+      },
+      "id": "c55fb179-07b7-4a89-b5c6-215e54afef44",
+      "name": "CODE - Normalizar Serviços",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5e3cbf00-7420-4224-873b-1d721b164049",
+      "name": "IF - Serviço Inválido Na Fonte",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compartilhado entre clientes.listar e servicos.listar (branches mutuamente\n// exclusivos por execução — só um dos dois IFs de erro técnico dispara) — mensagem\n// genérica de propósito, não específica de uma fonte.\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nreturn [{ json: {\n  erro_codigo: 'UPSTREAM_ERROR',\n  erro_mensagem: 'Não foi possível consultar os dados no momento.',\n  requestId,\n} }];"
       },
       "id": "de843cb6-0377-440b-a219-fcfb43a80e6d",
       "name": "CODE - Erro Upstream",
@@ -176,7 +367,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { ok: true, data: $json.clientes, meta: { requestId: $json.requestId } } }];"
+        "jsCode": "// Compartilhado entre clientes.listar e servicos.listar (branches mutuamente\n// exclusivos por execução — só um dos dois normalizadores roda) — lê qualquer um dos\n// dois campos que o normalizador correspondente tiver produzido.\nreturn [{ json: { ok: true, data: $json.clientes ?? $json.servicos ?? [], meta: { requestId: $json.requestId } } }];"
       },
       "id": "0b60d626-a219-4a31-9b6f-e21d4fe77164",
       "name": "CODE - Montar Sucesso",
@@ -219,12 +410,12 @@
     },
     {
       "parameters": {
-        "content": "## APP-WF019 — Gateway App v1.1 (Fase 1)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Só conhece `clientes.listar`\nnesta fase — qualquer outra operação recebida devolve `INVALID_OPERATION`. Não chamar\nWF001-WF018 a partir daqui.\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS.\n\n**Convergência sem Merge**: `CODE - Montar Erro` e `RESPOND - Resultado` recebem 2\nconexões diretas cada (branches mutuamente exclusivos) — nunca um `n8n-nodes-base.merge`\npara isso (bug conhecido do projeto: Merge com `numberInputs` trava quando só um dos\nbranches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
-        "height": 620,
-        "width": 640
+        "content": "## APP-WF019 — Gateway App v1.5 (Fase 2 + hardening)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Conhece `clientes.listar` e\n`servicos.listar` nesta fase — qualquer outra operação recebida devolve\n`INVALID_OPERATION`. Não chamar WF001-WF018 a partir daqui.\n\n**Schema real SERVICOS (corrigido v1.5)**: ID_SERVICO, ID_EMPRESA, NOME, CATEGORIA,\nDESCRICAO, DURACAO_MIN, TEMPO_INTERVALO_MIN, VALOR, STATUS, DATA_CADASTRO,\nULTIMA_ATUALIZACAO. DESCRICAO existe de fato (premissa anterior de que não existia\nestava errada) e agora é mapeada (vazio/ausente -> null, nunca fabricada). CATEGORIA,\nTEMPO_INTERVALO_MIN, DATA_CADASTRO e ULTIMA_ATUALIZACAO existem na fonte mas não fazem\nparte do contrato público `Servico` — decisão de escopo, não erro; não lidas aqui.\n\n**Roteamento**: `SWITCH - Operação` decide entre os dois catálogos logo após a\nvalidação do envelope — como `CODE - Validar Envelope` já garante que só uma operação\nsuportada chega até aqui, o fallback do Switch é `none` (nunca deveria disparar).\n`CODE - Erro Upstream` e `CODE - Montar Sucesso` são compartilhados entre as duas\noperações, alimentados por conexões diretas (nunca um `Merge` — mesmo padrão já\nusado para convergência de branches mutuamente exclusivos).\n\n**Hardening de Serviços (v1.3)**: `CODE - Normalizar Serviços` valida NOME/STATUS/\nDURACAO_MIN/VALOR de cada serviço real da empresa — STATUS só aceita 'ATIVO'/'INATIVO'\nexplícitos (nunca vira 'ATIVO' por default), e qualquer campo obrigatório inválido faz\n`IF - Serviço Inválido Na Fonte` desviar a operação INTEIRA para `CODE - Montar Erro`\n(UPSTREAM_ERROR) — nunca uma lista parcial silenciosamente incompleta.\n\n**Hardening v1.4**: distingue o placeholder LEGÍTIMO do `alwaysOutputData` (item sem\nNENHUM campo operacional de serviço presente — busca realmente vazia, sucesso com\n`data: []`) de uma linha real corrompida que tem algum campo preenchido\n(NOME/STATUS/DURACAO_MIN/VALOR) mas `ID_SERVICO` vazio/ausente — esse segundo caso NUNCA\né tratado como \"nenhum serviço\", é dado inválido e falha a operação inteira, mesma regra\ndas demais validações.\n\nAdicionar uma 3ª operação exige: (1) um novo par de nodes `GS - Buscar <Recurso>`/\n`IF - Erro Técnico`, (2) uma nova regra no `SWITCH - Operação`, (3) atualizar\n`OPERACOES_SUPORTADAS` em `CODE - Validar Envelope`, (4) ligar o normalizador\ncorrespondente às conexões extras de `CODE - Erro Upstream`/`CODE - Montar Sucesso`.\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS.\n\n**Convergência sem Merge**: `CODE - Montar Erro` e `RESPOND - Resultado` recebem 2\nconexões diretas cada (branches mutuamente exclusivos) — nunca um `n8n-nodes-base.merge`\npara isso (bug conhecido do projeto: Merge com `numberInputs` trava quando só um dos\nbranches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
+        "height": 760,
+        "width": 660
       },
       "id": "68a3a5a8-6e0a-4e0a-9c0e-1a2b3c4d5e6f",
-      "name": "NOTA - WF019 v1.0",
+      "name": "NOTA - WF019 v1.5",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
@@ -261,7 +452,7 @@
       "main": [
         [
           {
-            "node": "GS - Buscar Clientes",
+            "node": "SWITCH - Operação",
             "type": "main",
             "index": 0
           }
@@ -269,6 +460,24 @@
         [
           {
             "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SWITCH - Operação": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Clientes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GS - Buscar Serviços",
             "type": "main",
             "index": 0
           }
@@ -306,6 +515,64 @@
     },
     "CODE - Normalizar Clientes": {
       "main": [
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Serviços": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Serviços",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Serviços": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Normalizar Serviços",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Serviços": {
+      "main": [
+        [
+          {
+            "node": "IF - Serviço Inválido Na Fonte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Serviço Inválido Na Fonte": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "CODE - Montar Sucesso",
@@ -355,7 +622,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "01f3fbad-22d8-4f8f-be72-45b539e06d76",
+  "versionId": "844b4fb8-67c1-464e-94ea-4d4f5ad33d45",
   "meta": {
     "templateCredsSetupCompleted": false,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"

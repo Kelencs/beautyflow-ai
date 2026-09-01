@@ -10,15 +10,19 @@ import { ServicosService } from './servicos.service';
 export class ServicosController {
   constructor(private readonly servicosService: ServicosService) {}
 
-  /** GET /servicos — não aceita id_empresa por querystring; vem sempre de @CurrentUser(). */
+  /**
+   * GET /servicos — não aceita id_empresa por querystring; vem sempre de @CurrentUser().
+   * Assíncrono porque ServicosService pode chamar o APP-WF019 via HTTP quando
+   * DATA_SOURCE_SERVICOS=n8n (ver servicos.service.ts).
+   */
   @Get()
-  listar(@CurrentUser() user: AuthenticatedUser): ServicosResponse {
+  listar(@CurrentUser() user: AuthenticatedUser): Promise<ServicosResponse> {
     return this.servicosService.listar(user);
   }
 
   /** GET /servicos/:id — 404 se o serviço não existir na empresa do usuário autenticado. */
   @Get(':id')
-  buscarPorId(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Servico {
+  buscarPorId(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<Servico> {
     return this.servicosService.buscarPorId(user, id);
   }
 }

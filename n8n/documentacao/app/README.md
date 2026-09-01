@@ -1,6 +1,6 @@
 # App — WF019
 
-> **Sincronização:** 2026-08-27
+> **Sincronização:** 2026-08-31
 > **Fonte da verdade:** JSON em `n8n/workflows/app/`.
 
 ## Visão geral
@@ -14,12 +14,12 @@ chamado por WF001–WF018.
 
 | ID | Workflow | Arquivo | Responsabilidade principal | `active` no JSON |
 |---|---|---|---|---|
-| WF019 | Gateway App | `APP-WF019-gateway-app.json` | Autenticar, validar e rotear chamadas do NestJS para dados operacionais — só `clientes.listar` nesta fase | `false` |
+| WF019 | Gateway App | `APP-WF019-gateway-app.json` | Autenticar, validar e rotear chamadas do NestJS para dados operacionais — `clientes.listar` e `servicos.listar` nesta fase | `false` |
 
 ## Integrações reais
 
-- Google Sheets: `CLIENTES` (leitura, mesmo credential `Google Sheets account` já usado
-  pelos demais módulos).
+- Google Sheets: `CLIENTES` e `SERVICOS` (leitura, mesmo credential `Google Sheets
+  account` já usado pelos demais módulos).
 
 **Nenhuma integração com WhatsApp, Gemini, Google Calendar ou Google Drive.**
 
@@ -34,7 +34,9 @@ envelope inválido? ── sim ──► monta erro (VALIDATION_ERROR/TENANT_REQ
         │
        não
         ↓
-busca CLIENTES filtrado por ID_EMPRESA
+SWITCH - Operação (clientes.listar | servicos.listar)
+        ↓
+busca CLIENTES ou SERVICOS filtrado por ID_EMPRESA
         ↓
 falha técnica? ── sim ──► monta erro (UPSTREAM_ERROR)
         │

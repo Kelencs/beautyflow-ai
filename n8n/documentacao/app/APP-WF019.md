@@ -1,15 +1,16 @@
 # WF019 — APP - WF019 - Gateway App
 
-> **Sincronização:** 2026-08-28
+> **Sincronização:** 2026-08-31
 > **Fonte da verdade:** [`APP-WF019-gateway-app.json`](../../workflows/app/APP-WF019-gateway-app.json) no branch `main`.
-> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado (Fase 1). Regras ou operações que não aparecem no workflow atual não são tratadas como implementadas.
+> **Escopo:** este documento descreve o comportamento efetivamente presente no JSON versionado (Fase 2). Regras ou operações que não aparecem no workflow atual não são tratadas como implementadas.
 
 ## 1. Objetivo
 
 Ser a camada de integração entre o backend NestJS do BeautyFlow App e os dados
 operacionais do n8n, autenticando a chamada, validando o envelope de requisição e
-devolvendo um envelope de resposta padronizado. Nesta Fase 1, conhece somente
-`clientes.listar`.
+devolvendo um envelope de resposta padronizado. Nesta Fase 2, conhece `clientes.listar`
+(Fase 1, validado em homologação real) e `servicos.listar` (Fase 2, ainda não testado em
+ambiente real — ver seção 11).
 
 ## 2. Identificação técnica
 
@@ -33,8 +34,9 @@ Corpo da requisição (JSON), enviado exclusivamente pelo backend NestJS
 }
 ```
 
-`idEmpresa` nunca vem do browser — o NestJS já o resolveu via Supabase Auth
-(`SupabaseAuthGuard`/`@CurrentUser()`) antes de chamar o gateway.
+`operacao` também aceita `"servicos.listar"` (Fase 2) — mesmo shape de requisição, só o
+valor do campo muda. `idEmpresa` nunca vem do browser — o NestJS já o resolveu via
+Supabase Auth (`SupabaseAuthGuard`/`@CurrentUser()`) antes de chamar o gateway.
 
 ## 4. Fluxo real do workflow
 
@@ -43,22 +45,32 @@ Corpo da requisição (JSON), enviado exclusivamente pelo backend NestJS
    `X-BeautyFlow-Gateway-Key` estiver ausente/incorreto.
 2. `CODE - Validar Envelope` normaliza `operacao`/`idEmpresa`/`requestId`/`dados` e
    calcula `erro_codigo`: `VALIDATION_ERROR` se `operacao` ausente; `TENANT_REQUIRED` se
-   `idEmpresa` ausente; `INVALID_OPERATION` se a operação não for `clientes.listar`.
+   `idEmpresa` ausente; `INVALID_OPERATION` se a operação não for `clientes.listar` nem
+   `servicos.listar`.
 3. `IF - Envelope Válido` decide: inválido vai direto para `CODE - Montar Erro`; válido
-   segue para a busca.
-4. `GS - Buscar Clientes` lê `CLIENTES` filtrando por `ID_EMPRESA = idEmpresa`
-   (`filtersUI`), com `alwaysOutputData` + `onError: continueRegularOutput` (mesmo padrão
-   corrigido já usado em CLI-WF008/ADM-WF017/ADM-WF018 do projeto). **Validado em teste
-   real** (ver seção 4.1): EMP001/EMP002 corretamente isolados.
-5. `IF - Erro Técnico Ao Buscar Clientes` verifica `$json.error` explicitamente — falha
-   técnica vai para `CODE - Erro Upstream` (`UPSTREAM_ERROR`); resultado normal (inclusive
-   0 linhas legítimas) segue para a normalização.
-6. `CODE - Normalizar Clientes` descarta o item-placeholder de uma busca vazia (sem
-   `ID_CLIENTE`) e mapeia cada linha real para o shape de integração — nunca inclui
-   `ID_EMPRESA` nem colunas técnicas.
-7. `CODE - Montar Sucesso` / `CODE - Montar Erro` produzem o envelope final; ambos
-   convergem em `RESPOND - Resultado` (sem node `Merge` — conexão direta múltipla, ver
-   seção 5), que responde ao Webhook (ver seção 4.2).
+   segue para `SWITCH - Operação`.
+4. `SWITCH - Operação` (Fase 2) roteia por `$json.operacao` — `clientes.listar` para o
+   branch de Clientes, `servicos.listar` para o branch de Serviços. `fallbackOutput:
+   "none"`: como `CODE - Validar Envelope` já garante que só uma operação suportada
+   chega até aqui, o fallback nunca deveria disparar na prática.
+5. **Branch Clientes**: `GS - Buscar Clientes` lê `CLIENTES` filtrando por `ID_EMPRESA =
+   idEmpresa` (`filtersUI`), com `alwaysOutputData` + `onError: continueRegularOutput`
+   (mesmo padrão corrigido já usado em CLI-WF008/ADM-WF017/ADM-WF018 do projeto).
+   **Validado em teste real** (ver seção 4.1): EMP001/EMP002 corretamente isolados.
+   `IF - Erro Técnico Ao Buscar Clientes` verifica `$json.error` explicitamente — falha
+   técnica vai para `CODE - Erro Upstream`; resultado normal (inclusive 0 linhas
+   legítimas) segue para `CODE - Normalizar Clientes`, que descarta o item-placeholder de
+   uma busca vazia (sem `ID_CLIENTE`) e mapeia cada linha real para o shape de
+   integração — nunca inclui `ID_EMPRESA` nem colunas técnicas.
+6. **Branch Serviços** (Fase 2, ver seção 11 para detalhes): mesma estrutura do branch de
+   Clientes — `GS - Buscar Serviços` (filtro `ID_EMPRESA`) → `IF - Erro Técnico Ao Buscar
+   Serviços` → `CODE - Normalizar Serviços`.
+7. `CODE - Erro Upstream` e `CODE - Montar Sucesso` são **compartilhados** entre os dois
+   branches (cada um recebe 2 conexões diretas — uma de cada branch, nunca simultâneas na
+   mesma execução). `CODE - Montar Sucesso` lê `$json.clientes ?? $json.servicos` —
+   qualquer um dos dois normalizadores pode ter produzido o campo. Ambos convergem em
+   `RESPOND - Resultado` (sem node `Merge` — conexão direta múltipla, ver seção 5), que
+   responde ao Webhook (ver seção 4.2).
 
 ### 4.1 Resultado do primeiro teste real de integração
 
@@ -110,18 +122,66 @@ isolado no node de resposta.
   no histórico de correção do WF016 (Merge com `numberInputs` nunca satisfeito quando só
   um branch dispara por execução).
 - `ID_EMPRESA` nunca aparece na resposta.
-- `INVALID_OPERATION` cobre qualquer operação diferente de `clientes.listar` — nenhum
-  branch vazio para operações futuras (Agenda/Financeiro/etc.) existe neste JSON.
+- `INVALID_OPERATION` cobre qualquer operação diferente de `clientes.listar`/
+  `servicos.listar` — nenhum branch vazio para operações futuras (Agenda/Financeiro/etc.)
+  existe neste JSON. Adicionar uma 3ª operação exige: novo par `GS - Buscar
+  <Recurso>`/`IF - Erro Técnico`, nova regra em `SWITCH - Operação`, atualizar
+  `OPERACOES_SUPORTADAS` em `CODE - Validar Envelope`, e ligar o novo normalizador às
+  conexões extras de `CODE - Erro Upstream`/`CODE - Montar Sucesso` (ver sticky note do
+  workflow).
 - O Webhook nunca deve responder com o payload bruto do próprio trigger — ver seção 4.2.
   Isso inclui, comprovado em teste real, o header de autenticação: nunca usar
   `responseMode: "lastNode"` neste workflow.
 
 ## 6. Integrações e dependências
 
-- Google Sheets: `CLIENTES` (leitura), credencial reutilizada `Google Sheets account`
-  (mesmo id já usado por WF004/WF006/WF007/WF008/WF009/WF010/WF011/WF013/WF014/WF015 —
-  nenhuma credencial nova criada).
+- Google Sheets: `CLIENTES` e `SERVICOS` (leitura), credencial reutilizada `Google Sheets
+  account` (mesmo id já usado por WF004/WF006/WF007/WF008/WF009/WF010/WF011/WF013/
+  WF014/WF015 — nenhuma credencial nova criada).
 - Nenhuma chamada a WF001–WF018.
+
+### 6.2 Schema real SERVICOS × contrato público (Fase 2, corrigido)
+
+**Correção de premissa**: uma auditoria anterior (baseada só em `AGE-WF004-consultar-
+disponibilidade.json`, `COM-WF013-lembrete.json` e `COM-WF014-pesquisa.json` — workflows
+que só leem um subconjunto das colunas) concluiu incorretamente que `DESCRICAO` não
+existia na aba real. **A planilha `SERVICOS` real confirmada tem exatamente 11 colunas**:
+`ID_SERVICO`, `ID_EMPRESA`, `NOME`, `CATEGORIA`, `DESCRICAO`, `DURACAO_MIN`,
+`TEMPO_INTERVALO_MIN`, `VALOR`, `STATUS`, `DATA_CADASTRO`, `ULTIMA_ATUALIZACAO`.
+`DESCRICAO` existe de fato e agora é mapeada corretamente (corrigido nesta tarefa).
+
+| Coluna Sheets | Campo de integração (WF019) | Campo público `Servico` | Transformação | Obrigatório? |
+|---|---|---|---|---|
+| `ID_SERVICO` | `idServico` | `idServico` | `String(...)` | Sim — ausência = linha ignorada como busca vazia SE nenhum outro campo estiver presente; caso contrário, linha corrompida (ver seção 11) |
+| `ID_EMPRESA` | — (removido) | — (nunca exposto) | usado só como filtro (`filtersUI`) | — |
+| `NOME` | `nome` | `nome` | `trim()`; vazio/ausente **falha a operação** (v1.3) | Sim |
+| `CATEGORIA` | **não lido** | **não existe no contrato** | existe na aba real; adicioná-la ao contrato público é decisão de produto fora desta tarefa | Não se aplica |
+| `DESCRICAO` | `descricao` | `descricao` | `trim()`; vazio/ausente vira `null` — nunca fabricada, nunca substituída pelo `NOME`. **Opcional**: sozinha, nunca falha a operação (corrigido nesta tarefa — antes era sempre `null` por premissa errada) | Não (opcional) |
+| `DURACAO_MIN` | `duracaoMinutos` | `duracaoMinutos` | `Number(...)`; não finito/negativo **falha a operação** (v1.3, nunca 0 fabricado) | Sim |
+| `TEMPO_INTERVALO_MIN` | **não lido** | **não existe no contrato** | usado só pelo cálculo de disponibilidade do WF004 — fora do escopo de `servicos.listar` | Não se aplica |
+| `VALOR` | `valor` | `valor` | parse defensivo BR-currency-aware (`"R$ 1.250,50"` → `1250.5`); não finito/negativo **falha a operação** (v1.3) | Sim |
+| `STATUS` | `status` | `status` | `trim().toUpperCase()`; só `'ATIVO'`/`'INATIVO'` aceitos — qualquer outro valor **falha a operação** (v1.3, nunca vira `'ATIVO'` por default) | Sim |
+| `DATA_CADASTRO` | **não lido** | **não existe no contrato** | existe na aba real; fora do escopo desta operação | Não se aplica |
+| `ULTIMA_ATUALIZACAO` | **não lido** | **não existe no contrato** | existe na aba real; fora do escopo desta operação | Não se aplica |
+
+`CATEGORIA`, `TEMPO_INTERVALO_MIN`, `DATA_CADASTRO` e `ULTIMA_ATUALIZACAO` **nunca são
+lidos** por `CODE - Normalizar Serviços` — não é um gap acidental, é escopo deliberado
+desta operação (adicioná-los ao contrato público `Servico` é decisão de produto para uma
+fase futura, não erro a corrigir agora).
+
+**Hardening v1.3**: até a correção desta tarefa, uma linha com `STATUS`/`DURACAO_MIN`/
+`VALOR` inválido era silenciosamente descartada (a operação continuava, só com menos
+itens). Isso mascarava dado corrompido da fonte. Agora, qualquer serviço real da empresa
+(linha com `ID_SERVICO`) com um campo obrigatório inválido faz a operação **inteira**
+falhar com `UPSTREAM_ERROR` — nunca uma lista parcial silenciosamente incompleta. Só a
+linha-placeholder do `alwaysOutputData` (busca legitimamente vazia, sem `ID_SERVICO`)
+continua sendo tratada como sucesso com `data: []`.
+
+**`WF004` filtra `GS - Buscar Serviço` também por `STATUS = 'ATIVO'`** (é a regra própria
+dele para cálculo de disponibilidade) — `GS - Buscar Serviços` do WF019 **não** replica
+esse filtro: `servicos.listar` devolve o catálogo inteiro (ativos e inativos), mesmo
+comportamento que o mock do App já tem hoje (`SERVICOS_MOCK_RECORDS` inclui `SRV007`/
+`SRV008` como `INATIVO`).
 
 ### 6.1 Credencial × planilha (não confundir)
 
@@ -157,6 +217,12 @@ Envelope de sucesso — **este objeto é literalmente o corpo HTTP** (`RESPOND -
 
 ```json
 { "ok": true, "data": [ { "idCliente": "...", "nome": "...", "...": "..." } ], "meta": { "requestId": "..." } }
+```
+
+`servicos.listar` devolve o mesmo shape de envelope, com `data` no formato:
+
+```json
+{ "ok": true, "data": [ { "idServico": "...", "nome": "...", "status": "ATIVO", "duracaoMinutos": 120, "valor": 120 } ], "meta": { "requestId": "..." } }
 ```
 
 Envelope de erro — mesmo mecanismo de resposta, mesmo formato:
@@ -200,17 +266,67 @@ durante o teste.
    reaproveite nenhum valor antigo — e associá-la ao node `Webhook - Gateway App`
    (o reimport traz de volta o placeholder `CONFIGURAR_CREDENCIAL_HEADER_AUTH`, que
    precisa ser substituído pela credencial real de novo).
-3. **Repetir o reapontamento do `documentId`** de `GS - Buscar Clientes` para a planilha
-   `BEAUTYFLOW_HOMOLOGACAO` (já existe e já foi usada com sucesso — ver seção 6.1) — o
-   reimport reverte esse campo para o valor de produção gravado neste arquivo
+3. **Repetir o reapontamento do `documentId`** de `GS - Buscar Clientes` **e (novo na
+   Fase 2) de `GS - Buscar Serviços`** para a planilha `BEAUTYFLOW_HOMOLOGACAO` (já
+   existe e já foi usada com sucesso em `clientes.listar` — ver seção 6.1). O reimport
+   reverte os dois campos para o valor de produção gravado neste arquivo
    (`1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E`). **Não** testar contra produção.
+   `servicos.listar` ainda não foi testado em nenhum ambiente real — ver seção 11.
 4. Copiar a URL real do Webhook (aba "Produção" do node, após ativar) para
    `N8N_GATEWAY_URL` no `.env` local do backend, e o novo valor da credencial (passo 2)
    para `N8N_GATEWAY_API_KEY` — nunca commitar esses valores.
 5. Manter o workflow inativo (`active: false`, valor já trazido pelo reimport) até
    revisão manual sua; ativar só quando decidir rodar o próximo teste real.
 
-## 10. Critério de manutenção desta documentação
+## 11. `servicos.listar` (Fase 2 — implementado, ainda não testado em ambiente real)
+
+- **Schema real × contrato público**: ver seção 6.2.
+- **`descricao` (corrigido — não é mais tratada como gap)**: a aba `SERVICOS` real **tem**
+  a coluna `DESCRICAO` — uma premissa anterior deste projeto, de que a coluna não
+  existia, estava errada. `CODE - Normalizar Serviços` agora mapeia `DESCRICAO` →
+  `descricao`: valor preenchido vira string normalizada (`trim()`), vazio/ausente vira
+  `null` — nunca fabricada, nunca substituída pelo `NOME`. `descricao` é opcional:
+  sozinha, nunca faz a operação falhar (diferente de `NOME`/`STATUS`/`DURACAO_MIN`/
+  `VALOR`), mas conta como "campo operacional presente" na distinção placeholder ×
+  linha corrompida do hardening v1.4 (uma linha com `DESCRICAO` preenchida mas
+  `ID_SERVICO` vazio também é tratada como dado corrompido, não como busca vazia). O
+  frontend (`ServicoCardList.tsx`/`ServicoDetailsDrawer.tsx`) já renderiza `descricao`
+  condicionalmente (`{servico.descricao && ...}`) desde antes — nenhuma mudança de
+  frontend foi necessária.
+- **`categoria`/`dataCadastro`/`ultimaAtualizacao` — não fazem parte do contrato**:
+  `CATEGORIA`, `DATA_CADASTRO` e `ULTIMA_ATUALIZACAO` existem na aba real, mas o
+  contrato público `Servico` não tem campos correspondentes. Documentado como fonte
+  existente, não exposta — adicioná-los é decisão de produto para uma fase futura, não
+  tomada nesta tarefa.
+- **Validação estrita de `STATUS`/`VALOR`/`DURACAO_MIN`/`NOME` (hardening v1.3)**:
+  `CODE - Normalizar Serviços` exige `NOME` não vazio, `STATUS` explicitamente
+  `'ATIVO'`/`'INATIVO'` (trim+uppercase; qualquer outro valor — `''`, `'ATIV'`,
+  `'PENDENTE'`, `'DESATIVADO'` etc. — nunca vira `'ATIVO'` por default) e
+  `VALOR`/`DURACAO_MIN` finitos e não-negativos (`VALOR` aceita formato BR:
+  `"R$ 1.250,50"`, `"90,50"`). **Qualquer serviço real (com `ID_SERVICO`) que falhe uma
+  dessas checagens faz a operação inteira responder `UPSTREAM_ERROR`** — nunca uma lista
+  parcial silenciosa com o item corrompido só "sumindo". A mensagem de erro é genérica
+  (`"Um ou mais serviços cadastrados possuem dados inválidos."`) e nunca expõe
+  `ID_SERVICO`/`ID_EMPRESA`/planilha/linha bruta. `IF - Serviço Inválido Na Fonte` é o
+  node que decide entre esse erro e `CODE - Montar Sucesso`. Comportamento coberto por
+  testes em `wf019-workflow.simulation.spec.ts`.
+- **Tenant**: mesmo filtro `ID_EMPRESA` do branch de Clientes, mesma defesa em
+  profundidade.
+- **`TEMPO_INTERVALO_MIN`**: existe na aba real (usado só pelo cálculo de disponibilidade
+  do WF004), mas não faz parte do contrato público `Servico` — o WF019 nem chega a lê-lo
+  para esta operação.
+- **Configuração manual pendente**: `documentId` de `GS - Buscar Serviços` continua
+  apontando para produção na fonte versionada (mesma política do branch de Clientes — ver
+  seção 6.1/9). Antes do primeiro teste real, reapontar manualmente para
+  `BEAUTYFLOW_HOMOLOGACAO`, a mesma planilha de homologação já usada e validada por
+  `clientes.listar`.
+- **Status do teste real**: `clientes.listar` já foi validado de ponta a ponta em
+  homologação (seção 4.1). `servicos.listar` foi implementado e validado só por
+  simulação local (`node --check` + execução real do JS de cada Code node fora do n8n,
+  sem chamar Sheets/Cloud) — **nenhum teste real contra o n8n Cloud foi feito nesta
+  tarefa**, conforme escopo explicitamente pedido.
+
+## 12. Critério de manutenção desta documentação
 
 Sempre que `APP-WF019-gateway-app.json` for alterado, este arquivo deve ser revisado na
 mesma mudança. Em caso de divergência, o JSON versionado é a referência para o
