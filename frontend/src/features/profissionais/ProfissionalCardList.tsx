@@ -43,7 +43,7 @@ export function ProfissionalCardList({ profissionais, onSelect }: ProfissionalCa
               </div>
               <div>
                 <p className="text-zinc-400">Atendimentos</p>
-                <p className="mt-0.5 font-medium text-zinc-700">{profissional.totalAtendimentos}</p>
+                <p className="mt-0.5 font-medium text-zinc-700">{profissional.totalAtendimentos ?? "—"}</p>
               </div>
             </div>
 

@@ -8,17 +8,26 @@ interface ProfissionaisSummaryProps {
  * "Atendimentos da equipe" soma `totalAtendimentos` (derivado/mockado nesta etapa — ver
  * profissionais.mock-data.ts no backend) de todos os profissionais, não só ativos —
  * indicador de volume de trabalho da equipe, não uma métrica financeira.
+ *
+ * `totalAtendimentos` é `null` quando a fonte é o APP-WF019 (a aba PROFISSIONAIS sozinha
+ * não calcula isso — ver libs/shared-types/src/profissionais.ts). Se qualquer
+ * profissional da lista tiver esse valor desconhecido, a soma inteira também é
+ * desconhecida — nunca somamos `null` como 0 (isso fabricaria um total parcial que pareceria
+ * completo); o card mostra "—" nesse caso, igual ao resto do App para dado ausente.
  */
 export function ProfissionaisSummary({ profissionais }: ProfissionaisSummaryProps) {
   const ativos = profissionais.filter((profissional) => profissional.status === "ATIVO").length;
   const inativos = profissionais.length - ativos;
-  const atendimentosEquipe = profissionais.reduce((soma, profissional) => soma + profissional.totalAtendimentos, 0);
+  const totalConhecido = profissionais.every((profissional) => profissional.totalAtendimentos !== null);
+  const atendimentosEquipe = totalConhecido
+    ? profissionais.reduce((soma, profissional) => soma + (profissional.totalAtendimentos ?? 0), 0)
+    : null;
 
   const cards = [
     { label: "Total de profissionais", value: String(profissionais.length) },
     { label: "Profissionais ativos", value: String(ativos) },
     { label: "Profissionais inativos", value: String(inativos) },
-    { label: "Atendimentos da equipe", value: String(atendimentosEquipe) },
+    { label: "Atendimentos da equipe", value: atendimentosEquipe === null ? "—" : String(atendimentosEquipe) },
   ];
 
   return (

@@ -13,10 +13,11 @@ export class ConfiguracoesController {
   /**
    * GET /configuracoes — não aceita id_empresa por querystring; vem sempre de
    * @CurrentUser(). Restrito a owner (403 para qualquer outro perfil — ver
-   * configuracoes.service.ts).
+   * configuracoes.service.ts). Assíncrono porque ConfiguracoesService pode chamar o
+   * APP-WF019 via HTTP quando DATA_SOURCE_CONFIGURACOES=n8n.
    */
   @Get()
-  obterConfiguracoes(@CurrentUser() user: AuthenticatedUser): ConfiguracoesEmpresa {
+  obterConfiguracoes(@CurrentUser() user: AuthenticatedUser): Promise<ConfiguracoesEmpresa> {
     return this.configuracoesService.obterConfiguracoes(user);
   }
 }

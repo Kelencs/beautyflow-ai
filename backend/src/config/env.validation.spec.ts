@@ -59,4 +59,78 @@ describe('validateEnv', () => {
       validateEnv({ DATA_SOURCE_CLIENTES: 'mock', DATA_SOURCE_SERVICOS: 'invalido' }),
     ).toThrow(/DATA_SOURCE_SERVICOS/);
   });
+
+  it("aceita DATA_SOURCE_PROFISSIONAIS='mock'", () => {
+    expect(() => validateEnv({ DATA_SOURCE_PROFISSIONAIS: 'mock' })).not.toThrow();
+  });
+
+  it("aceita DATA_SOURCE_PROFISSIONAIS='n8n'", () => {
+    expect(() => validateEnv({ DATA_SOURCE_PROFISSIONAIS: 'n8n' })).not.toThrow();
+  });
+
+  it('aceita DATA_SOURCE_PROFISSIONAIS ausente/vazio (default seguro é mock no service)', () => {
+    expect(() => validateEnv({})).not.toThrow();
+    expect(() => validateEnv({ DATA_SOURCE_PROFISSIONAIS: '' })).not.toThrow();
+  });
+
+  it('rejeita DATA_SOURCE_PROFISSIONAIS com valor desconhecido', () => {
+    expect(() => validateEnv({ DATA_SOURCE_PROFISSIONAIS: 'postgres' })).toThrow(
+      /DATA_SOURCE_PROFISSIONAIS deve ser 'mock' ou 'n8n'/,
+    );
+  });
+
+  it('DATA_SOURCE_CLIENTES, DATA_SOURCE_SERVICOS e DATA_SOURCE_PROFISSIONAIS são validados de forma independente', () => {
+    expect(() =>
+      validateEnv({
+        DATA_SOURCE_CLIENTES: 'n8n',
+        DATA_SOURCE_SERVICOS: 'mock',
+        DATA_SOURCE_PROFISSIONAIS: 'n8n',
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateEnv({
+        DATA_SOURCE_CLIENTES: 'mock',
+        DATA_SOURCE_SERVICOS: 'mock',
+        DATA_SOURCE_PROFISSIONAIS: 'invalido',
+      }),
+    ).toThrow(/DATA_SOURCE_PROFISSIONAIS/);
+  });
+
+  it("aceita DATA_SOURCE_CONFIGURACOES='mock'", () => {
+    expect(() => validateEnv({ DATA_SOURCE_CONFIGURACOES: 'mock' })).not.toThrow();
+  });
+
+  it("aceita DATA_SOURCE_CONFIGURACOES='n8n'", () => {
+    expect(() => validateEnv({ DATA_SOURCE_CONFIGURACOES: 'n8n' })).not.toThrow();
+  });
+
+  it('aceita DATA_SOURCE_CONFIGURACOES ausente/vazio (default seguro é mock no service)', () => {
+    expect(() => validateEnv({})).not.toThrow();
+    expect(() => validateEnv({ DATA_SOURCE_CONFIGURACOES: '' })).not.toThrow();
+  });
+
+  it('rejeita DATA_SOURCE_CONFIGURACOES com valor desconhecido', () => {
+    expect(() => validateEnv({ DATA_SOURCE_CONFIGURACOES: 'postgres' })).toThrow(
+      /DATA_SOURCE_CONFIGURACOES deve ser 'mock' ou 'n8n'/,
+    );
+  });
+
+  it('todas as flags DATA_SOURCE_* são validadas de forma independente', () => {
+    expect(() =>
+      validateEnv({
+        DATA_SOURCE_CLIENTES: 'n8n',
+        DATA_SOURCE_SERVICOS: 'mock',
+        DATA_SOURCE_PROFISSIONAIS: 'n8n',
+        DATA_SOURCE_CONFIGURACOES: 'n8n',
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateEnv({
+        DATA_SOURCE_CLIENTES: 'mock',
+        DATA_SOURCE_SERVICOS: 'mock',
+        DATA_SOURCE_PROFISSIONAIS: 'mock',
+        DATA_SOURCE_CONFIGURACOES: 'invalido',
+      }),
+    ).toThrow(/DATA_SOURCE_CONFIGURACOES/);
+  });
 });

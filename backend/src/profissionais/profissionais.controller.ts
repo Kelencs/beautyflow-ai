@@ -10,15 +10,22 @@ import { ProfissionaisService } from './profissionais.service';
 export class ProfissionaisController {
   constructor(private readonly profissionaisService: ProfissionaisService) {}
 
-  /** GET /profissionais — não aceita id_empresa por querystring; vem sempre de @CurrentUser(). */
+  /**
+   * GET /profissionais — não aceita id_empresa por querystring; vem sempre de
+   * @CurrentUser(). Assíncrono porque ProfissionaisService pode chamar o APP-WF019 via
+   * HTTP quando DATA_SOURCE_PROFISSIONAIS=n8n (ver profissionais.service.ts).
+   */
   @Get()
-  listar(@CurrentUser() user: AuthenticatedUser): ProfissionaisResponse {
+  listar(@CurrentUser() user: AuthenticatedUser): Promise<ProfissionaisResponse> {
     return this.profissionaisService.listar(user);
   }
 
   /** GET /profissionais/:id — 404 se o profissional não existir na empresa do usuário autenticado. */
   @Get(':id')
-  buscarPorId(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Profissional {
+  buscarPorId(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ): Promise<Profissional> {
     return this.profissionaisService.buscarPorId(user, id);
   }
 }

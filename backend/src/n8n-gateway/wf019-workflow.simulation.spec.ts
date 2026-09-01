@@ -196,20 +196,33 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
       expect(validado.erro_codigo).toBe('');
     });
 
-    it('uma terceira operação (ex.: agenda.listar) continua INVALID_OPERATION', () => {
+    it('profissionais.listar é reconhecido (Fase 3)', () => {
       const validado = runCode(workflow, 'CODE - Validar Envelope', {
-        json: { body: { operacao: 'agenda.listar', idEmpresa: 'EMP001', requestId: 'r3' } },
+        json: { body: { operacao: 'profissionais.listar', idEmpresa: 'EMP001', requestId: 'r3' } },
+      });
+      expect(validado.erro_codigo).toBe('');
+    });
+
+    it('uma quarta operação (ex.: agenda.listar) continua INVALID_OPERATION', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: { body: { operacao: 'agenda.listar', idEmpresa: 'EMP001', requestId: 'r4' } },
       });
       expect(validado.erro_codigo).toBe('INVALID_OPERATION');
     });
   });
 
   describe('Fase 2 — estrutura do branch de Serviços', () => {
-    it('SWITCH - Operação existe e roteia clientes.listar/servicos.listar', () => {
+    it('SWITCH - Operação existe e roteia as cinco operações read-only suportadas', () => {
       const sw = getNode(workflow, 'SWITCH - Operação');
       const values = (sw.parameters.rules as { values: Array<Record<string, unknown>> }).values;
       const chaves = values.map((v) => v.outputKey);
-      expect(chaves).toEqual(['clientes.listar', 'servicos.listar']);
+      expect(chaves).toEqual([
+        'clientes.listar',
+        'servicos.listar',
+        'profissionais.listar',
+        'empresa.obter',
+        'disponibilidades.listar',
+      ]);
     });
 
     it('GS - Buscar Serviços filtra por ID_EMPRESA e reutiliza a credencial já existente', () => {
@@ -725,6 +738,1267 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
         { ID_SERVICO: 'SRV1', NOME: 'Corte', STATUS: 'ATIVO', DURACAO_MIN: 60, VALOR: 80 },
         { ID_SERVICO: '', NOME: 'Corrompido' },
         { ID_SERVICO: 'SRV3', NOME: 'Escova', STATUS: 'ATIVO', DURACAO_MIN: 30, VALOR: 40 },
+      ]);
+      expect(resultado.ok).toBe(false);
+    });
+  });
+
+  /**
+   * Fase 3 — adiciona `profissionais.listar` sem regredir `clientes.listar`/
+   * `servicos.listar`. Schema real PROFISSIONAIS revalidado diretamente em
+   * AGE-WF004/COM-WF013/COM-WF014 (únicos workflows existentes que leem essa aba): só
+   * ID_EMPRESA, ID_PROFISSIONAL, NOME e STATUS são colunas reais confirmadas — não existe
+   * TELEFONE/EMAIL/ESPECIALIDADE na planilha hoje.
+   */
+  describe('Fase 3 — estrutura do branch de Profissionais', () => {
+    it('GS - Buscar Profissionais filtra por ID_EMPRESA e reutiliza a credencial já existente', () => {
+      const gs = getNode(workflow, 'GS - Buscar Profissionais');
+      const filtros = gs.parameters.filtersUI as { values: Array<Record<string, string>> };
+
+      expect(filtros.values).toEqual([
+        { lookupColumn: 'ID_EMPRESA', lookupValue: '={{ $json.idEmpresa }}' },
+      ]);
+      expect(
+        (gs as unknown as { credentials: { googleSheetsOAuth2Api: { id: string } } }).credentials
+          .googleSheetsOAuth2Api.id,
+      ).toBe('bV94b0kU1RKmLn1F');
+    });
+
+    it('IF - Profissional Inválido Na Fonte existe e verifica erro_codigo', () => {
+      const node = getNode(workflow, 'IF - Profissional Inválido Na Fonte');
+      const cond = (
+        node.parameters.conditions as {
+          conditions: Array<{ leftValue: string }>;
+        }
+      ).conditions[0];
+      expect(cond.leftValue).toBe('={{ !!$json.erro_codigo }}');
+    });
+
+    it('workflow continua active:false e sem credenciais reais (regressão)', () => {
+      expect(workflow.active).toBe(false);
+      const webhook = getNode(workflow, 'Webhook - Gateway App') as unknown as {
+        credentials: { httpHeaderAuth: { id: string } };
+      };
+      expect(webhook.credentials.httpHeaderAuth.id).toBe('CONFIGURAR_CREDENCIAL_HEADER_AUTH');
+    });
+  });
+
+  describe('profissionais.listar EMP001 — envelope final conceitual', () => {
+    // Linha com as 12 colunas reais confirmadas (correção de schema) — prova que só os 6
+    // campos do contrato público saem, mesmo com todas as colunas reais presentes na
+    // fonte.
+    const LINHA_SHEETS_EMP001 = {
+      ID_PROFISSIONAL: 'PROF-HML-001',
+      ID_EMPRESA: 'EMP001',
+      NOME: 'Ana Martins',
+      ESPECIALIDADE: 'Nail Designer',
+      TELEFONE: '034999998888',
+      EMAIL: 'ana.martins@exemplo.com',
+      GOOGLE_CALENDAR_ID: 'calendario-interno-123',
+      DURACAO_INTERVALO_MIN: 15,
+      STATUS: 'ATIVO',
+      DATA_ADMISSAO: '2024-01-10',
+      DATA_CADASTRO: '2026-01-01T10:00:00.000Z',
+      ULTIMA_ATUALIZACAO: '2026-02-01T10:00:00.000Z',
+    };
+
+    it('produz exatamente { ok: true, data: [...EMP001...], meta: { requestId } } — nunca ID_EMPRESA/GOOGLE_CALENDAR_ID/DURACAO_INTERVALO_MIN/datas/headers/webhookUrl/executionMode', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: { operacao: 'profissionais.listar', idEmpresa: 'EMP001', requestId: 'teste-prof' },
+        },
+      });
+      expect(validado.erro_codigo).toBe('');
+
+      const normalizado = runCode(workflow, 'CODE - Normalizar Profissionais', {
+        json: {},
+        items: [LINHA_SHEETS_EMP001],
+        nodeOutputs: { 'CODE - Validar Envelope': validado },
+      });
+
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      // toEqual (estrito, não toMatchObject) prova ao mesmo tempo o shape correto E a
+      // ausência de qualquer campo extra (ID_EMPRESA/GOOGLE_CALENDAR_ID/
+      // DURACAO_INTERVALO_MIN/DATA_ADMISSAO/DATA_CADASTRO/ULTIMA_ATUALIZACAO) — se algum
+      // vazasse, este toEqual falharia. ESPECIALIDADE/TELEFONE/EMAIL agora SÃO mapeados
+      // (correção de schema desta tarefa).
+      expect(respostaFinal).toEqual({
+        ok: true,
+        data: [
+          {
+            idProfissional: 'PROF-HML-001',
+            nome: 'Ana Martins',
+            especialidade: 'Nail Designer',
+            telefone: '034999998888',
+            email: 'ana.martins@exemplo.com',
+            status: 'ATIVO',
+          },
+        ],
+        meta: { requestId: 'teste-prof' },
+      });
+      expect(Array.isArray(respostaFinal)).toBe(false);
+      expect(typeof respostaFinal).not.toBe('string');
+      expect(respostaFinal).not.toHaveProperty('ID_EMPRESA');
+      expect(respostaFinal).not.toHaveProperty('headers');
+      expect(respostaFinal).not.toHaveProperty('webhookUrl');
+      expect(respostaFinal).not.toHaveProperty('executionMode');
+    });
+
+    it('Sheets vazio (placeholder sem ID_PROFISSIONAL) -> sucesso com data: []', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Profissionais', {
+        json: {},
+        items: [{ ID_PROFISSIONAL: undefined }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-vazio-prof' } },
+      });
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      expect(respostaFinal).toEqual({ ok: true, data: [], meta: { requestId: 'r-vazio-prof' } });
+    });
+
+    it('erro técnico ao buscar PROFISSIONAIS converge para UPSTREAM_ERROR (mesmo node compartilhado de Clientes/Serviços)', () => {
+      const erro = runCode(workflow, 'CODE - Erro Upstream', {
+        json: {},
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-erro-prof' } },
+      });
+      expect(erro.erro_codigo).toBe('UPSTREAM_ERROR');
+
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: erro });
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Não foi possível consultar os dados no momento.',
+        },
+        meta: { requestId: 'r-erro-prof' },
+      });
+    });
+  });
+
+  /**
+   * Fase 3 (hardening) — mesmo padrão de rigor já validado em Serviços: ID_PROFISSIONAL/
+   * NOME/STATUS obrigatórios, STATUS com whitelist explícita (nunca default), e qualquer
+   * campo obrigatório inválido em UM profissional real reprova a operação INTEIRA — nunca
+   * lista parcial.
+   */
+  describe('Fase 3 (hardening) — CODE - Normalizar Profissionais: válido vs. falha da operação inteira', () => {
+    function normalizarLinhas(
+      rows: Record<string, unknown>[],
+    ):
+      | { ok: true; profissionais: Record<string, unknown>[] }
+      | { ok: false; erro_codigo: string; erro_mensagem: string } {
+      const resultado = runCode(workflow, 'CODE - Normalizar Profissionais', {
+        json: {},
+        items: rows,
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r' } },
+      });
+      if ('erro_codigo' in resultado) {
+        return {
+          ok: false,
+          erro_codigo: resultado.erro_codigo as string,
+          erro_mensagem: resultado.erro_mensagem as string,
+        };
+      }
+      return { ok: true, profissionais: resultado.profissionais as Record<string, unknown>[] };
+    }
+
+    function normalizarUmaLinha(row: Record<string, unknown>) {
+      return normalizarLinhas([row]);
+    }
+
+    const BASE = { ID_PROFISSIONAL: 'PROF1', NOME: 'Teste', STATUS: 'ATIVO' };
+
+    it('profissional totalmente válido é aceito com STATUS ATIVO', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: 'ATIVO' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0]).toEqual({
+          idProfissional: 'PROF1',
+          nome: 'Teste',
+          especialidade: null,
+          telefone: null,
+          email: null,
+          status: 'ATIVO',
+        });
+      }
+    });
+
+    it('profissional totalmente válido é aceito com STATUS INATIVO', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: 'INATIVO' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0].status).toBe('INATIVO');
+      }
+    });
+
+    it('STATUS com trim/case diferente ("  ativo  ") é normalizado para ATIVO', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: '  ativo  ' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0].status).toBe('ATIVO');
+      }
+    });
+
+    it('STATUS desconhecido ("ATIV") faz a operação falhar — nunca vira ATIVO por default', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: 'ATIV' });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('STATUS desconhecido ("PENDENTE"/"DESATIVADO") faz a operação falhar', () => {
+      expect(normalizarUmaLinha({ ...BASE, STATUS: 'PENDENTE' }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, STATUS: 'DESATIVADO' }).ok).toBe(false);
+    });
+
+    it('STATUS vazio/ausente faz a operação falhar', () => {
+      expect(normalizarUmaLinha({ ...BASE, STATUS: '' }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, STATUS: undefined }).ok).toBe(false);
+    });
+
+    it('NOME vazio/ausente faz a operação falhar', () => {
+      expect(normalizarUmaLinha({ ...BASE, NOME: '' }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, NOME: '   ' }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, NOME: undefined }).ok).toBe(false);
+    });
+
+    /**
+     * Correção de schema: ESPECIALIDADE/TELEFONE/EMAIL EXISTEM de fato na aba real (uma
+     * premissa anterior desta fase, de que não existiam, estava incompleta). Agora são
+     * mapeados — preenchido vira string normalizada/trim; vazio/ausente vira `null`;
+     * nunca fabricado nem inferido de outro campo. Os três são opcionais: sozinhos, nunca
+     * fazem a operação falhar (diferente de NOME/STATUS). TELEFONE nunca é convertido
+     * para número (preserva zero à esquerda/precisão).
+     */
+    it('ESPECIALIDADE preenchida com espaços extras é normalizada (trim)', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ESPECIALIDADE: ' Nail Designer ' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0].especialidade).toBe('Nail Designer');
+      }
+    });
+
+    it('ESPECIALIDADE vazia/ausente vira null, nunca fabricada ou inferida do NOME', () => {
+      expect(normalizarUmaLinha({ ...BASE, ESPECIALIDADE: '' }).ok).toBe(true);
+      const r1 = normalizarUmaLinha({ ...BASE, ESPECIALIDADE: '' });
+      if (r1.ok) expect(r1.profissionais[0].especialidade).toBeNull();
+      const r2 = normalizarUmaLinha({ ...BASE });
+      if (r2.ok) expect(r2.profissionais[0].especialidade).toBeNull();
+    });
+
+    it('TELEFONE é preservado como string, exatamente como veio (nunca convertido para Number — preserva zero à esquerda)', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, TELEFONE: '034999998888' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0].telefone).toBe('034999998888');
+        expect(typeof resultado.profissionais[0].telefone).toBe('string');
+      }
+    });
+
+    it('TELEFONE vazio/ausente vira null, nunca fabricado', () => {
+      const r1 = normalizarUmaLinha({ ...BASE, TELEFONE: '' });
+      if (r1.ok) expect(r1.profissionais[0].telefone).toBeNull();
+      const r2 = normalizarUmaLinha({ ...BASE });
+      if (r2.ok) expect(r2.profissionais[0].telefone).toBeNull();
+    });
+
+    it('EMAIL preenchido com espaços extras é normalizado (trim)', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, EMAIL: ' profissional@teste.com ' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0].email).toBe('profissional@teste.com');
+      }
+    });
+
+    it('EMAIL vazio/ausente vira null — sozinho, nunca faz a operação falhar', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, EMAIL: '' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.profissionais[0].email).toBeNull();
+    });
+
+    it('GOOGLE_CALENDAR_ID, DURACAO_INTERVALO_MIN, DATA_ADMISSAO, DATA_CADASTRO e ULTIMA_ATUALIZACAO nunca vazam no shape de integração (não fazem parte do contrato público)', () => {
+      const resultado = normalizarUmaLinha({
+        ...BASE,
+        ESPECIALIDADE: 'Nail Designer',
+        TELEFONE: '034999998888',
+        EMAIL: 'ana@teste.com',
+        GOOGLE_CALENDAR_ID: 'calendario-interno-999',
+        DURACAO_INTERVALO_MIN: 15,
+        DATA_ADMISSAO: '2024-01-01',
+        DATA_CADASTRO: '2026-01-01T10:00:00.000Z',
+        ULTIMA_ATUALIZACAO: '2026-02-01T10:00:00.000Z',
+      });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais[0]).toEqual({
+          idProfissional: 'PROF1',
+          nome: 'Teste',
+          especialidade: 'Nail Designer',
+          telefone: '034999998888',
+          email: 'ana@teste.com',
+          status: 'ATIVO',
+        });
+      }
+    });
+
+    it('1 profissional corrompido entre 3 reais faz a operação INTEIRA falhar — nunca devolve os 2 bons e omite o ruim', () => {
+      const resultado = normalizarLinhas([
+        { ID_PROFISSIONAL: 'PROF1', NOME: 'Ana', STATUS: 'ATIVO' },
+        { ID_PROFISSIONAL: 'PROF2', NOME: 'Carla', STATUS: 'ATIV' },
+        { ID_PROFISSIONAL: 'PROF3', NOME: 'Julia', STATUS: 'INATIVO' },
+      ]);
+      expect(resultado.ok).toBe(false);
+    });
+
+    it('erro de dado corrompido converge para o envelope padrão de erro, sem expor linha/ID_EMPRESA/planilha/stack', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Profissionais', {
+        json: {},
+        items: [{ ...BASE, ID_EMPRESA: 'EMP001', STATUS: 'ATIV' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-corrompido-prof' } },
+      });
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: normalizado });
+
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Um ou mais profissionais cadastrados possuem dados inválidos.',
+        },
+        meta: { requestId: 'r-corrompido-prof' },
+      });
+      const textoCompleto = JSON.stringify(envelopeErro);
+      expect(textoCompleto).not.toContain('EMP001');
+      expect(textoCompleto).not.toContain('PROF1');
+      expect(textoCompleto).not.toContain('BEAUTYFLOW');
+      expect(envelopeErro).not.toHaveProperty('stack');
+      expect(envelopeErro).not.toHaveProperty('credential');
+    });
+  });
+
+  /**
+   * Fase 3 (hardening, revisado na correção de schema v1.7) — mesma distinção de
+   * placeholder x linha corrompida já validada em Serviços (v1.4), adaptada a
+   * Profissionais: agora reconhece TODAS as 10 colunas reais além de ID_PROFISSIONAL
+   * (NOME/STATUS/ESPECIALIDADE/TELEFONE/EMAIL/GOOGLE_CALENDAR_ID/DURACAO_INTERVALO_MIN/
+   * DATA_ADMISSAO/DATA_CADASTRO/ULTIMA_ATUALIZACAO) como "outro campo" — a versão
+   * anterior só reconhecia NOME/STATUS, o que classificaria incorretamente uma linha
+   * corrompida com só, por exemplo, TELEFONE preenchido como "busca vazia".
+   */
+  describe('Fase 3 (hardening) — distinção entre placeholder vazio e linha corrompida (Profissionais)', () => {
+    function normalizar(
+      rows: Record<string, unknown>[],
+    ): { ok: true; profissionais: Record<string, unknown>[] } | { ok: false; erro_codigo: string } {
+      const resultado = runCode(workflow, 'CODE - Normalizar Profissionais', {
+        json: {},
+        items: rows,
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r' } },
+      });
+      if ('erro_codigo' in resultado) {
+        return { ok: false, erro_codigo: resultado.erro_codigo as string };
+      }
+      return { ok: true, profissionais: resultado.profissionais as Record<string, unknown>[] };
+    }
+
+    it('1. objeto realmente vazio ({}) -> sucesso com data: []', () => {
+      const resultado = normalizar([{}]);
+      expect(resultado).toEqual({ ok: true, profissionais: [] });
+    });
+
+    it('2. placeholder técnico equivalente do alwaysOutputData (todos os campos reais undefined) -> sucesso com data: []', () => {
+      const resultado = normalizar([
+        {
+          ID_PROFISSIONAL: undefined,
+          NOME: undefined,
+          STATUS: undefined,
+          ESPECIALIDADE: undefined,
+          TELEFONE: undefined,
+          EMAIL: undefined,
+          GOOGLE_CALENDAR_ID: undefined,
+          DURACAO_INTERVALO_MIN: undefined,
+          DATA_ADMISSAO: undefined,
+          DATA_CADASTRO: undefined,
+          ULTIMA_ATUALIZACAO: undefined,
+        },
+      ]);
+      expect(resultado).toEqual({ ok: true, profissionais: [] });
+    });
+
+    it('3. NOME presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR (nunca "nenhum profissional")', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', NOME: 'Manicure' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4. STATUS presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: null, STATUS: 'ATIVO' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4b. ESPECIALIDADE presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', ESPECIALIDADE: 'Manicure' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4c. TELEFONE presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', TELEFONE: '034999998888' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4d. EMAIL presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', EMAIL: 'x@teste.com' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4e. GOOGLE_CALENDAR_ID presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', GOOGLE_CALENDAR_ID: 'cal-123' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4f. DURACAO_INTERVALO_MIN presente (mesmo valor 0) sem ID_PROFISSIONAL -> UPSTREAM_ERROR (0 não é "ausente")', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', DURACAO_INTERVALO_MIN: 0 }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4g. DATA_ADMISSAO presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', DATA_ADMISSAO: '2024-01-01' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('5. linha completa e válida (ID_PROFISSIONAL presente) continua funcionando normalmente', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: 'PROF001', NOME: 'Ana', STATUS: 'ATIVO' }]);
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.profissionais).toEqual([
+          {
+            idProfissional: 'PROF001',
+            nome: 'Ana',
+            especialidade: null,
+            telefone: null,
+            email: null,
+            status: 'ATIVO',
+          },
+        ]);
+      }
+    });
+
+    it('6. erro de linha corrompida sem ID_PROFISSIONAL nunca expõe o dado bruto da linha', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Profissionais', {
+        json: {},
+        items: [{ ID_PROFISSIONAL: '', NOME: 'Cabeleireira Secreta', ID_EMPRESA: 'EMP001' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-corrompido-prof-2' } },
+      });
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: normalizado });
+
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Um ou mais profissionais cadastrados possuem dados inválidos.',
+        },
+        meta: { requestId: 'r-corrompido-prof-2' },
+      });
+      const textoCompleto = JSON.stringify(envelopeErro);
+      expect(textoCompleto).not.toContain('Cabeleireira Secreta');
+      expect(textoCompleto).not.toContain('EMP001');
+      expect(envelopeErro).not.toHaveProperty('stack');
+    });
+
+    it('preserva as validações já existentes: STATUS ATIV (com ID_PROFISSIONAL presente) ainda falha', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: 'PROF1', NOME: 'Teste', STATUS: 'ATIV' }]);
+      expect(resultado.ok).toBe(false);
+    });
+
+    it('preserva as validações já existentes: NOME ausente (com ID_PROFISSIONAL presente) ainda falha', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: 'PROF1', STATUS: 'ATIVO' }]);
+      expect(resultado.ok).toBe(false);
+    });
+
+    it('preserva a regra de "nenhuma lista parcial": 1 linha corrompida sem ID_PROFISSIONAL entre 2 válidas reprova tudo', () => {
+      const resultado = normalizar([
+        { ID_PROFISSIONAL: 'PROF1', NOME: 'Ana', STATUS: 'ATIVO' },
+        { ID_PROFISSIONAL: '', NOME: 'Corrompido' },
+        { ID_PROFISSIONAL: 'PROF3', NOME: 'Julia', STATUS: 'INATIVO' },
+      ]);
+      expect(resultado.ok).toBe(false);
+    });
+  });
+
+  /**
+   * Camada read-only completa — adiciona `empresa.obter` e `disponibilidades.listar`
+   * (Configurações) sem regredir as três operações já existentes.
+   */
+  describe('Camada read-only completa — reconhecimento das 5 operações', () => {
+    it('clientes.listar/servicos.listar/profissionais.listar continuam reconhecidos (regressão)', () => {
+      for (const operacao of ['clientes.listar', 'servicos.listar', 'profissionais.listar']) {
+        const validado = runCode(workflow, 'CODE - Validar Envelope', {
+          json: { body: { operacao, idEmpresa: 'EMP001', requestId: 'r-regressao' } },
+        });
+        expect(validado.erro_codigo).toBe('');
+      }
+    });
+
+    it('empresa.obter é reconhecido', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: { body: { operacao: 'empresa.obter', idEmpresa: 'EMP001', requestId: 'r1' } },
+      });
+      expect(validado.erro_codigo).toBe('');
+    });
+
+    it('disponibilidades.listar é reconhecido', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: { operacao: 'disponibilidades.listar', idEmpresa: 'EMP001', requestId: 'r2' },
+        },
+      });
+      expect(validado.erro_codigo).toBe('');
+    });
+
+    it('uma sexta operação (ex.: agendamentos.listar) continua INVALID_OPERATION', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: { body: { operacao: 'agendamentos.listar', idEmpresa: 'EMP001', requestId: 'r3' } },
+      });
+      expect(validado.erro_codigo).toBe('INVALID_OPERATION');
+    });
+
+    it('IF - Empresa Inválida Na Fonte e IF - Disponibilidade Inválida Na Fonte existem e verificam erro_codigo', () => {
+      for (const nome of [
+        'IF - Empresa Inválida Na Fonte',
+        'IF - Disponibilidade Inválida Na Fonte',
+      ]) {
+        const node = getNode(workflow, nome);
+        const cond = (node.parameters.conditions as { conditions: Array<{ leftValue: string }> })
+          .conditions[0];
+        expect(cond.leftValue).toBe('={{ !!$json.erro_codigo }}');
+      }
+    });
+
+    it('GS - Buscar Empresa e GS - Buscar Disponibilidades filtram por ID_EMPRESA e reutilizam a credencial já existente', () => {
+      for (const nome of ['GS - Buscar Empresa', 'GS - Buscar Disponibilidades']) {
+        const gs = getNode(workflow, nome);
+        const filtros = gs.parameters.filtersUI as { values: Array<Record<string, string>> };
+        expect(filtros.values).toEqual([
+          { lookupColumn: 'ID_EMPRESA', lookupValue: '={{ $json.idEmpresa }}' },
+        ]);
+        expect(
+          (gs as unknown as { credentials: { googleSheetsOAuth2Api: { id: string } } }).credentials
+            .googleSheetsOAuth2Api.id,
+        ).toBe('bV94b0kU1RKmLn1F');
+      }
+    });
+
+    it('workflow continua active:false e sem credenciais reais (regressão)', () => {
+      expect(workflow.active).toBe(false);
+      const webhook = getNode(workflow, 'Webhook - Gateway App') as unknown as {
+        credentials: { httpHeaderAuth: { id: string } };
+      };
+      expect(webhook.credentials.httpHeaderAuth.id).toBe('CONFIGURAR_CREDENCIAL_HEADER_AUTH');
+    });
+  });
+
+  describe('empresa.obter EMP001 — envelope final conceitual (operação singular)', () => {
+    // Linha com as 18 colunas reais confirmadas (correção de schema) — prova que só os 6
+    // campos do contrato público saem, mesmo com todas as colunas reais presentes na
+    // fonte.
+    const LINHA_SHEETS_EMP001 = {
+      ID_EMPRESA: 'EMP001',
+      NOME: 'Studio Bella',
+      CNPJ: '12.345.678/0001-90',
+      TELEFONE: '5534999999999',
+      EMAIL: 'contato@studiobella.com.br',
+      ENDERECO: 'Rua das Flores, 123',
+      CIDADE: 'Uberlândia',
+      UF: 'MG',
+      CEP: '38400-000',
+      TIMEZONE: 'America/Sao_Paulo',
+      HORARIO_FUNCIONAMENTO: '09:00-18:00',
+      TEMPO_CANCELAMENTO_MIN: 120,
+      WHATSAPP_PHONE_NUMBER_ID: '109876543210001',
+      WHATSAPP_WABA_ID: 'waba-interno-999',
+      GOOGLE_CALENDAR_ID: 'calendario-interno-empresa-123',
+      STATUS: 'ATIVO',
+      DATA_CADASTRO: '2024-01-01T10:00:00.000Z',
+      ULTIMA_ATUALIZACAO: '2026-01-01T10:00:00.000Z',
+    };
+
+    it('produz exatamente { ok: true, data: {...} } — data é o OBJETO direto, nunca um array — e nunca ID_EMPRESA/CNPJ/ENDERECO/WHATSAPP_PHONE_NUMBER_ID/WHATSAPP_WABA_ID/GOOGLE_CALENDAR_ID/STATUS/datas/headers/webhookUrl', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: { operacao: 'empresa.obter', idEmpresa: 'EMP001', requestId: 'teste-empresa' },
+        },
+      });
+      expect(validado.erro_codigo).toBe('');
+
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [LINHA_SHEETS_EMP001],
+        nodeOutputs: { 'CODE - Validar Envelope': validado },
+      });
+
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      // toEqual (estrito, não toMatchObject) prova ao mesmo tempo o shape correto E a
+      // ausência de qualquer campo extra das 18 colunas reais — se algum vazasse, isto
+      // falharia.
+      expect(respostaFinal).toEqual({
+        ok: true,
+        data: {
+          nome: 'Studio Bella',
+          telefone: '5534999999999',
+          email: 'contato@studiobella.com.br',
+          timezone: 'America/Sao_Paulo',
+          tempoCancelamentoMinutos: 120,
+          whatsappConfigurado: true,
+        },
+        meta: { requestId: 'teste-empresa' },
+      });
+      expect(Array.isArray(respostaFinal.data)).toBe(false);
+      expect(respostaFinal).not.toHaveProperty('ID_EMPRESA');
+      expect(respostaFinal).not.toHaveProperty('headers');
+      expect(respostaFinal).not.toHaveProperty('webhookUrl');
+      expect(respostaFinal).not.toHaveProperty('executionMode');
+      const textoCompleto = JSON.stringify(respostaFinal);
+      expect(textoCompleto).not.toContain('109876543210001');
+      expect(textoCompleto).not.toContain('waba-interno-999');
+      expect(textoCompleto).not.toContain('calendario-interno-empresa-123');
+      expect(textoCompleto).not.toContain('12.345.678/0001-90');
+      expect(textoCompleto).not.toContain('Rua das Flores');
+    });
+
+    it('NOME preenchido com espaços extras é normalizado (trim)', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, NOME: ' Studio Bella ' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-nome-trim' } },
+      });
+      expect((normalizado.empresa as Record<string, unknown>).nome).toBe('Studio Bella');
+    });
+
+    it('NOME vazio/ausente vira "" (mesmo tipo não-nulo do contrato), nunca fabricado', () => {
+      const vazio = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, NOME: '' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-nome-vazio' } },
+      });
+      expect((vazio.empresa as Record<string, unknown>).nome).toBe('');
+
+      const ausente = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, NOME: undefined }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-nome-ausente' } },
+      });
+      expect((ausente.empresa as Record<string, unknown>).nome).toBe('');
+    });
+
+    it('TELEFONE é preservado como string, exatamente como veio (nunca convertido para Number)', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, TELEFONE: ' 034999999999 ' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-telefone' } },
+      });
+      const telefone = (normalizado.empresa as Record<string, unknown>).telefone;
+      expect(telefone).toBe('034999999999');
+      expect(typeof telefone).toBe('string');
+    });
+
+    it('TELEFONE vazio/ausente vira null, nunca fabricado', () => {
+      const vazio = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, TELEFONE: '' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-tel-vazio' } },
+      });
+      expect((vazio.empresa as Record<string, unknown>).telefone).toBeNull();
+    });
+
+    it('EMAIL preenchido com espaços extras é normalizado (trim)', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, EMAIL: ' contato@studio.com ' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-email-trim' } },
+      });
+      expect((normalizado.empresa as Record<string, unknown>).email).toBe('contato@studio.com');
+    });
+
+    it('EMAIL vazio/ausente vira null, nunca fabricado', () => {
+      const vazio = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, EMAIL: '' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-email-vazio' } },
+      });
+      expect((vazio.empresa as Record<string, unknown>).email).toBeNull();
+    });
+
+    it('whatsappConfigurado é false quando WHATSAPP_PHONE_NUMBER_ID está vazio/ausente', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ...LINHA_SHEETS_EMP001, WHATSAPP_PHONE_NUMBER_ID: '' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-sem-whatsapp' } },
+      });
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      expect((respostaFinal.data as Record<string, unknown>).whatsappConfigurado).toBe(false);
+    });
+
+    it('linha corrompida: CNPJ/ENDERECO/STATUS/GOOGLE_CALENDAR_ID presentes sem ID_EMPRESA -> UPSTREAM_ERROR (nunca objeto parcial)', () => {
+      const casos = [
+        { CNPJ: '12.345.678/0001-90' },
+        { ENDERECO: 'Rua X, 123' },
+        { STATUS: 'ATIVO' },
+        { GOOGLE_CALENDAR_ID: 'cal-x' },
+        { WHATSAPP_WABA_ID: 'waba-x' },
+        { DATA_CADASTRO: '2024-01-01' },
+      ];
+      for (const campoExtra of casos) {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [{ ID_EMPRESA: undefined, ...campoExtra }],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-corrompida' } },
+        });
+        expect(normalizado.erro_codigo).toBe('UPSTREAM_ERROR');
+      }
+    });
+
+    it('Sheets vazio (nenhuma linha real para o idEmpresa) -> UPSTREAM_ERROR, nunca "sucesso vazio" (operação singular)', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ID_EMPRESA: undefined }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-vazio-empresa' } },
+      });
+
+      expect(normalizado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    /**
+     * Hardening de duplicidade (último ajuste antes da homologação): o filtro
+     * `ID_EMPRESA` do node Sheets deveria garantir no máximo 1 linha real por chamada,
+     * mas `CODE - Normalizar Empresa` nunca confia cegamente nisso. Se 2+ linhas reais
+     * vierem para a mesma chamada, a operação INTEIRA falha — nunca escolhe a
+     * primeira/última silenciosamente, nunca mescla dados de duas linhas.
+     */
+    describe('hardening de duplicidade — 2+ linhas reais para o mesmo ID_EMPRESA', () => {
+      const LINHA_VALIDA = {
+        ID_EMPRESA: 'EMP001',
+        NOME: 'Studio Bella',
+        TIMEZONE: 'America/Sao_Paulo',
+        TEMPO_CANCELAMENTO_MIN: 120,
+        WHATSAPP_PHONE_NUMBER_ID: '109876543210001',
+      };
+
+      it('1. nenhuma empresa real -> erro controlado (UPSTREAM_ERROR)', () => {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [{}],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-dup-0' } },
+        });
+        expect(normalizado.erro_codigo).toBe('UPSTREAM_ERROR');
+      });
+
+      it('2. exatamente uma empresa real -> sucesso', () => {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [LINHA_VALIDA],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-dup-1' } },
+        });
+        expect(normalizado).not.toHaveProperty('erro_codigo');
+        expect((normalizado.empresa as Record<string, unknown>).nome).toBe('Studio Bella');
+      });
+
+      it('3. duas linhas reais para o mesmo ID_EMPRESA -> UPSTREAM_ERROR (nunca escolhe uma, nunca mescla)', () => {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [LINHA_VALIDA, { ...LINHA_VALIDA, NOME: 'Studio Bella (duplicata)' }],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-dup-2' } },
+        });
+        expect(normalizado.erro_codigo).toBe('UPSTREAM_ERROR');
+        expect(normalizado).not.toHaveProperty('empresa');
+      });
+
+      it('4. três linhas reais para o mesmo ID_EMPRESA -> UPSTREAM_ERROR', () => {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [LINHA_VALIDA, LINHA_VALIDA, LINHA_VALIDA],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-dup-3' } },
+        });
+        expect(normalizado.erro_codigo).toBe('UPSTREAM_ERROR');
+      });
+
+      it('5. placeholder do alwaysOutputData + uma linha real -> sucesso com a linha real (placeholder nunca conta como duplicidade)', () => {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [{}, LINHA_VALIDA],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-dup-placeholder' } },
+        });
+        expect(normalizado).not.toHaveProperty('erro_codigo');
+        expect((normalizado.empresa as Record<string, unknown>).nome).toBe('Studio Bella');
+      });
+
+      it('6. duplicidade não vaza ID_EMPRESA/nome/telefone/WHATSAPP_PHONE_NUMBER_ID nem no envelope de erro', () => {
+        const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+          json: {},
+          items: [LINHA_VALIDA, { ...LINHA_VALIDA, NOME: 'Studio Bella (duplicata)' }],
+          nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-dup-segredo' } },
+        });
+        const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: normalizado });
+
+        expect(envelopeErro).toEqual({
+          ok: false,
+          error: {
+            code: 'UPSTREAM_ERROR',
+            message: 'Não foi possível carregar as configurações da empresa.',
+          },
+          meta: { requestId: 'r-dup-segredo' },
+        });
+        const textoCompleto = JSON.stringify(envelopeErro);
+        expect(textoCompleto).not.toContain('EMP001');
+        expect(textoCompleto).not.toContain('Studio Bella');
+        expect(textoCompleto).not.toContain('109876543210001');
+        expect(envelopeErro).not.toHaveProperty('stack');
+        expect(envelopeErro).not.toHaveProperty('credential');
+      });
+    });
+
+    it('TIMEZONE ausente/vazio faz a operação falhar (campo essencial)', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ID_EMPRESA: 'EMP001', TEMPO_CANCELAMENTO_MIN: 60 }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-sem-tz' } },
+      });
+      expect(normalizado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('TEMPO_CANCELAMENTO_MIN inválido (texto não numérico ou negativo) faz a operação falhar', () => {
+      const invalido1 = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [
+          { ID_EMPRESA: 'EMP001', TIMEZONE: 'America/Sao_Paulo', TEMPO_CANCELAMENTO_MIN: 'abc' },
+        ],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-tc-invalido' } },
+      });
+      expect(invalido1.erro_codigo).toBe('UPSTREAM_ERROR');
+
+      const invalido2 = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [
+          { ID_EMPRESA: 'EMP001', TIMEZONE: 'America/Sao_Paulo', TEMPO_CANCELAMENTO_MIN: -10 },
+        ],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-tc-negativo' } },
+      });
+      expect(invalido2.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('erro de empresa inválida converge para o envelope padrão de erro, sem expor ID_EMPRESA/planilha/stack', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Empresa', {
+        json: {},
+        items: [{ ID_EMPRESA: 'EMP001' }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-erro-empresa' } },
+      });
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: normalizado });
+
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Não foi possível carregar as configurações da empresa.',
+        },
+        meta: { requestId: 'r-erro-empresa' },
+      });
+      const textoCompleto = JSON.stringify(envelopeErro);
+      expect(textoCompleto).not.toContain('EMP001');
+      expect(envelopeErro).not.toHaveProperty('stack');
+    });
+
+    it('erro técnico ao buscar EMPRESAS converge para UPSTREAM_ERROR (mesmo node compartilhado das demais operações)', () => {
+      const erro = runCode(workflow, 'CODE - Erro Upstream', {
+        json: {},
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-erro-tecnico-empresa' } },
+      });
+      expect(erro.erro_codigo).toBe('UPSTREAM_ERROR');
+
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: erro });
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Não foi possível consultar os dados no momento.',
+        },
+        meta: { requestId: 'r-erro-tecnico-empresa' },
+      });
+    });
+  });
+
+  describe('disponibilidades.listar EMP001 — envelope final conceitual', () => {
+    // Linha com as 10 colunas reais confirmadas (correção de schema) — prova que
+    // ID_DISPONIBILIDADE e DIA_SEMANA (texto) nunca vazam, mesmo presentes na fonte.
+    const LINHA_ABERTA = {
+      ID_DISPONIBILIDADE: 'DISP001',
+      ID_PROFISSIONAL: 'PROF001',
+      ID_EMPRESA: 'EMP001',
+      DIA_SEMANA_NUM: 1,
+      DIA_SEMANA: 'SEGUNDA',
+      ATIVO: 'SIM',
+      HORA_INICIO: '09:00',
+      HORA_FIM: '18:00',
+      INTERVALO_INICIO: '12:00',
+      INTERVALO_FIM: '13:00',
+    };
+
+    it('produz exatamente { ok: true, data: [...] } — nunca ID_EMPRESA/ID_DISPONIBILIDADE/DIA_SEMANA/headers/webhookUrl/executionMode', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: {
+            operacao: 'disponibilidades.listar',
+            idEmpresa: 'EMP001',
+            requestId: 'teste-disp',
+          },
+        },
+      });
+      expect(validado.erro_codigo).toBe('');
+
+      const normalizado = runCode(workflow, 'CODE - Normalizar Disponibilidades', {
+        json: {},
+        items: [LINHA_ABERTA],
+        nodeOutputs: { 'CODE - Validar Envelope': validado },
+      });
+
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      expect(respostaFinal).toEqual({
+        ok: true,
+        data: [
+          {
+            idProfissional: 'PROF001',
+            diaSemanaNum: 1,
+            aberto: true,
+            horaInicio: '09:00',
+            horaFim: '18:00',
+            intervaloInicio: '12:00',
+            intervaloFim: '13:00',
+          },
+        ],
+        meta: { requestId: 'teste-disp' },
+      });
+      expect(Array.isArray(respostaFinal.data)).toBe(true);
+      expect(respostaFinal).not.toHaveProperty('ID_EMPRESA');
+      expect(respostaFinal).not.toHaveProperty('headers');
+      expect(respostaFinal).not.toHaveProperty('webhookUrl');
+      expect(respostaFinal).not.toHaveProperty('executionMode');
+      const textoCompleto = JSON.stringify(respostaFinal);
+      expect(textoCompleto).not.toContain('DISP001');
+      expect(textoCompleto).not.toContain('SEGUNDA');
+    });
+
+    it('Sheets vazio (placeholder sem ID_PROFISSIONAL) -> sucesso com data: []', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Disponibilidades', {
+        json: {},
+        items: [{ ID_PROFISSIONAL: undefined }],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-vazio-disp' } },
+      });
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      expect(respostaFinal).toEqual({ ok: true, data: [], meta: { requestId: 'r-vazio-disp' } });
+    });
+
+    it('erro técnico ao buscar DISPONIBILIDADES converge para UPSTREAM_ERROR (mesmo node compartilhado das demais operações)', () => {
+      const erro = runCode(workflow, 'CODE - Erro Upstream', {
+        json: {},
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-erro-disp' } },
+      });
+      expect(erro.erro_codigo).toBe('UPSTREAM_ERROR');
+
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: erro });
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Não foi possível consultar os dados no momento.',
+        },
+        meta: { requestId: 'r-erro-disp' },
+      });
+    });
+  });
+
+  /**
+   * Hardening de Disponibilidades — mesmo padrão de rigor já validado em
+   * Serviços/Profissionais: ID_PROFISSIONAL/DIA_SEMANA_NUM/ATIVO obrigatórios,
+   * HORA_INICIO/HORA_FIM obrigatórios quando ATIVO='SIM', e qualquer campo obrigatório
+   * inválido em UMA disponibilidade real reprova a operação INTEIRA — nunca lista
+   * parcial.
+   */
+  describe('Camada read-only — CODE - Normalizar Disponibilidades: válido vs. falha da operação inteira', () => {
+    function normalizarLinhas(
+      rows: Record<string, unknown>[],
+    ):
+      | { ok: true; disponibilidades: Record<string, unknown>[] }
+      | { ok: false; erro_codigo: string; erro_mensagem: string } {
+      const resultado = runCode(workflow, 'CODE - Normalizar Disponibilidades', {
+        json: {},
+        items: rows,
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r' } },
+      });
+      if ('erro_codigo' in resultado) {
+        return {
+          ok: false,
+          erro_codigo: resultado.erro_codigo as string,
+          erro_mensagem: resultado.erro_mensagem as string,
+        };
+      }
+      return {
+        ok: true,
+        disponibilidades: resultado.disponibilidades as Record<string, unknown>[],
+      };
+    }
+
+    function normalizarUmaLinha(row: Record<string, unknown>) {
+      return normalizarLinhas([row]);
+    }
+
+    const BASE = {
+      ID_PROFISSIONAL: 'PROF1',
+      DIA_SEMANA_NUM: 1,
+      ATIVO: 'SIM',
+      HORA_INICIO: '09:00',
+      HORA_FIM: '18:00',
+    };
+
+    it('dia aberto totalmente válido é aceito', () => {
+      const resultado = normalizarUmaLinha(BASE);
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.disponibilidades[0]).toEqual({
+          idProfissional: 'PROF1',
+          diaSemanaNum: 1,
+          aberto: true,
+          horaInicio: '09:00',
+          horaFim: '18:00',
+          intervaloInicio: null,
+          intervaloFim: null,
+        });
+      }
+    });
+
+    it('dia fechado (ATIVO=NAO) é aceito mesmo sem HORA_INICIO/HORA_FIM', () => {
+      const resultado = normalizarUmaLinha({
+        ID_PROFISSIONAL: 'PROF1',
+        DIA_SEMANA_NUM: 0,
+        ATIVO: 'NAO',
+      });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.disponibilidades[0].aberto).toBe(false);
+        expect(resultado.disponibilidades[0].horaInicio).toBeNull();
+        expect(resultado.disponibilidades[0].horaFim).toBeNull();
+      }
+    });
+
+    it('ATIVO com trim/case diferente ("  sim  ") é normalizado para aberto=true', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ATIVO: '  sim  ' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.disponibilidades[0].aberto).toBe(true);
+    });
+
+    it('ATIVO desconhecido ("SIMM"/"ATIVO") faz a operação falhar — nunca vira SIM ou NAO por default', () => {
+      expect(normalizarUmaLinha({ ...BASE, ATIVO: 'SIMM' }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, ATIVO: 'ATIVO' }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, ATIVO: '' }).ok).toBe(false);
+    });
+
+    it('DIA_SEMANA_NUM fora de 0-6 faz a operação falhar', () => {
+      expect(normalizarUmaLinha({ ...BASE, DIA_SEMANA_NUM: 7 }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, DIA_SEMANA_NUM: -1 }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, DIA_SEMANA_NUM: 'segunda' }).ok).toBe(false);
+    });
+
+    it('DIA_SEMANA_NUM=0 (domingo) é válido — 0 nunca é confundido com ausência', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, DIA_SEMANA_NUM: 0 });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.disponibilidades[0].diaSemanaNum).toBe(0);
+    });
+
+    it('dia aberto (ATIVO=SIM) sem HORA_INICIO ou HORA_FIM faz a operação falhar', () => {
+      expect(
+        normalizarUmaLinha({ ID_PROFISSIONAL: 'PROF1', DIA_SEMANA_NUM: 1, ATIVO: 'SIM' }).ok,
+      ).toBe(false);
+      expect(
+        normalizarUmaLinha({
+          ID_PROFISSIONAL: 'PROF1',
+          DIA_SEMANA_NUM: 1,
+          ATIVO: 'SIM',
+          HORA_INICIO: '09:00',
+        }).ok,
+      ).toBe(false);
+    });
+
+    it('INTERVALO_INICIO/INTERVALO_FIM são opcionais mesmo com o dia aberto', () => {
+      const resultado = normalizarUmaLinha(BASE);
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.disponibilidades[0].intervaloInicio).toBeNull();
+        expect(resultado.disponibilidades[0].intervaloFim).toBeNull();
+      }
+    });
+
+    it('1 disponibilidade corrompida entre 3 reais faz a operação INTEIRA falhar — nunca devolve as 2 boas e omite a ruim', () => {
+      const resultado = normalizarLinhas([
+        { ...BASE, ID_PROFISSIONAL: 'PROF1' },
+        {
+          ID_PROFISSIONAL: 'PROF2',
+          DIA_SEMANA_NUM: 8,
+          ATIVO: 'SIM',
+          HORA_INICIO: '09:00',
+          HORA_FIM: '18:00',
+        },
+        { ...BASE, ID_PROFISSIONAL: 'PROF3' },
+      ]);
+      expect(resultado.ok).toBe(false);
+    });
+
+    it('erro de dado corrompido converge para o envelope padrão de erro, sem expor linha/ID_EMPRESA/planilha/stack', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Disponibilidades', {
+        json: {},
+        items: [
+          { ID_PROFISSIONAL: 'PROF1', ID_EMPRESA: 'EMP001', DIA_SEMANA_NUM: 99, ATIVO: 'SIM' },
+        ],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-corrompido-disp' } },
+      });
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: normalizado });
+
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Uma ou mais disponibilidades cadastradas possuem dados inválidos.',
+        },
+        meta: { requestId: 'r-corrompido-disp' },
+      });
+      const textoCompleto = JSON.stringify(envelopeErro);
+      expect(textoCompleto).not.toContain('EMP001');
+      expect(envelopeErro).not.toHaveProperty('stack');
+    });
+  });
+
+  /**
+   * Placeholder x linha corrompida (Disponibilidades, revisado na correção de schema —
+   * 10 colunas reais confirmadas) — mesma distinção já validada em Serviços/
+   * Profissionais: ID_DISPONIBILIDADE/DIA_SEMANA_NUM/DIA_SEMANA/ATIVO/HORA_INICIO/
+   * HORA_FIM/INTERVALO_INICIO/INTERVALO_FIM são os "outros campos" possíveis — a versão
+   * anterior só reconhecia 6 deles (sem ID_DISPONIBILIDADE/DIA_SEMANA), o que
+   * classificaria incorretamente uma linha corrompida com só, por exemplo,
+   * ID_DISPONIBILIDADE preenchido como "busca vazia".
+   */
+  describe('Camada read-only — distinção entre placeholder vazio e linha corrompida (Disponibilidades)', () => {
+    function normalizar(
+      rows: Record<string, unknown>[],
+    ):
+      | { ok: true; disponibilidades: Record<string, unknown>[] }
+      | { ok: false; erro_codigo: string } {
+      const resultado = runCode(workflow, 'CODE - Normalizar Disponibilidades', {
+        json: {},
+        items: rows,
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r' } },
+      });
+      if ('erro_codigo' in resultado) {
+        return { ok: false, erro_codigo: resultado.erro_codigo as string };
+      }
+      return {
+        ok: true,
+        disponibilidades: resultado.disponibilidades as Record<string, unknown>[],
+      };
+    }
+
+    it('1. objeto realmente vazio ({}) -> sucesso com data: []', () => {
+      const resultado = normalizar([{}]);
+      expect(resultado).toEqual({ ok: true, disponibilidades: [] });
+    });
+
+    it('2. placeholder técnico equivalente do alwaysOutputData (todas as 9 colunas reais além de ID_PROFISSIONAL undefined) -> sucesso com data: []', () => {
+      const resultado = normalizar([
+        {
+          ID_PROFISSIONAL: undefined,
+          ID_DISPONIBILIDADE: undefined,
+          DIA_SEMANA_NUM: undefined,
+          DIA_SEMANA: undefined,
+          ATIVO: undefined,
+          HORA_INICIO: undefined,
+          HORA_FIM: undefined,
+          INTERVALO_INICIO: undefined,
+          INTERVALO_FIM: undefined,
+        },
+      ]);
+      expect(resultado).toEqual({ ok: true, disponibilidades: [] });
+    });
+
+    it('3. DIA_SEMANA_NUM presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR (nunca "nenhuma disponibilidade")', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', DIA_SEMANA_NUM: 1 }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('3b. ID_DISPONIBILIDADE presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', ID_DISPONIBILIDADE: 'DISP001' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('3c. DIA_SEMANA (texto) presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: null, DIA_SEMANA: 'TERCA' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('4. ATIVO presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: null, ATIVO: 'SIM' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('5. HORA_INICIO presente sem ID_PROFISSIONAL -> UPSTREAM_ERROR', () => {
+      const resultado = normalizar([{ ID_PROFISSIONAL: '', HORA_INICIO: '09:00' }]);
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('6. linha completa e válida (ID_PROFISSIONAL presente) continua funcionando normalmente', () => {
+      const resultado = normalizar([
+        {
+          ID_PROFISSIONAL: 'PROF001',
+          DIA_SEMANA_NUM: 1,
+          ATIVO: 'SIM',
+          HORA_INICIO: '09:00',
+          HORA_FIM: '18:00',
+        },
+      ]);
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.disponibilidades).toEqual([
+          {
+            idProfissional: 'PROF001',
+            diaSemanaNum: 1,
+            aberto: true,
+            horaInicio: '09:00',
+            horaFim: '18:00',
+            intervaloInicio: null,
+            intervaloFim: null,
+          },
+        ]);
+      }
+    });
+
+    it('preserva a regra de "nenhuma lista parcial": 1 linha corrompida sem ID_PROFISSIONAL entre 2 válidas reprova tudo', () => {
+      const resultado = normalizar([
+        {
+          ID_PROFISSIONAL: 'PROF1',
+          DIA_SEMANA_NUM: 1,
+          ATIVO: 'SIM',
+          HORA_INICIO: '09:00',
+          HORA_FIM: '18:00',
+        },
+        { ID_PROFISSIONAL: '', DIA_SEMANA_NUM: 2 },
+        { ID_PROFISSIONAL: 'PROF3', DIA_SEMANA_NUM: 3, ATIVO: 'NAO' },
       ]);
       expect(resultado.ok).toBe(false);
     });

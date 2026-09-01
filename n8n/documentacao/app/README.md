@@ -1,6 +1,6 @@
 # App — WF019
 
-> **Sincronização:** 2026-08-31
+> **Sincronização:** 2026-09-01
 > **Fonte da verdade:** JSON em `n8n/workflows/app/`.
 
 ## Visão geral
@@ -14,12 +14,16 @@ chamado por WF001–WF018.
 
 | ID | Workflow | Arquivo | Responsabilidade principal | `active` no JSON |
 |---|---|---|---|---|
-| WF019 | Gateway App | `APP-WF019-gateway-app.json` | Autenticar, validar e rotear chamadas do NestJS para dados operacionais — `clientes.listar` e `servicos.listar` nesta fase | `false` |
+| WF019 | Gateway App | `APP-WF019-gateway-app.json` | Autenticar, validar e rotear chamadas do NestJS para dados operacionais — `clientes.listar`, `servicos.listar`, `profissionais.listar`, `empresa.obter` e `disponibilidades.listar` (camada read-only completa desta rodada) | `false` |
 
 ## Integrações reais
 
-- Google Sheets: `CLIENTES` e `SERVICOS` (leitura, mesmo credential `Google Sheets
-  account` já usado pelos demais módulos).
+- Google Sheets: `CLIENTES`, `SERVICOS`, `PROFISSIONAIS`, `EMPRESAS` e
+  `DISPONIBILIDADES` (leitura, mesmo credential `Google Sheets account` já usado pelos
+  demais módulos).
+- Agenda (`AGENDAMENTOS`), Financeiro (`PAGAMENTOS`) e Comunicação (`MENSAGENS` e
+  demais) foram auditados nesta rodada e ficaram bloqueados — ver
+  [`APP-WF019.md`](./APP-WF019.md), seção "Matriz READ-ONLY".
 
 **Nenhuma integração com WhatsApp, Gemini, Google Calendar ou Google Drive.**
 
@@ -34,9 +38,11 @@ envelope inválido? ── sim ──► monta erro (VALIDATION_ERROR/TENANT_REQ
         │
        não
         ↓
-SWITCH - Operação (clientes.listar | servicos.listar)
+SWITCH - Operação (clientes.listar | servicos.listar | profissionais.listar |
+                    empresa.obter | disponibilidades.listar)
         ↓
-busca CLIENTES ou SERVICOS filtrado por ID_EMPRESA
+busca CLIENTES, SERVICOS, PROFISSIONAIS, EMPRESAS ou DISPONIBILIDADES, filtrado por
+ID_EMPRESA
         ↓
 falha técnica? ── sim ──► monta erro (UPSTREAM_ERROR)
         │

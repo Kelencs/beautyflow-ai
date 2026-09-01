@@ -134,7 +134,9 @@ export function ProfissionalDetailsDrawer({
                 <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" aria-hidden="true" />
                 <div>
                   <dt className="text-xs text-zinc-500">Total de atendimentos</dt>
-                  <dd className="text-base font-semibold text-zinc-900">{profissional.totalAtendimentos}</dd>
+                  <dd className="text-base font-semibold text-zinc-900">
+                    {profissional.totalAtendimentos ?? "Não disponível"}
+                  </dd>
                 </div>
               </div>
             </dl>

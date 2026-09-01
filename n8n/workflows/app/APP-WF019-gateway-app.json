@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida nesta Fase 1 — qualquer outra vira INVALID_OPERATION.\n// Não criar branches vazios de Agenda/Financeiro/etc. aqui (ver sticky note desta\n// workflow): adicionar a próxima operação exige voltar a este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar', 'servicos.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
+        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida nesta Fase 1 — qualquer outra vira INVALID_OPERATION.\n// Não criar branches vazios de Agenda/Financeiro/etc. aqui (ver sticky note desta\n// workflow): adicionar a próxima operação exige voltar a este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar', 'servicos.listar', 'profissionais.listar', 'empresa.obter', 'disponibilidades.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
       },
       "id": "f6375890-a627-40e3-bf78-711eb5b04a8d",
       "name": "CODE - Validar Envelope",
@@ -122,6 +122,78 @@
               },
               "renameOutput": true,
               "outputKey": "servicos.listar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c3",
+                    "leftValue": "={{ $json.operacao }}",
+                    "rightValue": "profissionais.listar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "profissionais.listar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c4",
+                    "leftValue": "={{ $json.operacao }}",
+                    "rightValue": "empresa.obter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "empresa.obter"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c5",
+                    "leftValue": "={{ $json.operacao }}",
+                    "rightValue": "disponibilidades.listar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "disponibilidades.listar"
             }
           ]
         },
@@ -367,7 +439,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Compartilhado entre clientes.listar e servicos.listar (branches mutuamente\n// exclusivos por execução — só um dos dois normalizadores roda) — lê qualquer um dos\n// dois campos que o normalizador correspondente tiver produzido.\nreturn [{ json: { ok: true, data: $json.clientes ?? $json.servicos ?? [], meta: { requestId: $json.requestId } } }];"
+        "jsCode": "// Compartilhado entre as cinco operações (branches mutuamente exclusivos por\n// execução — só um normalizador roda por vez) — lê qualquer um dos campos que o\n// normalizador correspondente tiver produzido. `empresa.obter` é a única singular:\n// `$json.empresa` já é o objeto direto (nunca um array) quando presente.\nreturn [{ json: { ok: true, data: $json.clientes ?? $json.servicos ?? $json.profissionais ?? $json.disponibilidades ?? $json.empresa ?? [], meta: { requestId: $json.requestId } } }];"
       },
       "id": "0b60d626-a219-4a31-9b6f-e21d4fe77164",
       "name": "CODE - Montar Sucesso",
@@ -380,7 +452,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Alimentado por duas origens mutuamente exclusivas (envelope inválido OU falha técnica\n// ao buscar CLIENTES) — ambas conectadas diretamente na mesma entrada deste node (não\n// um Merge; ver sticky note desta workflow para o motivo). Nunca expõe stack, payload\n// bruto do Sheets, credencial ou API key — só code/message já decididos antes.\nreturn [{ json: {\n  ok: false,\n  error: { code: $json.erro_codigo, message: $json.erro_mensagem },\n  meta: { requestId: $json.requestId },\n} }];"
+        "jsCode": "// Alimentado por múltiplas origens mutuamente exclusivas (envelope inválido, falha\n// técnica ao buscar dados, ou dado inválido na fonte de qualquer uma das operações) —\n// todas conectadas diretamente na mesma entrada deste node (não um Merge; ver sticky\n// note desta workflow para o motivo). Nunca expõe stack, payload bruto do Sheets,\n// credencial ou API key — só code/message já decididos antes.\nreturn [{ json: {\n  ok: false,\n  error: { code: $json.erro_codigo, message: $json.erro_mensagem },\n  meta: { requestId: $json.requestId },\n} }];"
       },
       "id": "de1a1d49-1b25-49cf-a900-77ac7ed2e705",
       "name": "CODE - Montar Erro",
@@ -410,17 +482,389 @@
     },
     {
       "parameters": {
-        "content": "## APP-WF019 — Gateway App v1.5 (Fase 2 + hardening)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Conhece `clientes.listar` e\n`servicos.listar` nesta fase — qualquer outra operação recebida devolve\n`INVALID_OPERATION`. Não chamar WF001-WF018 a partir daqui.\n\n**Schema real SERVICOS (corrigido v1.5)**: ID_SERVICO, ID_EMPRESA, NOME, CATEGORIA,\nDESCRICAO, DURACAO_MIN, TEMPO_INTERVALO_MIN, VALOR, STATUS, DATA_CADASTRO,\nULTIMA_ATUALIZACAO. DESCRICAO existe de fato (premissa anterior de que não existia\nestava errada) e agora é mapeada (vazio/ausente -> null, nunca fabricada). CATEGORIA,\nTEMPO_INTERVALO_MIN, DATA_CADASTRO e ULTIMA_ATUALIZACAO existem na fonte mas não fazem\nparte do contrato público `Servico` — decisão de escopo, não erro; não lidas aqui.\n\n**Roteamento**: `SWITCH - Operação` decide entre os dois catálogos logo após a\nvalidação do envelope — como `CODE - Validar Envelope` já garante que só uma operação\nsuportada chega até aqui, o fallback do Switch é `none` (nunca deveria disparar).\n`CODE - Erro Upstream` e `CODE - Montar Sucesso` são compartilhados entre as duas\noperações, alimentados por conexões diretas (nunca um `Merge` — mesmo padrão já\nusado para convergência de branches mutuamente exclusivos).\n\n**Hardening de Serviços (v1.3)**: `CODE - Normalizar Serviços` valida NOME/STATUS/\nDURACAO_MIN/VALOR de cada serviço real da empresa — STATUS só aceita 'ATIVO'/'INATIVO'\nexplícitos (nunca vira 'ATIVO' por default), e qualquer campo obrigatório inválido faz\n`IF - Serviço Inválido Na Fonte` desviar a operação INTEIRA para `CODE - Montar Erro`\n(UPSTREAM_ERROR) — nunca uma lista parcial silenciosamente incompleta.\n\n**Hardening v1.4**: distingue o placeholder LEGÍTIMO do `alwaysOutputData` (item sem\nNENHUM campo operacional de serviço presente — busca realmente vazia, sucesso com\n`data: []`) de uma linha real corrompida que tem algum campo preenchido\n(NOME/STATUS/DURACAO_MIN/VALOR) mas `ID_SERVICO` vazio/ausente — esse segundo caso NUNCA\né tratado como \"nenhum serviço\", é dado inválido e falha a operação inteira, mesma regra\ndas demais validações.\n\nAdicionar uma 3ª operação exige: (1) um novo par de nodes `GS - Buscar <Recurso>`/\n`IF - Erro Técnico`, (2) uma nova regra no `SWITCH - Operação`, (3) atualizar\n`OPERACOES_SUPORTADAS` em `CODE - Validar Envelope`, (4) ligar o normalizador\ncorrespondente às conexões extras de `CODE - Erro Upstream`/`CODE - Montar Sucesso`.\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS.\n\n**Convergência sem Merge**: `CODE - Montar Erro` e `RESPOND - Resultado` recebem 2\nconexões diretas cada (branches mutuamente exclusivos) — nunca um `n8n-nodes-base.merge`\npara isso (bug conhecido do projeto: Merge com `numberInputs` trava quando só um dos\nbranches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
+        "content": "## APP-WF019 — Gateway App v1.10 (hardening de duplicidade em empresa.obter)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Conhece `clientes.listar`,\n`servicos.listar`, `profissionais.listar`, `empresa.obter` e `disponibilidades.listar`\nnesta fase — qualquer outra operação recebida devolve `INVALID_OPERATION`. Não chamar\nWF001-WF018 a partir daqui.\n\n**`.obter` x `.listar`**: `empresa.obter` é a primeira operação singular do gateway —\n`data` no envelope de sucesso é o OBJETO da empresa diretamente (nunca embrulhado em\narray), enquanto toda `.listar` continua devolvendo `data` como array (mesmo `[]` vazio).\n`CODE - Montar Sucesso` lê `$json.clientes ?? $json.servicos ?? $json.profissionais ??\n$json.disponibilidades ?? $json.empresa ?? []` — a ordem não importa, os branches são\nmutuamente exclusivos por execução.\n\n**Schema real EMPRESAS (corrigido v1.9)**: 18 colunas — ID_EMPRESA, NOME, CNPJ,\nTELEFONE, EMAIL, ENDERECO, CIDADE, UF, CEP, TIMEZONE, HORARIO_FUNCIONAMENTO,\nTEMPO_CANCELAMENTO_MIN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WABA_ID, GOOGLE_CALENDAR_ID,\nSTATUS, DATA_CADASTRO, ULTIMA_ATUALIZACAO. Uma auditoria anterior, baseada só nos\nworkflows que leem um subconjunto de colunas, concluiu incorretamente que só 4\nexistiam; NOME/TELEFONE/EMAIL agora alimentam `ConfiguracoesEmpresa.negocio` com dado\nreal (trim; TELEFONE/EMAIL vazio/ausente -> null; NOME vazio/ausente -> '', nunca\nfabricado). CNPJ/ENDERECO/CIDADE/UF/CEP/HORARIO_FUNCIONAMENTO (do estabelecimento —\ndistinto de DISPONIBILIDADES por profissional)/STATUS/DATA_CADASTRO/\nULTIMA_ATUALIZACAO/WHATSAPP_WABA_ID/GOOGLE_CALENDAR_ID existem na fonte mas não fazem\nparte do contrato público — decisão de escopo, participam só da distinção placeholder x\nlinha corrompida. `WHATSAPP_PHONE_NUMBER_ID` nunca sai como valor — só a\npresença/ausência vira `whatsappConfigurado` boolean. `empresa.obter` é singular: sem\nlinha real ou com TIMEZONE/TEMPO_CANCELAMENTO_MIN inválidos, a operação falha inteira\n(`UPSTREAM_ERROR`) — nunca um \"sucesso vazio\".\n\n**Hardening de duplicidade em empresa.obter (v1.10)**: o filtro `ID_EMPRESA` do\n`GS - Buscar Empresa` deveria garantir no máximo 1 linha real por chamada, mas\n`CODE - Normalizar Empresa` nunca confia cegamente nisso — conta explicitamente as\nlinhas reais (com `ID_EMPRESA` presente) e, se houver 2 ou mais para a mesma chamada,\na operação INTEIRA falha com `UPSTREAM_ERROR` (mesma mensagem genérica de sempre, nunca\nrevela quantas linhas existem nem seu conteúdo) — nunca escolhe a primeira/última\nsilenciosamente, nunca mescla dados de duas empresas. Essa checagem tem prioridade sobre\n\"linha corrompida\"/\"ausência de empresa\".\n\n**Schema real DISPONIBILIDADES (corrigido v1.9)**: 10 colunas — ID_DISPONIBILIDADE,\nID_EMPRESA, ID_PROFISSIONAL, DIA_SEMANA_NUM (convenção do cadastro 0=domingo..6=sábado —\ndistinta do `weekday` do Luxon, ver comentário original em AGE-WF004), DIA_SEMANA\n(texto), HORA_INICIO, HORA_FIM, INTERVALO_INICIO, INTERVALO_FIM (opcionais), ATIVO\n('SIM'/'NAO'). ID_DISPONIBILIDADE e DIA_SEMANA (texto) não fazem parte do shape de\nsaída — o contrato público não tem campo equivalente a ID_DISPONIBILIDADE, e `diaSemana`\njá é DERIVADO de DIA_SEMANA_NUM em configuracoes.service.ts (expor DIA_SEMANA bruto\ncriaria uma segunda fonte de verdade sem necessidade, e o vocabulário textual real dessa\ncoluna não está confirmado). As duas participam, porém, da distinção placeholder x linha\ncorrompida (v1.9): ID_DISPONIBILIDADE ou DIA_SEMANA preenchidos sem ID_PROFISSIONAL\ntambém é dado corrompido, nunca \"nenhuma disponibilidade\". Único workflow existente que\nlê essa aba é AGE-WF004 (`GS - Buscar Disponibilidade`), com filtro adicional\n`ATIVO='SIM'` (só quer dias abertos para calcular horários livres) — `GS - Buscar\nDisponibilidades` deste gateway **não** replica esse filtro: precisa de todos os dias\n(abertos e fechados) para montar a grade completa por profissional. A tradução\n`DIA_SEMANA_NUM` (número) -> enum `DiaSemana` (string) e o preenchimento dos dias sem\nlinha real (fechado por padrão, nunca fabricado como aberto) acontecem em\n`configuracoes.service.ts` (NestJS), não aqui — nem `nome` do profissional (resolvido\nali via `ProfissionaisService`, já integrado).\n\n**Hardening de Empresa/Disponibilidades (mesmo padrão de Serviços/Profissionais)**:\n`CODE - Normalizar Disponibilidades` exige ID_PROFISSIONAL/DIA_SEMANA_NUM(0-6)/ATIVO\n('SIM'/'NAO' explícitos); quando ATIVO='SIM', HORA_INICIO/HORA_FIM também são\nobrigatórios. Distinção placeholder x linha corrompida (v1.9) considera as 8 colunas\nreais além de ID_PROFISSIONAL (incluindo ID_DISPONIBILIDADE e DIA_SEMANA) — qualquer\numa presente com ID_PROFISSIONAL ausente = dado inválido, nunca \"nenhuma\ndisponibilidade\"; valor `0` válido nunca conta como ausência. `CODE - Normalizar\nEmpresa` (v1.9) percorre todos os itens da mesma forma (17 colunas reais além de\nID_EMPRESA na detecção), embora — por ser operação singular — placeholder legítimo e\nlinha corrompida convirjam para o mesmo resultado (`UPSTREAM_ERROR`); TIMEZONE/\nTEMPO_CANCELAMENTO_MIN ausentes/inválidos na linha real também falham a operação.\n\n**Roteamento**: `SWITCH - Operação` decide entre os cinco recursos logo após a validação\ndo envelope — fallback `none` (nunca deveria disparar, já que `CODE - Validar Envelope`\ngarante que só uma operação suportada chega até aqui). `CODE - Erro Upstream` e `CODE -\nMontar Sucesso` são compartilhados entre as cinco operações, alimentados por conexões\ndiretas (nunca um `Merge`).\n\n**Operações avaliadas e conscientemente NÃO implementadas nesta rodada** (auditoria\ncompleta registrada em `n8n/documentacao/app/APP-WF019.md`, seção \"Matriz READ-ONLY\"):\n- `agendamentos.listar` (Agenda) — BLOQUEADA: `AGENDAMENTOS.STATUS` real só tem\n  `{AGENDADO, CANCELADO}`, mas o contrato público exige 4 valores\n  (`PENDENTE/CONFIRMADO/CONCLUIDO/CANCELADO`) — mapear `AGENDADO` para `PENDENTE` ou\n  `CONFIRMADO` seria inventar uma regra de produto que a fonte não sustenta.\n- `pagamentos.listar` (Financeiro) — BLOQUEADA por complexidade: schema confirmado, mas\n  exigiria juntar AGENDAMENTOS+PAGAMENTOS (2 planilhas) num único Code node, algo\n  substancialmente mais arriscado que o padrão de leitura única já validado — não\n  tentado nesta rodada por prudência, não por falta de schema.\n- `mensagens.listar` (Comunicação) — BLOQUEADA: exigiria mesclar 5 abas\n  (MENSAGENS/LEMBRETES/PESQUISA/FOLLOWUPS/COBRANCAS) sem chave de correlação clara entre\n  elas, mais decisões de produto em aberto (incluir mensagens inbound? MENSAGENS cresce\n  sem limpeza conhecida).\n- `ia.obter` (IA) — BLOQUEADA: `IA_MEMORIA` não tem NENHUM writer conhecido em\n  WF001-WF018 (só WF002 lê) — \"memória ativa\" seria sempre vazia ou de origem\n  desconhecida; `resumo.status` não é determinável por tenant a partir de dado real\n  (WF001 tem `id_empresa` fixo em código, não uma flag por empresa em nenhuma aba).\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS — inclusive em `GS - Buscar Empresa`/`GS - Buscar Disponibilidades`.\n\n**Convergência sem Merge**: `CODE - Montar Sucesso`, `CODE - Montar Erro` e `RESPOND -\nResultado` recebem múltiplas conexões diretas cada, uma por branch mutuamente exclusivo\n— nunca um `n8n-nodes-base.merge` para isso (bug conhecido do projeto: Merge com\n`numberInputs` trava quando só um dos branches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Configuração manual pendente**: antes de qualquer teste real, `GS - Buscar Empresa` e\n`GS - Buscar Disponibilidades` (assim como os demais nodes GS deste workflow) precisam\nser reapontados manualmente no n8n Cloud de `BEAUTYFLOW3.1` para\n`BEAUTYFLOW_HOMOLOGACAO` — não feito neste arquivo, não acessado nesta tarefa.\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
         "height": 760,
         "width": 660
       },
       "id": "68a3a5a8-6e0a-4e0a-9c0e-1a2b3c4d5e6f",
-      "name": "NOTA - WF019 v1.5",
+      "name": "NOTA - WF019 v1.10",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         672,
         1040
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1890272312,
+          "mode": "list",
+          "cachedResultName": "PROFISSIONAIS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1890272312"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "GS - Buscar Profissionais",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        2048
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-2222-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Erro Técnico Ao Buscar Profissionais",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        2048
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// PROFISSIONAIS: schema real confirmado (correção de schema desta tarefa — a conclusão\n// anterior de que só ID_EMPRESA/ID_PROFISSIONAL/NOME/STATUS existiam, baseada em\n// workflows que só leem um subconjunto de colunas, estava incompleta) — 12 colunas:\n// ID_PROFISSIONAL, ID_EMPRESA, NOME, ESPECIALIDADE, TELEFONE, EMAIL,\n// GOOGLE_CALENDAR_ID, DURACAO_INTERVALO_MIN, STATUS, DATA_ADMISSAO, DATA_CADASTRO,\n// ULTIMA_ATUALIZACAO. ESPECIALIDADE/TELEFONE/EMAIL EXISTEM de fato e agora são\n// mapeadas (trim, vazio/ausente -> null, nunca fabricadas/inferidas por nome ou\n// serviço). TELEFONE nunca passa por conversão numérica — é texto/identificador, não\n// quantidade (Number() perderia zeros à esquerda, sinal \"+\" internacional e precisão).\n// GOOGLE_CALENDAR_ID (identificador de integração interno), DURACAO_INTERVALO_MIN (uso\n// futuro em Agenda/disponibilidade), DATA_ADMISSAO, DATA_CADASTRO e ULTIMA_ATUALIZACAO\n// existem na fonte mas NÃO fazem parte do contrato público `Profissional` —\n// deliberadamente nunca lidas para o shape de saída (decisão de escopo, não erro).\n//\n// Hardening (mesmo padrão de CODE - Normalizar Serviços): ID_PROFISSIONAL, NOME e STATUS\n// são obrigatórios. STATUS só aceita exatamente 'ATIVO'/'INATIVO' (trim+uppercase, nunca\n// outro valor vira 'ATIVO' por default — isso mascararia dado corrompido da fonte).\n// ESPECIALIDADE/TELEFONE/EMAIL são opcionais: vazios/ausentes sozinhos nunca falham a\n// operação. Se QUALQUER profissional real da empresa tiver ID_PROFISSIONAL/NOME/STATUS\n// inválido, a operação INTEIRA falha com UPSTREAM_ERROR — nunca devolve uma lista\n// parcial silenciosamente incompleta.\n//\n// Placeholder x linha corrompida (mesma distinção do hardening de Serviços, revisada\n// nesta correção para reconhecer TODAS as colunas reais, não só NOME/STATUS): item sem\n// NENHUM campo operacional presente (nem NOME, STATUS, ESPECIALIDADE, TELEFONE, EMAIL,\n// GOOGLE_CALENDAR_ID, DURACAO_INTERVALO_MIN, DATA_ADMISSAO, DATA_CADASTRO,\n// ULTIMA_ATUALIZACAO) é o placeholder legítimo do alwaysOutputData — busca realmente\n// vazia, não um erro. Uma linha real com QUALQUER um desses campos preenchido mas\n// ID_PROFISSIONAL ausente é dado corrompido, nunca tratado como \"nenhum profissional\".\n// Um campo com valor `0` válido (ex.: DURACAO_INTERVALO_MIN=0) conta como presente, nunca\n// como ausência (ver campoPresente).\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nconst linhas = $input.all().map((item) => item.json);\n\nconst STATUS_VALIDOS = new Set(['ATIVO', 'INATIVO']);\n\nfunction campoPresente(valor) {\n  if (valor === undefined || valor === null) return false;\n  if (typeof valor === 'string' && valor.trim() === '') return false;\n  return true;\n}\n\n// Nunca usa Number(): texto normalizado (trim), preservado como string. Vazio/ausente\n// vira null — nunca fabricado, nunca inferido de outro campo.\nfunction textoOuNull(valor) {\n  if (!campoPresente(valor)) return null;\n  const texto = typeof valor === 'string' ? valor : String(valor);\n  const aparado = texto.trim();\n  return aparado ? aparado : null;\n}\n\nlet existeInvalido = false;\nconst profissionais = [];\n\nfor (const row of linhas) {\n  if (!row) continue;\n\n  const temIdProfissional = campoPresente(row.ID_PROFISSIONAL);\n  const temOutroCampo =\n    campoPresente(row.NOME) ||\n    campoPresente(row.STATUS) ||\n    campoPresente(row.ESPECIALIDADE) ||\n    campoPresente(row.TELEFONE) ||\n    campoPresente(row.EMAIL) ||\n    campoPresente(row.GOOGLE_CALENDAR_ID) ||\n    campoPresente(row.DURACAO_INTERVALO_MIN) ||\n    campoPresente(row.DATA_ADMISSAO) ||\n    campoPresente(row.DATA_CADASTRO) ||\n    campoPresente(row.ULTIMA_ATUALIZACAO);\n\n  if (!temIdProfissional && !temOutroCampo) {\n    // Placeholder real do alwaysOutputData: busca legitimamente vazia — não é erro, não\n    // é um profissional. Ignorado.\n    continue;\n  }\n\n  if (!temIdProfissional) {\n    // Linha real (tem algum campo operacional preenchido) mas sem ID_PROFISSIONAL —\n    // dado corrompido da fonte, nunca \"nenhum profissional\".\n    existeInvalido = true;\n    continue;\n  }\n\n  const nome = textoOuNull(row.NOME) ?? '';\n  const status = typeof row.STATUS === 'string' ? row.STATUS.trim().toUpperCase() : '';\n\n  if (!nome || !STATUS_VALIDOS.has(status)) {\n    existeInvalido = true;\n    continue;\n  }\n\n  profissionais.push({\n    idProfissional: String(row.ID_PROFISSIONAL),\n    nome,\n    especialidade: textoOuNull(row.ESPECIALIDADE),\n    telefone: textoOuNull(row.TELEFONE),\n    email: textoOuNull(row.EMAIL),\n    status,\n  });\n}\n\nif (existeInvalido) {\n  // Mensagem genérica de propósito — nunca expõe qual linha/ID_PROFISSIONAL/ID_EMPRESA/\n  // planilha está com o dado inválido.\n  return [{ json: {\n    erro_codigo: 'UPSTREAM_ERROR',\n    erro_mensagem: 'Um ou mais profissionais cadastrados possuem dados inválidos.',\n    requestId,\n  } }];\n}\n\nreturn [{ json: { profissionais, requestId } }];\n"
+      },
+      "id": "a1b2c3d4-3333-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Normalizar Profissionais",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        2048
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-4444-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Profissional Inválido Na Fonte",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        2048
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 308796797,
+          "mode": "list",
+          "cachedResultName": "EMPRESAS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=308796797"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-1111-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "GS - Buscar Empresa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        2368
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-2222-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Erro Técnico Ao Buscar Empresa",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// EMPRESAS: schema real confirmado (correção de schema — a conclusão anterior de que só\n// 4 colunas existiam, inferida indiretamente dos workflows WF001-018, estava\n// incompleta) — 18 colunas: ID_EMPRESA, NOME, CNPJ, TELEFONE, EMAIL, ENDERECO, CIDADE,\n// UF, CEP, TIMEZONE, HORARIO_FUNCIONAMENTO, TEMPO_CANCELAMENTO_MIN,\n// WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WABA_ID, GOOGLE_CALENDAR_ID, STATUS, DATA_CADASTRO,\n// ULTIMA_ATUALIZACAO.\n//\n// NOME/TELEFONE/EMAIL EXISTEM de fato e agora alimentam o contrato público com dado\n// real (trim; TELEFONE/EMAIL vazio/ausente -> null; NOME vazio/ausente -> '' — mesmo\n// tipo não-nulo do contrato, nunca um texto fabricado). TELEFONE nunca passa por\n// conversão numérica (é texto/identificador, não quantidade).\n//\n// CNPJ, ENDERECO, CIDADE, UF, CEP, HORARIO_FUNCIONAMENTO (do estabelecimento — conceito\n// distinto de DISPONIBILIDADES, que é por profissional), STATUS, DATA_CADASTRO,\n// ULTIMA_ATUALIZACAO, WHATSAPP_WABA_ID e GOOGLE_CALENDAR_ID existem na aba real mas NÃO\n// fazem parte do contrato público ConfiguracoesEmpresa — decisão de escopo, nunca lidos\n// para o shape de saída, mas todos participam da distinção placeholder x linha\n// corrompida abaixo. WHATSAPP_PHONE_NUMBER_ID nunca sai como valor — só a\n// presença/ausência vira whatsappConfigurado (minimização de dados).\n//\n// `empresa.obter` é singular: EMPRESAS deveria ter exatamente 1 linha para o idEmpresa\n// do tenant já autenticado. Um item realmente vazio do alwaysOutputData (nenhum dos 17\n// campos reais presente) é ausência de empresa; uma linha com QUALQUER campo real\n// preenchido mas ID_EMPRESA ausente é dado corrompido — para esta operação singular,\n// as duas situações convergem para o mesmo resultado (UPSTREAM_ERROR, nunca \"sucesso\n// vazio\"), mas a distinção fica registrada aqui por clareza/auditoria, no mesmo padrão\n// das operações .listar. TIMEZONE/TEMPO_CANCELAMENTO_MIN ausentes/inválidos na linha\n// real também falham a operação — nunca um default silencioso.\n//\n// Hardening (último, antes da homologação): o filtro ID_EMPRESA do node Sheets deveria\n// garantir no máximo 1 linha real por empresa, mas nunca confiamos cegamente nisso — se\n// 2 ou mais linhas reais (com ID_EMPRESA presente) vierem para a mesma chamada, isso é\n// duplicidade acidental na fonte. NUNCA escolhemos a primeira, a última, nem mesclamos\n// os dados das linhas — a operação INTEIRA falha com UPSTREAM_ERROR (mesma mensagem\n// genérica de sempre, nunca expõe ID_EMPRESA/CNPJ/telefone/e-mail/quantas linhas\n// existem). Essa checagem tem prioridade sobre \"linha corrompida\"/\"ausência de\n// empresa\": duplicidade é sempre o motivo relatado quando ocorre junto de outro\n// problema.\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nconst linhas = $input.all().map((item) => item.json);\n\nfunction campoPresente(valor) {\n  if (valor === undefined || valor === null) return false;\n  if (typeof valor === 'string' && valor.trim() === '') return false;\n  return true;\n}\n\nfunction textoOuNull(valor) {\n  if (!campoPresente(valor)) return null;\n  const texto = typeof valor === 'string' ? valor : String(valor);\n  const aparado = texto.trim();\n  return aparado ? aparado : null;\n}\n\nfunction erroUpstream() {\n  return [{ json: {\n    erro_codigo: 'UPSTREAM_ERROR',\n    erro_mensagem: 'Não foi possível carregar as configurações da empresa.',\n    requestId,\n  } }];\n}\n\nlet empresaReal = null;\nlet existeInvalido = false;\nlet quantidadeLinhasReais = 0;\n\nfor (const row of linhas) {\n  if (!row) continue;\n\n  const temIdEmpresa = campoPresente(row.ID_EMPRESA);\n  const temOutroCampo =\n    campoPresente(row.NOME) ||\n    campoPresente(row.CNPJ) ||\n    campoPresente(row.TELEFONE) ||\n    campoPresente(row.EMAIL) ||\n    campoPresente(row.ENDERECO) ||\n    campoPresente(row.CIDADE) ||\n    campoPresente(row.UF) ||\n    campoPresente(row.CEP) ||\n    campoPresente(row.TIMEZONE) ||\n    campoPresente(row.HORARIO_FUNCIONAMENTO) ||\n    campoPresente(row.TEMPO_CANCELAMENTO_MIN) ||\n    campoPresente(row.WHATSAPP_PHONE_NUMBER_ID) ||\n    campoPresente(row.WHATSAPP_WABA_ID) ||\n    campoPresente(row.GOOGLE_CALENDAR_ID) ||\n    campoPresente(row.STATUS) ||\n    campoPresente(row.DATA_CADASTRO) ||\n    campoPresente(row.ULTIMA_ATUALIZACAO);\n\n  if (!temIdEmpresa && !temOutroCampo) {\n    // Placeholder real do alwaysOutputData: busca legitimamente sem correspondência —\n    // não é dado corrompido, é ausência de empresa (tratada abaixo, fora do loop).\n    continue;\n  }\n\n  if (!temIdEmpresa) {\n    // Linha real (tem algum campo operacional preenchido) mas sem ID_EMPRESA — dado\n    // corrompido da fonte, nunca tratado como \"nenhuma empresa\".\n    existeInvalido = true;\n    continue;\n  }\n\n  quantidadeLinhasReais += 1;\n\n  const nome = textoOuNull(row.NOME) ?? '';\n  const telefone = textoOuNull(row.TELEFONE);\n  const email = textoOuNull(row.EMAIL);\n  const timezone = typeof row.TIMEZONE === 'string' ? row.TIMEZONE.trim() : '';\n  const tempoCancelamentoMinutos = Number(row.TEMPO_CANCELAMENTO_MIN);\n\n  if (!timezone || !Number.isFinite(tempoCancelamentoMinutos) || tempoCancelamentoMinutos < 0) {\n    existeInvalido = true;\n    continue;\n  }\n\n  empresaReal = {\n    nome,\n    telefone,\n    email,\n    timezone,\n    tempoCancelamentoMinutos,\n    whatsappConfigurado: campoPresente(row.WHATSAPP_PHONE_NUMBER_ID),\n  };\n}\n\nif (quantidadeLinhasReais > 1) {\n  // Duplicidade acidental na fonte para o mesmo ID_EMPRESA — nunca escolher uma linha\n  // silenciosamente nem mesclar dados. Falha determinística e genérica.\n  return erroUpstream();\n}\n\nif (existeInvalido) {\n  return erroUpstream();\n}\n\nif (!empresaReal) {\n  return erroUpstream();\n}\n\nreturn [{ json: { empresa: empresaReal, requestId } }];\n"
+      },
+      "id": "b2c3d4e5-3333-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Normalizar Empresa",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-4444-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Empresa Inválida Na Fonte",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1692873768,
+          "mode": "list",
+          "cachedResultName": "DISPONIBILIDADES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=1692873768"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-1111-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "GS - Buscar Disponibilidades",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        2688
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-2222-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Erro Técnico Ao Buscar Disponibilidades",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// DISPONIBILIDADES: schema real confirmado (correção de schema desta tarefa — a\n// conclusão anterior de 8 colunas, baseada só no subconjunto lido por AGE-WF004, estava\n// incompleta) — 10 colunas: ID_DISPONIBILIDADE, ID_EMPRESA, ID_PROFISSIONAL,\n// DIA_SEMANA_NUM (convenção do cadastro: 0=domingo..6=sábado, distinta do weekday do\n// Luxon — comentário do próprio AGE-WF004), DIA_SEMANA (texto), HORA_INICIO, HORA_FIM,\n// INTERVALO_INICIO, INTERVALO_FIM (opcionais), ATIVO ('SIM'/'NAO'). Nunca inclui\n// ID_EMPRESA na saída.\n//\n// ID_DISPONIBILIDADE e DIA_SEMANA (texto) NÃO fazem parte do shape de saída: o contrato\n// público não tem campo equivalente a ID_DISPONIBILIDADE (identificador interno de\n// linha), e `diaSemana` (string) do contrato já é DERIVADO de DIA_SEMANA_NUM em\n// configuracoes.service.ts — expor DIA_SEMANA bruto criaria uma segunda fonte de\n// verdade para o mesmo conceito, sem necessidade (o vocabulário textual real de\n// DIA_SEMANA não está confirmado, então não há como validar consistência entre as duas\n// colunas sem risco de inventar valores). As duas PARTICIPAM, porém, da distinção\n// placeholder x linha corrompida abaixo.\n//\n// `disponibilidades.listar` NÃO replica o filtro adicional `ATIVO='SIM'` que AGE-WF004\n// usa (ele só quer dias abertos para calcular horários livres) — aqui vêm TODOS os dias,\n// abertos e fechados, para montar a grade completa por profissional no contrato público\n// (a tradução DIA_SEMANA_NUM -> enum de string e o preenchimento dos dias sem linha real\n// acontecem em configuracoes.service.ts, não aqui).\n//\n// Hardening (mesmo padrão de Serviços/Profissionais): ID_PROFISSIONAL, DIA_SEMANA_NUM e\n// ATIVO são obrigatórios. DIA_SEMANA_NUM só aceita um inteiro 0-6 — qualquer outro valor\n// falha a operação inteira. ATIVO só aceita exatamente 'SIM'/'NAO' (trim+uppercase,\n// nunca default). Quando ATIVO='SIM', HORA_INICIO/HORA_FIM também são obrigatórios (um\n// dia aberto sem horário é dado corrompido); quando ATIVO='NAO', ficam null (nunca\n// fabricados, mesmo que a planilha tenha valores residuais nessas colunas — um dia\n// fechado não tem horário válido, independente do que sobrou na linha).\n// INTERVALO_INICIO/INTERVALO_FIM são sempre opcionais.\n//\n// Placeholder x linha corrompida (revisado nesta correção para incluir\n// ID_DISPONIBILIDADE e DIA_SEMANA): item sem NENHUM campo real presente\n// (ID_DISPONIBILIDADE/DIA_SEMANA_NUM/DIA_SEMANA/ATIVO/HORA_INICIO/HORA_FIM/\n// INTERVALO_INICIO/INTERVALO_FIM também ausentes) é o placeholder legítimo do\n// alwaysOutputData — busca realmente vazia. Uma linha real com QUALQUER um desses\n// campos preenchido mas ID_PROFISSIONAL ausente é dado corrompido, nunca \"nenhuma\n// disponibilidade\" (isso vale explicitamente para ID_DISPONIBILIDADE preenchido sem\n// ID_PROFISSIONAL, e para DIA_SEMANA preenchido sem ID_PROFISSIONAL). Um valor 0 válido\n// (ex.: DIA_SEMANA_NUM=0, domingo) conta como presente, nunca como ausência.\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nconst linhas = $input.all().map((item) => item.json);\n\nfunction campoPresente(valor) {\n  if (valor === undefined || valor === null) return false;\n  if (typeof valor === 'string' && valor.trim() === '') return false;\n  return true;\n}\n\nfunction textoOuNull(valor) {\n  if (!campoPresente(valor)) return null;\n  const texto = typeof valor === 'string' ? valor : String(valor);\n  const aparado = texto.trim();\n  return aparado ? aparado : null;\n}\n\nlet existeInvalido = false;\nconst disponibilidades = [];\n\nfor (const row of linhas) {\n  if (!row) continue;\n\n  const temIdProfissional = campoPresente(row.ID_PROFISSIONAL);\n  const temOutroCampo =\n    campoPresente(row.ID_DISPONIBILIDADE) ||\n    campoPresente(row.DIA_SEMANA_NUM) ||\n    campoPresente(row.DIA_SEMANA) ||\n    campoPresente(row.ATIVO) ||\n    campoPresente(row.HORA_INICIO) ||\n    campoPresente(row.HORA_FIM) ||\n    campoPresente(row.INTERVALO_INICIO) ||\n    campoPresente(row.INTERVALO_FIM);\n\n  if (!temIdProfissional && !temOutroCampo) {\n    // Placeholder real do alwaysOutputData: busca legitimamente vazia — não é erro, não\n    // é uma disponibilidade. Ignorado.\n    continue;\n  }\n\n  if (!temIdProfissional) {\n    // Linha real (tem algum campo operacional preenchido, incluindo ID_DISPONIBILIDADE\n    // ou DIA_SEMANA sozinhos) mas sem ID_PROFISSIONAL — dado corrompido da fonte, nunca\n    // \"nenhuma disponibilidade\".\n    existeInvalido = true;\n    continue;\n  }\n\n  const diaSemanaNum = Number(row.DIA_SEMANA_NUM);\n  const ativoTexto = typeof row.ATIVO === 'string' ? row.ATIVO.trim().toUpperCase() : '';\n\n  if (!Number.isInteger(diaSemanaNum) || diaSemanaNum < 0 || diaSemanaNum > 6) {\n    existeInvalido = true;\n    continue;\n  }\n  if (ativoTexto !== 'SIM' && ativoTexto !== 'NAO') {\n    existeInvalido = true;\n    continue;\n  }\n\n  const aberto = ativoTexto === 'SIM';\n  const horaInicio = textoOuNull(row.HORA_INICIO);\n  const horaFim = textoOuNull(row.HORA_FIM);\n\n  if (aberto && (!horaInicio || !horaFim)) {\n    existeInvalido = true;\n    continue;\n  }\n\n  disponibilidades.push({\n    idProfissional: String(row.ID_PROFISSIONAL),\n    diaSemanaNum,\n    aberto,\n    horaInicio: aberto ? horaInicio : null,\n    horaFim: aberto ? horaFim : null,\n    intervaloInicio: textoOuNull(row.INTERVALO_INICIO),\n    intervaloFim: textoOuNull(row.INTERVALO_FIM),\n  });\n}\n\nif (existeInvalido) {\n  // Mensagem genérica de propósito — nunca expõe qual linha/ID_PROFISSIONAL/ID_EMPRESA/\n  // planilha está com o dado inválido.\n  return [{ json: {\n    erro_codigo: 'UPSTREAM_ERROR',\n    erro_mensagem: 'Uma ou mais disponibilidades cadastradas possuem dados inválidos.',\n    requestId,\n  } }];\n}\n\nreturn [{ json: { disponibilidades, requestId } }];\n"
+      },
+      "id": "c3d4e5f6-3333-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Normalizar Disponibilidades",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        2688
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3d4e5f6-4444-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Disponibilidade Inválida Na Fonte",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        2688
       ]
     }
   ],
@@ -478,6 +922,27 @@
         [
           {
             "node": "GS - Buscar Serviços",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GS - Buscar Profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GS - Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GS - Buscar Disponibilidades",
             "type": "main",
             "index": 0
           }
@@ -614,6 +1079,180 @@
           }
         ]
       ]
+    },
+    "GS - Buscar Profissionais": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Profissionais": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Normalizar Profissionais",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Profissionais": {
+      "main": [
+        [
+          {
+            "node": "IF - Profissional Inválido Na Fonte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Profissional Inválido Na Fonte": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Empresa": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Normalizar Empresa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Empresa": {
+      "main": [
+        [
+          {
+            "node": "IF - Empresa Inválida Na Fonte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Empresa Inválida Na Fonte": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Disponibilidades": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Disponibilidades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Disponibilidades": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Normalizar Disponibilidades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Disponibilidades": {
+      "main": [
+        [
+          {
+            "node": "IF - Disponibilidade Inválida Na Fonte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Disponibilidade Inválida Na Fonte": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -622,7 +1261,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "844b4fb8-67c1-464e-94ea-4d4f5ad33d45",
+  "versionId": "c5e7a924-6f1b-4d83-9a2e-3b8f5c7d1e46",
   "meta": {
     "templateCredsSetupCompleted": false,
     "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"

@@ -43,7 +43,9 @@ export function ProfissionaisTable({ profissionais, onSelect }: ProfissionaisTab
               <td className="px-4 py-3 font-medium text-zinc-900">{profissional.nome}</td>
               <td className="px-4 py-3 text-zinc-600">{profissional.especialidade ?? "—"}</td>
               <td className="px-4 py-3 text-zinc-600">{profissional.telefone ?? "—"}</td>
-              <td className="px-4 py-3 text-right tabular-nums text-zinc-600">{profissional.totalAtendimentos}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-zinc-600">
+                {profissional.totalAtendimentos ?? "—"}
+              </td>
               <td className="px-4 py-3">
                 <ProfissionalStatusBadge status={profissional.status} />
               </td>

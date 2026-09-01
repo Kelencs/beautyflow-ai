@@ -29,6 +29,8 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
 
   validarDataSource(config, 'DATA_SOURCE_CLIENTES');
   validarDataSource(config, 'DATA_SOURCE_SERVICOS');
+  validarDataSource(config, 'DATA_SOURCE_PROFISSIONAIS');
+  validarDataSource(config, 'DATA_SOURCE_CONFIGURACOES');
 
   return config;
 }

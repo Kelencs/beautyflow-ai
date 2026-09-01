@@ -2,13 +2,18 @@
  * Contrato de GET /profissionais e GET /profissionais/:id (backend NestJS). Mesmo
  * espírito de agenda.ts/clientes.ts/servicos.ts: camelCase, sem ids internos de tenant.
  *
- * Schema real da aba PROFISSIONAIS (confirmado nos workflows n8n existentes — AGE-WF004,
- * COM-WF013, COM-WF014): só `ID_EMPRESA`, `ID_PROFISSIONAL`, `NOME` e `STATUS` são
- * efetivamente lidos/filtrados em algum workflow. **Não existe** coluna de TELEFONE,
- * EMAIL nem ESPECIALIDADE na planilha real hoje — `telefone`/`email`/`especialidade`
- * aqui são campos do domínio já preparados para quando a aba ganhar essas colunas; nos
- * mocks do backend vêm preenchidos (ou null) para dar contexto visual, mas não
- * correspondem a dados reais ainda.
+ * Schema real da aba PROFISSIONAIS (corrigido — uma auditoria anterior desta fase,
+ * baseada só em workflows que leem um subconjunto de colunas, concluiu incorretamente
+ * que TELEFONE/EMAIL/ESPECIALIDADE não existiam): `ID_PROFISSIONAL`, `ID_EMPRESA`,
+ * `NOME`, `ESPECIALIDADE`, `TELEFONE`, `EMAIL`, `GOOGLE_CALENDAR_ID`,
+ * `DURACAO_INTERVALO_MIN`, `STATUS`, `DATA_ADMISSAO`, `DATA_CADASTRO`,
+ * `ULTIMA_ATUALIZACAO`. `telefone`/`email`/`especialidade` **existem** de fato e, quando
+ * a fonte é `n8n` (`DATA_SOURCE_PROFISSIONAIS`), vêm normalizados pelo APP-WF019 (trim,
+ * vazio/ausente vira `null`, nunca fabricado/inferido). `GOOGLE_CALENDAR_ID`
+ * (identificador de integração), `DURACAO_INTERVALO_MIN` (uso futuro em
+ * Agenda/disponibilidade), `DATA_ADMISSAO`, `DATA_CADASTRO` e `ULTIMA_ATUALIZACAO`
+ * também existem na planilha mas **não fazem parte deste contrato** — decisão de escopo,
+ * não um gap a corrigir.
  */
 export type StatusProfissional = "ATIVO" | "INATIVO";
 
@@ -20,11 +25,16 @@ export interface Profissional {
   especialidade: string | null;
   status: StatusProfissional;
   /**
-   * Derivado/mockado nesta etapa (contagem sobre o mock de Agenda-like data interno do
-   * backend) — não é um valor persistido real ainda. Ver ProfissionaisService.
+   * Mock: contagem derivada de um mock local (não persistida). Fonte `n8n`: `null` —
+   * dependeria de AGENDAMENTOS, que a aba PROFISSIONAIS sozinha não tem (mesmo motivo de
+   * `Cliente.totalAtendimentos`/`totalGasto`) — nunca `0` fabricado. Ver
+   * ProfissionaisService.
    */
-  totalAtendimentos: number;
-  /** Derivado/mockado nesta etapa — ISO "YYYY-MM-DD", ou null se não houver. */
+  totalAtendimentos: number | null;
+  /**
+   * Mock: derivado/mockado nesta etapa, ISO "YYYY-MM-DD". Fonte `n8n`: sempre `null` —
+   * mesmo motivo de `totalAtendimentos` ("não sabemos", não "não há").
+   */
   proximoAtendimento: string | null;
 }
 
