@@ -48,14 +48,12 @@ O BeautyFlow transforma essas interações em **processos estruturados, rastreá
 ```ts
 const beautyFlow = {
   nome: "BeautyFlow AI",
-
   produto: [
     "SaaS",
     "Automação de Processos",
     "Inteligência Artificial",
     "Gestão para o setor da beleza"
   ],
-
   objetivo: [
     "Automatizar atendimento no WhatsApp",
     "Organizar agenda e disponibilidade",
@@ -64,7 +62,6 @@ const beautyFlow = {
     "Automatizar comunicação e follow-up",
     "Evoluir para uma plataforma SaaS de gestão"
   ],
-
   publicoAlvo: [
     "Nail Designers",
     "Lash Designers",
@@ -76,7 +73,6 @@ const beautyFlow = {
     "Clínicas de Estética",
     "Profissionais Autônomos"
   ],
-
   pilares: [
     "Atendimento inteligente",
     "Automação de processos",
@@ -85,9 +81,8 @@ const beautyFlow = {
     "Arquitetura escalável",
     "Rastreabilidade"
   ],
-
-  statusAtual: "Em desenvolvimento ativo",
-  proximaEtapa: "Integração do App com o gateway APP-WF019"
+  statusAtual: "Em desenvolvimento ativo com integração real parcial homologada",
+  proximaEtapa: "Decisão do modelo de status da Agenda e preparação da integração real"
 };
 ```
 
@@ -115,7 +110,6 @@ flowchart LR
     B["Menos tarefas manuais"] --> E
     C["Mais organização"] --> E
     D["Atendimento mais rápido"] --> E
-
     E --> F["Automação"]
     E --> G["Gestão"]
     E --> H["IA"]
@@ -137,7 +131,7 @@ flowchart LR
 
 ## 05 // ARQUITETURA GERAL
 
-O BeautyFlow possui hoje **duas grandes camadas**.
+O BeautyFlow possui hoje **duas grandes camadas integradas de forma progressiva**.
 
 ### Núcleo operacional
 
@@ -145,7 +139,6 @@ O BeautyFlow possui hoje **duas grandes camadas**.
 flowchart LR
     A["Cliente"] --> B["WhatsApp Cloud API"]
     B --> C["n8n Cloud"]
-
     C --> D["Google Gemini"]
     C --> E["Google Sheets"]
     C --> F["Google Calendar"]
@@ -159,23 +152,21 @@ flowchart LR
     A["Usuário"] --> B["Next.js"]
     B --> C["NestJS"]
     C --> D["Supabase"]
+    C --> E["APP-WF019"]
+    E --> F["Google Sheets"]
 ```
 
-### Arquitetura alvo de integração
+### Arquitetura atual de integração
 
 ```mermaid
 flowchart LR
     A["BeautyFlow App<br/>Next.js"] --> B["Backend<br/>NestJS"]
-    B --> C["Supabase<br/>Auth + App Data"]
-    B --> D["APP-WF019<br/>Gateway"]
-    D --> E["n8n"]
-    E --> F["Google Sheets"]
-    E --> G["Google Calendar"]
-    E --> H["Google Gemini"]
-    E --> I["Google Drive"]
+    B --> C["Supabase<br/>Auth + identidade"]
+    B --> D["APP-WF019<br/>Gateway read-only"]
+    D --> E["Google Sheets<br/>dados operacionais"]
 ```
 
-> O frontend não deve chamar os webhooks do n8n diretamente. O NestJS permanece como fronteira de autenticação, autorização, validação, auditoria e integração.
+> O frontend nunca chama o n8n diretamente. O NestJS permanece como backend principal e fronteira de autenticação, autorização, resolução de tenant, regras de negócio e orquestração. O APP-WF019 atua como **gateway/adaptador de integração** com as fontes operacionais.
 
 ---
 
@@ -186,19 +177,15 @@ flowchart TD
     A["Cliente envia mensagem"] --> B["WF001<br/>Receber WhatsApp"]
     B --> C["WF002<br/>IA Atendimento"]
     C --> D["Cliente existe?"]
-
     D -->|"Não"| E["WF008<br/>Cadastrar Cliente"]
     D -->|"Sim"| F["WF003<br/>Identificar Intenção"]
     E --> F
-
     F --> G{"Intenção"}
-
     G -->|"Consultar horário"| H["WF004<br/>Consultar Disponibilidade"]
     G -->|"Agendar"| I["WF005<br/>Criar Agendamento"]
     G -->|"Reagendar"| J["WF006<br/>Reagendar"]
     G -->|"Cancelar"| K["WF007<br/>Cancelar"]
     G -->|"Outro"| L["WF012<br/>Comunicação"]
-
     H --> M["Resposta ao cliente"]
     I --> M
     J --> M
@@ -218,10 +205,11 @@ flowchart TD
 | 💳 Financeiro | WF010–WF011 | Pagamentos e cobranças |
 | 📣 Comunicação | WF012–WF015 | Mensagens, lembretes, pesquisa e follow-up |
 | ⚙️ Administração | WF016–WF018 | Backup, logs e limpeza |
+| 🧩 App | WF019 | Gateway read-only entre NestJS e dados operacionais |
 
 ---
 
-## 08 // VISÃO DOS 18 WORKFLOWS
+## 08 // VISÃO DOS WORKFLOWS
 
 ```text
 ATENDIMENTO
@@ -253,6 +241,9 @@ ADMINISTRAÇÃO
 ├── WF016 — Backup
 ├── WF017 — Logs
 └── WF018 — Limpeza
+
+APP
+└── WF019 — Gateway App
 ```
 
 ---
@@ -278,6 +269,29 @@ flowchart TD
     A --> K["Configurações"]
 ```
 
+### Operações reais homologadas no APP-WF019
+
+| Operação | Situação |
+|---|---|
+| `clientes.listar` | ✅ Homologada |
+| `servicos.listar` | ✅ Homologada |
+| `profissionais.listar` | ✅ Homologada |
+| `empresa.obter` | ✅ Homologada |
+| `disponibilidades.listar` | ✅ Homologada |
+
+### Telas com dados reais
+
+| Tela | Fonte | Situação |
+|---|---|---|
+| `/clientes` | APP-WF019 → CLIENTES | ✅ Homologada |
+| `/servicos` | APP-WF019 → SERVICOS | ✅ Homologada |
+| `/profissionais` | APP-WF019 → PROFISSIONAIS | ✅ Homologada |
+| `/configuracoes` | APP-WF019 → EMPRESAS + DISPONIBILIDADES + ProfissionaisService | ✅ Homologada |
+| `/agenda` | Mock | ⏳ Decisão de domínio pendente |
+| `/financeiro` | Mock | ⏳ Integração real pendente |
+| `/comunicacao` | Mock | ⏳ Integração real pendente |
+| `/ia` | Mock/parcial | ⏳ Integração real pendente |
+
 ### Backend NestJS
 
 ```text
@@ -292,6 +306,7 @@ Comunicação
 Relatórios
 Configurações
 IA
+N8nGateway
 ```
 
 ---
@@ -371,14 +386,16 @@ O BeautyFlow App foi estruturado para que **segurança não dependa apenas da in
 - autenticação via Supabase;
 - autorização efetiva no backend;
 - resolução de empresa e usuário server-side;
+- `idEmpresa` obtido do contexto autenticado, não do browser;
 - isolamento multiempresa;
 - restrição por perfil;
 - frontend sem acesso direto ao n8n;
+- gateway n8n autenticado por Header Auth server-to-server;
 - chaves privadas somente no servidor;
 - prevenção de acesso cross-tenant;
 - variáveis sensíveis fora do versionamento.
 
-### Fluxo de autorização
+### Fluxo de autorização e integração
 
 ```mermaid
 sequenceDiagram
@@ -386,14 +403,18 @@ sequenceDiagram
     participant F as Next.js
     participant B as NestJS
     participant S as Supabase
+    participant W as APP-WF019
+    participant G as Google Sheets
 
-    U->>F: Login
-    F->>S: Autenticação
-    S-->>F: Sessão / token
+    U->>F: Login / navegação
+    F->>S: Sessão
     F->>B: Requisição autenticada
-    B->>S: Valida usuário e contexto
-    S-->>B: Empresa + perfil
-    B-->>F: Dados autorizados
+    B->>S: Valida usuário, empresa e perfil
+    B->>W: Operação + tenant resolvido server-side
+    W->>G: Consulta filtrada por ID_EMPRESA
+    G-->>W: Dados operacionais
+    W-->>B: Envelope normalizado
+    B-->>F: Contrato público autorizado
 ```
 
 ---
@@ -442,17 +463,23 @@ flowchart LR
 
 ## 15 // TESTES E QUALIDADE
 
+O checkpoint read-only atual foi fechado com **424 testes backend em 20 suítes, 100% verdes**, além de lint backend/frontend e builds de `shared-types`, backend e frontend concluídos com sucesso.
+
 ```text
 WF001 ↔ CT001
 WF002 ↔ CT002
 WF003 ↔ CT003
 ...
 WF018 ↔ CT018
+
+APP-WF019
+├── testes de contrato
+├── simulação do workflow
+├── hardening de upstream
+└── homologação E2E das 5 operações atuais
 ```
 
-> Um arquivo JSON versionado não significa automaticamente que o workflow está validado.
-
-A classificação de pronto deve considerar implementação, testes, evidências, regras de negócio, tratamento de erro, regressão e documentação.
+> Um arquivo JSON versionado não significa automaticamente que o workflow está validado. A classificação de pronto considera implementação, testes, evidências, regras de negócio, tratamento de erro, regressão e documentação.
 
 ---
 
@@ -466,35 +493,31 @@ A classificação de pronto deve considerar implementação, testes, evidências
 | Frontend Next.js | ✅ Estruturado |
 | Backend NestJS | ✅ Estruturado |
 | Supabase Auth | ✅ Implementado |
-| Dashboard | ✅ Implementado/estruturado |
-| Agenda | ✅ Implementada/estruturada |
-| Clientes | ✅ Implementado/estruturado |
-| Serviços | ✅ Implementado/estruturado |
-| Profissionais | ✅ Implementado/estruturado |
-| Financeiro | ✅ Implementado/estruturado |
-| Comunicação | ✅ Implementado/estruturado |
-| Relatórios | ✅ Implementado/estruturado |
-| IA | ✅ Implementado/estruturado |
-| Configurações | ✅ Implementado/estruturado |
-| APP-WF019 | 🔄 Próxima macroetapa |
-| Dados reais no App | 🔄 Integração progressiva |
+| APP-WF019 | ✅ Implementado — 5 operações read-only homologadas |
+| Clientes | ✅ Dados reais homologados |
+| Serviços | ✅ Dados reais homologados |
+| Profissionais | ✅ Dados reais homologados |
+| Configurações | ✅ Dados reais homologados |
+| Dashboard | 🟡 Estruturado; depende parcialmente dos módulos integrados |
+| Relatórios | 🟡 Estruturado; depende parcialmente dos módulos integrados |
+| Agenda | 🟡 Estruturada em mock; integração real bloqueada por decisão de status |
+| Financeiro | 🟡 Estruturado em mock; integração real pendente |
+| Comunicação | 🟡 Estruturada em mock; integração real pendente |
+| IA | 🟡 Estruturada; persistência/memória real ainda incompleta |
 | Hardening para produção | 🟡 Pendente |
 | Escala SaaS | 🟡 Evolução futura |
 
 ---
 
-## 17 // O QUE AINDA NÃO ESTÁ CONCLUÍDO
+## 17 // BLOQUEIOS E DÍVIDAS CONHECIDAS
 
-- integração operacional completa do App com o n8n;
-- implementação do `APP-WF019`;
-- substituição progressiva de mocks;
-- integração completa das telas aos dados reais;
-- onboarding automatizado;
-- evolução da observabilidade;
-- hardening de segurança;
-- testes de integração de ponta a ponta;
-- preparação para produção em escala;
-- refinamento de gaps funcionais conhecidos.
+- **Agenda:** a fonte real de `AGENDAMENTOS.STATUS` usa `AGENDADO`/`CANCELADO`, enquanto o contrato atual do App usa `PENDENTE`/`CONFIRMADO`/`CONCLUIDO`/`CANCELADO`; a decisão de domínio precisa ser tomada antes de `agendamentos.listar`.
+- **Google Calendar legado:** workflows antigos ainda possuem configuração fixa associada ao ambiente original e exigem revisão antes da escala multiempresa.
+- **Financeiro:** integração read-only exige composição de `AGENDAMENTOS` + `PAGAMENTOS` e não foi implementada no APP-WF019 atual.
+- **Comunicação:** histórico depende de múltiplas fontes (`MENSAGENS`, `LEMBRETES`, `PESQUISA`, `FOLLOWUPS`, `COBRANCAS`) sem correlação única consolidada.
+- **IA:** `IA_MEMORIA` é lida pelo fluxo conversacional, mas não há writer persistente confirmado no conjunto WF001–WF018.
+- **Performance:** chamadas reais observadas de `clientes.listar` e `servicos.listar` ficaram na faixa de ~4,8–4,9 s; otimização/cache permanece dívida não bloqueante.
+- **Homologação:** o JSON versionado do WF019 aponta para `BEAUTYFLOW3.1`; no n8n Cloud de homologação os 5 nodes de Sheets foram reapontados manualmente para `BEAUTYFLOW_HOMOLOGACAO`.
 
 ---
 
@@ -504,27 +527,27 @@ A classificação de pronto deve considerar implementação, testes, evidências
 flowchart LR
     A["WF001-WF018"] --> B["BeautyFlow App"]
     B --> C["Supabase + Auth"]
-    C --> D["Módulos do App"]
-    D --> E["APP-WF019"]
-    E --> F["Agenda com dados reais"]
-    F --> G["Demais módulos"]
-    G --> H["Testes E2E"]
-    H --> I["Hardening"]
-    I --> J["MVP Comercial"]
-    J --> K["Escala SaaS"]
+    C --> D["APP-WF019 read-only"]
+    D --> E["Clientes / Serviços / Profissionais / Configurações reais"]
+    E --> F["Decisão de domínio da Agenda"]
+    F --> G["Agenda real"]
+    G --> H["Financeiro / Comunicação / IA"]
+    H --> I["Testes E2E ampliados"]
+    I --> J["Hardening"]
+    J --> K["MVP Comercial"]
+    K --> L["Escala SaaS"]
 ```
 
 ### Próximas prioridades
 
 1. manter documentação e código sincronizados;
-2. implementar `APP-WF019`;
-3. usar Agenda como primeiro fluxo vertical real;
-4. validar Frontend → Backend → n8n → dados;
-5. substituir mocks gradualmente;
-6. ampliar testes de integração;
-7. fortalecer segurança e observabilidade;
-8. criar ambiente de demonstração;
-9. preparar MVP comercial.
+2. concluir a decisão de domínio do status da Agenda;
+3. ajustar contratos/mocks/testes da Agenda de forma controlada;
+4. implementar `agendamentos.listar` somente após essa decisão;
+5. homologar a Agenda com dados reais;
+6. avançar para Financeiro, Comunicação e IA;
+7. ampliar observabilidade e otimização de performance;
+8. preparar hardening e MVP comercial.
 
 ---
 
@@ -538,9 +561,9 @@ beautyflow-ai/
 ├── libs/
 │   └── shared-types/         # Contratos compartilhados
 ├── n8n/
-│   ├── workflows/            # WF001-WF018
+│   ├── workflows/            # WF001-WF019
 │   └── documentacao/         # Documentação técnica
-├── docs/                     # Requisitos e arquitetura
+├── docs/                     # Requisitos, arquitetura e status
 ├── tests/                    # Testes e rastreabilidade
 ├── database/
 ├── scripts/
@@ -664,8 +687,10 @@ journey
       Backend NestJS: 5
       Supabase e Auth: 5
     section Integração
-      APP-WF019: 2
-      Dados reais no App: 2
+      APP-WF019 read-only: 5
+      Clientes/Serviços/Profissionais/Configurações reais: 5
+      Agenda real: 2
+      Demais módulos reais: 1
       Produção SaaS: 1
 ```
 
