@@ -15,6 +15,7 @@ function toAgendaItem(registro: AgendaMockRecord): AgendaItem {
     horaInicio: registro.horaInicio,
     horaFim: registro.horaFim,
     status: registro.status,
+    statusConfirmacao: registro.statusConfirmacao,
     valor: registro.valor,
   };
 }

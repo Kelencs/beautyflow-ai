@@ -113,7 +113,11 @@ export class RelatoriosService {
     // status — representam o volume bruto de agendamentos do período, não só o "válido".
     const naoCancelados = agenda.filter((item) => item.status !== 'CANCELADO');
 
-    const confirmados = agenda.filter((item) => item.status === 'CONFIRMADO').length;
+    // atendimentosConfirmados é sobre StatusConfirmacao (confirmação do cliente), não
+    // StatusAgendamento — não precisa checar status === 'AGENDADO' à parte porque um
+    // atendimento CONCLUIDO/CANCELADO sempre tem statusConfirmacao null (ver
+    // shared-types/agenda.ts), então já fica fora desta contagem.
+    const confirmados = agenda.filter((item) => item.statusConfirmacao === 'CONFIRMADO').length;
     const concluidos = agenda.filter((item) => item.status === 'CONCLUIDO').length;
     const cancelados = agenda.filter((item) => item.status === 'CANCELADO').length;
     const total = agenda.length;

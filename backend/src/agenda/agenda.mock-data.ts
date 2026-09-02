@@ -47,7 +47,8 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     data: deslocarDiasISO(HOJE, -3),
     horaInicio: '09:00',
     horaFim: '11:00',
-    status: 'CONFIRMADO',
+    status: 'AGENDADO',
+    statusConfirmacao: 'CONFIRMADO',
     valor: 120,
   },
   {
@@ -61,7 +62,8 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     data: deslocarDiasISO(HOJE, -3),
     horaInicio: '11:30',
     horaFim: '13:00',
-    status: 'CONFIRMADO',
+    status: 'AGENDADO',
+    statusConfirmacao: 'CONFIRMADO',
     valor: 90,
   },
   {
@@ -75,7 +77,8 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     data: deslocarDiasISO(HOJE, 0),
     horaInicio: '14:30',
     horaFim: '15:30',
-    status: 'PENDENTE',
+    status: 'AGENDADO',
+    statusConfirmacao: 'PENDENTE',
     valor: 70,
   },
   // EMP001 — Carla Souza (PROF002)
@@ -90,7 +93,8 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     data: deslocarDiasISO(HOJE, -2),
     horaInicio: '10:00',
     horaFim: '11:30',
-    status: 'CONFIRMADO',
+    status: 'AGENDADO',
+    statusConfirmacao: 'CONFIRMADO',
     valor: 140,
   },
   {
@@ -105,14 +109,20 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     horaInicio: '13:00',
     horaFim: '14:00',
     status: 'CANCELADO',
+    statusConfirmacao: null,
     valor: 60,
   },
   // EMP001 — agendamentos históricos: existiam antes só em financeiro.mock-data.ts/
   // comunicacao.mock-data.ts (AGD006/007/008), que já referenciavam estes idAgendamento
   // sem contrapartida aqui — integridade corrigida adicionando-os com os MESMOS
   // dados (cliente/profissional/serviço/data/valor) já usados nos outros dois mocks, sem
-  // inventar outro ID nem alterar datas. Todos CONCLUIDO: já têm registro financeiro
-  // resolvido (PAGO/PARCIAL/PENDENTE), logo o atendimento em si já aconteceu.
+  // inventar outro ID nem alterar datas. Todos CONCLUIDO por serem fixtures de
+  // atendimentos já passados neste mock (não por terem registro financeiro associado —
+  // financeiro.mock-data.ts é um mock independente, sem relação de causa com o status da
+  // Agenda; ver "regra fundamental" da migração de status: nunca inferir CONCLUIDO a
+  // partir de pagamento). statusConfirmacao: null porque, uma vez CONCLUIDO, a
+  // confirmação de presença do cliente deixa de se aplicar (ver StatusConfirmacao em
+  // shared-types/agenda.ts).
   {
     idAgendamento: 'AGD006',
     idEmpresa: 'EMP001',
@@ -125,6 +135,7 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     horaInicio: '13:00',
     horaFim: '14:00',
     status: 'CONCLUIDO',
+    statusConfirmacao: null,
     valor: 60,
   },
   {
@@ -139,6 +150,7 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     horaInicio: '11:30',
     horaFim: '13:00',
     status: 'CONCLUIDO',
+    statusConfirmacao: null,
     valor: 90,
   },
   {
@@ -153,6 +165,7 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     horaInicio: '10:00',
     horaFim: '11:00',
     status: 'CONCLUIDO',
+    statusConfirmacao: null,
     valor: 60,
   },
   // EMP002 — outra empresa, nunca deve aparecer para usuários de EMP001
@@ -168,6 +181,7 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     horaInicio: '09:00',
     horaFim: '10:00',
     status: 'CONCLUIDO',
+    statusConfirmacao: null,
     valor: 80,
   },
   {
@@ -181,7 +195,8 @@ export const AGENDA_MOCK_RECORDS: AgendaMockRecord[] = [
     data: '2026-08-23',
     horaInicio: '15:00',
     horaFim: '17:00',
-    status: 'CONFIRMADO',
+    status: 'AGENDADO',
+    statusConfirmacao: 'CONFIRMADO',
     valor: 220,
   },
 ];

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  BadgeCheck,
   Calendar,
   Clock,
   DollarSign,
@@ -11,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import type { Agendamento } from "./types";
+import { STATUS_CONFIRMACAO_META } from "./status";
 import { StatusBadge } from "./StatusBadge";
 import { formatLongDate, parseISODate } from "@/lib/date";
 import { cn } from "@/lib/cn";
@@ -65,6 +67,23 @@ export function AppointmentDetails({ agendamento, onClose }: AppointmentDetailsP
     { icon: Clock, label: "Horário", value: `${agendamento.horaInicio} — ${agendamento.horaFim}` },
     { icon: DollarSign, label: "Valor", value: formatBRL(agendamento.valor) },
   ];
+
+  // Confirmação exibida como linha própria e separada do Status (cabeçalho, acima) —
+  // os dois eixos nunca devem ser fundidos num único indicador (ver StatusAgendamento x
+  // StatusConfirmacao em @beautyflow/shared-types). Só listada quando o atendimento
+  // ainda está AGENDADO: fora disso a confirmação não se aplica (statusConfirmacao é
+  // sempre null), então a linha nem aparece — em vez de mostrar um "—" para algo que não
+  // faz sentido perguntar. Dentro de AGENDADO, "—" sinaliza especificamente o caso
+  // (hoje só teórico, sem persistência real ainda) de confirmação desconhecida.
+  if (agendamento.status === "AGENDADO") {
+    info.splice(1, 0, {
+      icon: BadgeCheck,
+      label: "Confirmação",
+      value: agendamento.statusConfirmacao
+        ? STATUS_CONFIRMACAO_META[agendamento.statusConfirmacao].label
+        : "—",
+    });
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">

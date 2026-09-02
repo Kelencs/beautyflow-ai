@@ -1,4 +1,4 @@
-import { STATUS_META } from "./status";
+import { STATUS_AGENDAMENTO_META, STATUS_CONFIRMACAO_META } from "./status";
 import { StatusBadge } from "./StatusBadge";
 import type { Agendamento } from "./types";
 import { cn } from "@/lib/cn";
@@ -15,11 +15,21 @@ interface AppointmentCardProps {
  * cartão em cada visão.
  */
 export function AppointmentCard({ agendamento, variant = "full", onSelect }: AppointmentCardProps) {
-  const meta = STATUS_META[agendamento.status];
+  const meta = STATUS_AGENDAMENTO_META[agendamento.status];
   const isCancelado = agendamento.status === "CANCELADO";
+  // Indicador secundário de confirmação: a aparência do cartão (cor do risco/borda, dot)
+  // continua inteiramente guiada pelo ciclo de vida (`status`) — a confirmação do
+  // cliente só aparece como um rótulo extra discreto, e só quando de fato se aplica
+  // (AGENDADO com statusConfirmacao conhecido). Ver StatusBadge para o mesmo critério.
+  const confirmacaoMeta =
+    agendamento.status === "AGENDADO" && agendamento.statusConfirmacao
+      ? STATUS_CONFIRMACAO_META[agendamento.statusConfirmacao]
+      : null;
 
   if (variant === "chip") {
-    const accessibleLabel = `${agendamento.horaInicio} — ${agendamento.clienteNome}, ${meta.label}`;
+    const accessibleLabel = `${agendamento.horaInicio} — ${agendamento.clienteNome}, ${meta.label}${
+      confirmacaoMeta ? ` (${confirmacaoMeta.label})` : ""
+    }`;
     return (
       <button
         type="button"
@@ -58,6 +68,11 @@ export function AppointmentCard({ agendamento, variant = "full", onSelect }: App
           <span className="flex items-center gap-1">
             <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", meta.dotClass)} aria-hidden="true" />
             <span className={cn("text-[10px] font-medium", meta.textClass)}>{meta.label}</span>
+            {confirmacaoMeta && (
+              <span className={cn("text-[10px] font-normal opacity-80", confirmacaoMeta.textClass)}>
+                · {confirmacaoMeta.label}
+              </span>
+            )}
           </span>
         </div>
         <span className={cn("truncate text-sm font-semibold text-zinc-900", isCancelado && "text-zinc-400 line-through")}>
@@ -85,7 +100,7 @@ export function AppointmentCard({ agendamento, variant = "full", onSelect }: App
             {agendamento.horaInicio} — {agendamento.horaFim} · {agendamento.profissionalNome}
           </span>
         </span>
-        <StatusBadge status={agendamento.status} />
+        <StatusBadge status={agendamento.status} statusConfirmacao={agendamento.statusConfirmacao} />
       </span>
     </button>
   );

@@ -38,8 +38,12 @@ function filtrarPorPeriodo(agendamentos: Agendamento[], view: VisaoAgenda, refer
 /** Cartões discretos de contexto do período selecionado — nunca deve virar um mini-dashboard financeiro. */
 export function AgendaSummary({ view, referenceDate, agendamentos }: AgendaSummaryProps) {
   const doPeriodo = filtrarPorPeriodo(agendamentos, view, referenceDate);
-  const confirmados = doPeriodo.filter((a) => a.status === "CONFIRMADO").length;
-  const pendentes = doPeriodo.filter((a) => a.status === "PENDENTE").length;
+  // Confirmados/pendentes são sobre StatusConfirmacao (eixo "o cliente confirmou?"), não
+  // StatusAgendamento — um agendamento CONCLUIDO/CANCELADO tem statusConfirmacao null
+  // (não se aplica mais, ver shared-types/agenda.ts) e por isso já cai fora das duas
+  // contagens abaixo, sem precisar de um filtro explícito por status.
+  const confirmados = doPeriodo.filter((a) => a.statusConfirmacao === "CONFIRMADO").length;
+  const pendentes = doPeriodo.filter((a) => a.statusConfirmacao === "PENDENTE").length;
   const concluidos = doPeriodo.filter((a) => a.status === "CONCLUIDO").length;
   const cancelados = doPeriodo.filter((a) => a.status === "CANCELADO").length;
   const previsto = doPeriodo

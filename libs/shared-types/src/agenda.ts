@@ -1,10 +1,27 @@
 /**
- * Contrato de GET /agenda (backend NestJS). Espelha o mesmo formato de status usado
- * pela Agenda mockada do frontend (frontend/src/features/agenda/types.ts) — quando o
- * frontend passar a consumir esta API de verdade (fase futura), é este o tipo a importar
- * em vez de duplicar a definição.
+ * Contrato de GET /agenda (backend NestJS). O frontend (frontend/src/features/agenda/
+ * types.ts) já consome esta API real hoje — não existe mais uma "fase futura" pendente
+ * de migração aqui.
+ *
+ * O status de um agendamento tem dois eixos independentes, que um enum único de 4
+ * valores conflava até esta migração (ver auditoria de domínio da Agenda). Os dois
+ * nunca devem voltar a ser combinados num único campo:
+ *
+ * - StatusAgendamento: o ciclo de vida do atendimento em si (ainda vai acontecer, já
+ *   aconteceu, ou foi cancelado).
+ * - StatusConfirmacao: se o cliente confirmou presença — um dado independente do ciclo
+ *   de vida, que só faz sentido enquanto o atendimento ainda está AGENDADO.
  */
-export type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO';
+export type StatusAgendamento = 'AGENDADO' | 'CONCLUIDO' | 'CANCELADO';
+
+/**
+ * PENDENTE = ainda sem confirmação do cliente; CONFIRMADO = cliente confirmou presença.
+ * `null` em AgendaItem.statusConfirmacao significa "não se aplica" (ex.: atendimento já
+ * CONCLUIDO ou CANCELADO) — nunca inferir PENDENTE/CONFIRMADO a partir de outro dado
+ * (AGENDADO, horário passado, pagamento registrado, lembrete enviado etc.); sem fonte
+ * real de confirmação, o valor correto é `null`, nunca um valor fabricado.
+ */
+export type StatusConfirmacao = 'PENDENTE' | 'CONFIRMADO';
 
 /**
  * Um item de resposta de GET /agenda. Deliberadamente sem idEmpresa/idProfissional —
@@ -23,6 +40,8 @@ export interface AgendaItem {
   horaInicio: string;
   horaFim: string;
   status: StatusAgendamento;
+  /** Confirmação do cliente — eixo independente de `status` (ver StatusConfirmacao). */
+  statusConfirmacao: StatusConfirmacao | null;
   valor: number;
 }
 

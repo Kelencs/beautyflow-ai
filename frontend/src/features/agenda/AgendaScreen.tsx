@@ -28,7 +28,11 @@ interface AgendaScreenProps {
   /** "Hoje" real calculado uma única vez no servidor — nunca recalculado aqui, para não
    *  arriscar divergir do HTML já enviado (hydration mismatch) perto da meia-noite. */
   todayIso: string;
-  /** Já vem mapeado de GET /agenda (backend NestJS) — não são mais os MOCK_AGENDAMENTOS. */
+  /**
+   * Já vem de GET /agenda (backend NestJS) — não existe mais um mock local de Agenda no
+   * frontend (o antigo mock-data.ts foi removido por estar órfão: nenhum componente o
+   * importava, ver migração do modelo de status da Agenda).
+   */
   agendamentos: Agendamento[];
 }
 

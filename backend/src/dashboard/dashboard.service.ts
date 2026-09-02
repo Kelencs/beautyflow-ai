@@ -25,8 +25,6 @@ const RESUMO_VAZIO: DashboardResumo = {
 
 /** No máximo N itens em "próximos atendimentos" — seção de destaque, não um calendário completo. */
 const MAX_PROXIMOS_ATENDIMENTOS = 5;
-/** Status que ainda representam algo "a acontecer" (exclui CANCELADO e CONCLUIDO). */
-const STATUS_PENDENTES_DE_OCORRER = new Set(['PENDENTE', 'CONFIRMADO']);
 
 function toDashboardItem(item: AgendaItem): DashboardProximoAtendimento {
   return {
@@ -90,8 +88,17 @@ export class DashboardService {
     const servicos = (await this.servicosService.listar(user)).data;
     const profissionais = (await this.profissionaisService.listar(user)).data;
 
-    const confirmadosHoje = agendaHoje.filter((item) => item.status === 'CONFIRMADO').length;
-    const pendentesHoje = agendaHoje.filter((item) => item.status === 'PENDENTE').length;
+    // confirmadosHoje/pendentesHoje são sobre StatusConfirmacao (eixo "o cliente
+    // confirmou?"), não sobre StatusAgendamento — e só fazem sentido para atendimentos
+    // ainda AGENDADO (um CONCLUIDO/CANCELADO tem statusConfirmacao null, ver
+    // shared-types/agenda.ts, e por isso já cai fora das duas contagens abaixo sem
+    // precisar de um filtro explícito de status).
+    const confirmadosHoje = agendaHoje.filter(
+      (item) => item.status === 'AGENDADO' && item.statusConfirmacao === 'CONFIRMADO',
+    ).length;
+    const pendentesHoje = agendaHoje.filter(
+      (item) => item.status === 'AGENDADO' && item.statusConfirmacao === 'PENDENTE',
+    ).length;
     const previstoHoje = agendaHoje
       .filter((item) => item.status !== 'CANCELADO')
       .reduce((soma, item) => soma + item.valor, 0);
@@ -101,9 +108,11 @@ export class DashboardService {
     // quando NÃO há dataReferenciaISO explícita (produção, sempre hoje de verdade): em
     // testes com data fixa, usar a hora real de execução do teste tornaria o resultado
     // não-determinístico, então o corte vira '00:00' (nenhum horário do dia é excluído).
+    // "A acontecer" agora é só StatusAgendamento === 'AGENDADO' (CONCLUIDO/CANCELADO já
+    // não representam algo pendente, independente do estado de confirmação do cliente).
     const horaAgora = dataReferenciaISO ? '00:00' : getHoraAgoraBrasil();
     const proximosAtendimentos = agendaHoje
-      .filter((item) => STATUS_PENDENTES_DE_OCORRER.has(item.status) && item.horaInicio > horaAgora)
+      .filter((item) => item.status === 'AGENDADO' && item.horaInicio > horaAgora)
       .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
       .slice(0, MAX_PROXIMOS_ATENDIMENTOS)
       .map(toDashboardItem);

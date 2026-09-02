@@ -70,8 +70,10 @@ describe('RelatoriosService', () => {
 
       const agendaEsperada = agendaService.listar(owner, agosto).data;
       expect(resultado.resumo.totalAtendimentos).toBe(agendaEsperada.length);
+      // atendimentosConfirmados é sobre StatusConfirmacao (confirmação do cliente), não
+      // sobre StatusAgendamento (ver relatorios.service.ts e shared-types/agenda.ts).
       expect(resultado.resumo.atendimentosConfirmados).toBe(
-        agendaEsperada.filter((item) => item.status === 'CONFIRMADO').length,
+        agendaEsperada.filter((item) => item.statusConfirmacao === 'CONFIRMADO').length,
       );
       expect(resultado.resumo.atendimentosConcluidos).toBe(
         agendaEsperada.filter((item) => item.status === 'CONCLUIDO').length,
@@ -209,6 +211,25 @@ describe('RelatoriosService', () => {
 
       expect(taxaConfirmacao).toBeCloseTo(atendimentosConfirmados / totalAtendimentos);
       expect(taxaCancelamento).toBeCloseTo(atendimentosCancelados / totalAtendimentos);
+    });
+
+    // Migração do modelo de status: um atendimento CONCLUIDO tem statusConfirmacao null
+    // (não se aplica mais, ver shared-types/agenda.ts) — nunca deve ser contado em
+    // atendimentosConfirmados, mesmo havendo CONCLUIDO no período (AGD006/007/008/101).
+    it('atendimentosConfirmados nunca conta atendimentos CONCLUIDO (statusConfirmacao null)', async () => {
+      const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
+      const resultado = await service.obterRelatorio(owner, agosto);
+
+      const agendaEsperada = agendaService.listar(owner, agosto).data;
+      const concluidosNoPeriodo = agendaEsperada.filter((item) => item.status === 'CONCLUIDO');
+      expect(concluidosNoPeriodo.length).toBeGreaterThan(0);
+      expect(concluidosNoPeriodo.every((item) => item.statusConfirmacao === null)).toBe(true);
+
+      const confirmadosReais = agendaEsperada.filter(
+        (item) => item.statusConfirmacao === 'CONFIRMADO',
+      ).length;
+      expect(resultado.resumo.atendimentosConfirmados).toBe(confirmadosReais);
+      expect(resultado.resumo.atendimentosConfirmados).toBeLessThan(agendaEsperada.length);
     });
 
     it('EMP001 nunca recebe dados de EMP002 (ranking de profissionais/serviços)', async () => {

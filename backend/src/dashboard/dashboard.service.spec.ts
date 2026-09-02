@@ -107,7 +107,7 @@ describe('DashboardService', () => {
       clienteNome: 'Mariana Silva',
       servicoNome: 'Alongamento em gel',
       profissionalNome: 'Ana Martins',
-      status: 'CONFIRMADO',
+      status: 'AGENDADO',
     });
     expect(resultado.proximosAtendimentos.map((item) => item.idAgendamento)).toEqual([
       'AGD001',
@@ -159,7 +159,7 @@ describe('DashboardService', () => {
   // qualquer que ele seja — porque AGD003 (o único agendamento de EMP001 na Agenda para
   // "hoje") agora é gerado com base na mesma `getHojeBrasilISO()` que o Dashboard usa.
   describe('obterResumo sem dataReferenciaISO (caminho real de produção — nunca uma data fixa)', () => {
-    it('usa o dia real de hoje em América/São Paulo: AGD003 (PENDENTE, R$70) é o único agendamento de hoje no mock', async () => {
+    it('usa o dia real de hoje em América/São Paulo: AGD003 (AGENDADO/PENDENTE, R$70) é o único agendamento de hoje no mock', async () => {
       const resultado = await service.obterResumo(
         usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
       );
@@ -186,5 +186,25 @@ describe('DashboardService', () => {
         expect(resultado.proximosAtendimentos).toEqual([]);
       }
     });
+  });
+
+  // Migração do modelo de status (StatusAgendamento x StatusConfirmacao, ver
+  // shared-types/agenda.ts): confirmadosHoje/pendentesHoje agora dependem de
+  // statusConfirmacao, não de status — um atendimento CONCLUIDO tem statusConfirmacao
+  // null (não se aplica mais), então nunca deve contar em nenhum dos dois, mesmo sendo
+  // "de hoje" na contagem bruta de agendamentosHoje.
+  it('atendimento CONCLUIDO (statusConfirmacao null) não conta como confirmado nem como pendente', async () => {
+    const resultado = await service.obterResumo(
+      usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
+      deslocarDiasISO(hoje, -6),
+    );
+
+    expect(resultado.resumo.agendamentosHoje).toBe(1);
+    expect(resultado.resumo.confirmadosHoje).toBe(0);
+    expect(resultado.resumo.pendentesHoje).toBe(0);
+    // CONCLUIDO não é "a acontecer": não aparece em próximos atendimentos, mesmo com
+    // horaInicio (13:00) maior que o corte '00:00' usado quando há dataReferenciaISO fixa.
+    expect(resultado.proximoAtendimento).toBeNull();
+    expect(resultado.proximosAtendimentos).toEqual([]);
   });
 });
