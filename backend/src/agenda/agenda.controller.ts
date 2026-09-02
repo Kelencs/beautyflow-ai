@@ -16,11 +16,11 @@ export class AgendaController {
    * Não aceita id_empresa por querystring de propósito — vem sempre de @CurrentUser().
    */
   @Get()
-  listar(
+  async listar(
     @CurrentUser() user: AuthenticatedUser,
     @Query('dataInicio') dataInicioRaw: unknown,
     @Query('dataFim') dataFimRaw: unknown,
-  ): AgendaResponse {
+  ): Promise<AgendaResponse> {
     const query = parseAgendaQuery(dataInicioRaw, dataFimRaw);
     return this.agendaService.listar(user, query);
   }

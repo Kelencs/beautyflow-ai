@@ -27,7 +27,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida nesta Fase 1 — qualquer outra vira INVALID_OPERATION.\n// Não criar branches vazios de Agenda/Financeiro/etc. aqui (ver sticky note desta\n// workflow): adicionar a próxima operação exige voltar a este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar', 'servicos.listar', 'profissionais.listar', 'empresa.obter', 'disponibilidades.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
+        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dados = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Seis operações reconhecidas nesta fase (read-only) — qualquer outra vira\n// INVALID_OPERATION. Não criar branches vazios de Financeiro/Comunicação/IA aqui\n// (ver sticky note desta workflow): adicionar a próxima operação exige voltar a\n// este array E ao fluxo real.\nconst OPERACOES_SUPORTADAS = ['clientes.listar', 'servicos.listar', 'profissionais.listar', 'empresa.obter', 'disponibilidades.listar', 'agendamentos.listar'];\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF019.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, dados, erro_codigo, erro_mensagem } }];"
       },
       "id": "f6375890-a627-40e3-bf78-711eb5b04a8d",
       "name": "CODE - Validar Envelope",
@@ -194,6 +194,30 @@
               },
               "renameOutput": true,
               "outputKey": "disponibilidades.listar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c6",
+                    "leftValue": "={{ $json.operacao }}",
+                    "rightValue": "agendamentos.listar",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "agendamentos.listar"
             }
           ]
         },
@@ -439,7 +463,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Compartilhado entre as cinco operações (branches mutuamente exclusivos por\n// execução — só um normalizador roda por vez) — lê qualquer um dos campos que o\n// normalizador correspondente tiver produzido. `empresa.obter` é a única singular:\n// `$json.empresa` já é o objeto direto (nunca um array) quando presente.\nreturn [{ json: { ok: true, data: $json.clientes ?? $json.servicos ?? $json.profissionais ?? $json.disponibilidades ?? $json.empresa ?? [], meta: { requestId: $json.requestId } } }];"
+        "jsCode": "// Compartilhado entre as seis operações (branches mutuamente exclusivos por\n// execução — só um normalizador roda por vez) — lê qualquer um dos campos que o\n// normalizador correspondente tiver produzido. `empresa.obter` é a única singular:\n// `$json.empresa` já é o objeto direto (nunca um array) quando presente.\nreturn [{ json: { ok: true, data: $json.clientes ?? $json.servicos ?? $json.profissionais ?? $json.disponibilidades ?? $json.agendamentos ?? $json.empresa ?? [], meta: { requestId: $json.requestId } } }];"
       },
       "id": "0b60d626-a219-4a31-9b6f-e21d4fe77164",
       "name": "CODE - Montar Sucesso",
@@ -482,12 +506,12 @@
     },
     {
       "parameters": {
-        "content": "## APP-WF019 — Gateway App v1.10 (hardening de duplicidade em empresa.obter)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Conhece `clientes.listar`,\n`servicos.listar`, `profissionais.listar`, `empresa.obter` e `disponibilidades.listar`\nnesta fase — qualquer outra operação recebida devolve `INVALID_OPERATION`. Não chamar\nWF001-WF018 a partir daqui.\n\n**`.obter` x `.listar`**: `empresa.obter` é a primeira operação singular do gateway —\n`data` no envelope de sucesso é o OBJETO da empresa diretamente (nunca embrulhado em\narray), enquanto toda `.listar` continua devolvendo `data` como array (mesmo `[]` vazio).\n`CODE - Montar Sucesso` lê `$json.clientes ?? $json.servicos ?? $json.profissionais ??\n$json.disponibilidades ?? $json.empresa ?? []` — a ordem não importa, os branches são\nmutuamente exclusivos por execução.\n\n**Schema real EMPRESAS (corrigido v1.9)**: 18 colunas — ID_EMPRESA, NOME, CNPJ,\nTELEFONE, EMAIL, ENDERECO, CIDADE, UF, CEP, TIMEZONE, HORARIO_FUNCIONAMENTO,\nTEMPO_CANCELAMENTO_MIN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WABA_ID, GOOGLE_CALENDAR_ID,\nSTATUS, DATA_CADASTRO, ULTIMA_ATUALIZACAO. Uma auditoria anterior, baseada só nos\nworkflows que leem um subconjunto de colunas, concluiu incorretamente que só 4\nexistiam; NOME/TELEFONE/EMAIL agora alimentam `ConfiguracoesEmpresa.negocio` com dado\nreal (trim; TELEFONE/EMAIL vazio/ausente -> null; NOME vazio/ausente -> '', nunca\nfabricado). CNPJ/ENDERECO/CIDADE/UF/CEP/HORARIO_FUNCIONAMENTO (do estabelecimento —\ndistinto de DISPONIBILIDADES por profissional)/STATUS/DATA_CADASTRO/\nULTIMA_ATUALIZACAO/WHATSAPP_WABA_ID/GOOGLE_CALENDAR_ID existem na fonte mas não fazem\nparte do contrato público — decisão de escopo, participam só da distinção placeholder x\nlinha corrompida. `WHATSAPP_PHONE_NUMBER_ID` nunca sai como valor — só a\npresença/ausência vira `whatsappConfigurado` boolean. `empresa.obter` é singular: sem\nlinha real ou com TIMEZONE/TEMPO_CANCELAMENTO_MIN inválidos, a operação falha inteira\n(`UPSTREAM_ERROR`) — nunca um \"sucesso vazio\".\n\n**Hardening de duplicidade em empresa.obter (v1.10)**: o filtro `ID_EMPRESA` do\n`GS - Buscar Empresa` deveria garantir no máximo 1 linha real por chamada, mas\n`CODE - Normalizar Empresa` nunca confia cegamente nisso — conta explicitamente as\nlinhas reais (com `ID_EMPRESA` presente) e, se houver 2 ou mais para a mesma chamada,\na operação INTEIRA falha com `UPSTREAM_ERROR` (mesma mensagem genérica de sempre, nunca\nrevela quantas linhas existem nem seu conteúdo) — nunca escolhe a primeira/última\nsilenciosamente, nunca mescla dados de duas empresas. Essa checagem tem prioridade sobre\n\"linha corrompida\"/\"ausência de empresa\".\n\n**Schema real DISPONIBILIDADES (corrigido v1.9)**: 10 colunas — ID_DISPONIBILIDADE,\nID_EMPRESA, ID_PROFISSIONAL, DIA_SEMANA_NUM (convenção do cadastro 0=domingo..6=sábado —\ndistinta do `weekday` do Luxon, ver comentário original em AGE-WF004), DIA_SEMANA\n(texto), HORA_INICIO, HORA_FIM, INTERVALO_INICIO, INTERVALO_FIM (opcionais), ATIVO\n('SIM'/'NAO'). ID_DISPONIBILIDADE e DIA_SEMANA (texto) não fazem parte do shape de\nsaída — o contrato público não tem campo equivalente a ID_DISPONIBILIDADE, e `diaSemana`\njá é DERIVADO de DIA_SEMANA_NUM em configuracoes.service.ts (expor DIA_SEMANA bruto\ncriaria uma segunda fonte de verdade sem necessidade, e o vocabulário textual real dessa\ncoluna não está confirmado). As duas participam, porém, da distinção placeholder x linha\ncorrompida (v1.9): ID_DISPONIBILIDADE ou DIA_SEMANA preenchidos sem ID_PROFISSIONAL\ntambém é dado corrompido, nunca \"nenhuma disponibilidade\". Único workflow existente que\nlê essa aba é AGE-WF004 (`GS - Buscar Disponibilidade`), com filtro adicional\n`ATIVO='SIM'` (só quer dias abertos para calcular horários livres) — `GS - Buscar\nDisponibilidades` deste gateway **não** replica esse filtro: precisa de todos os dias\n(abertos e fechados) para montar a grade completa por profissional. A tradução\n`DIA_SEMANA_NUM` (número) -> enum `DiaSemana` (string) e o preenchimento dos dias sem\nlinha real (fechado por padrão, nunca fabricado como aberto) acontecem em\n`configuracoes.service.ts` (NestJS), não aqui — nem `nome` do profissional (resolvido\nali via `ProfissionaisService`, já integrado).\n\n**Hardening de Empresa/Disponibilidades (mesmo padrão de Serviços/Profissionais)**:\n`CODE - Normalizar Disponibilidades` exige ID_PROFISSIONAL/DIA_SEMANA_NUM(0-6)/ATIVO\n('SIM'/'NAO' explícitos); quando ATIVO='SIM', HORA_INICIO/HORA_FIM também são\nobrigatórios. Distinção placeholder x linha corrompida (v1.9) considera as 8 colunas\nreais além de ID_PROFISSIONAL (incluindo ID_DISPONIBILIDADE e DIA_SEMANA) — qualquer\numa presente com ID_PROFISSIONAL ausente = dado inválido, nunca \"nenhuma\ndisponibilidade\"; valor `0` válido nunca conta como ausência. `CODE - Normalizar\nEmpresa` (v1.9) percorre todos os itens da mesma forma (17 colunas reais além de\nID_EMPRESA na detecção), embora — por ser operação singular — placeholder legítimo e\nlinha corrompida convirjam para o mesmo resultado (`UPSTREAM_ERROR`); TIMEZONE/\nTEMPO_CANCELAMENTO_MIN ausentes/inválidos na linha real também falham a operação.\n\n**Roteamento**: `SWITCH - Operação` decide entre os cinco recursos logo após a validação\ndo envelope — fallback `none` (nunca deveria disparar, já que `CODE - Validar Envelope`\ngarante que só uma operação suportada chega até aqui). `CODE - Erro Upstream` e `CODE -\nMontar Sucesso` são compartilhados entre as cinco operações, alimentados por conexões\ndiretas (nunca um `Merge`).\n\n**Operações avaliadas e conscientemente NÃO implementadas nesta rodada** (auditoria\ncompleta registrada em `n8n/documentacao/app/APP-WF019.md`, seção \"Matriz READ-ONLY\"):\n- `agendamentos.listar` (Agenda) — BLOQUEADA: `AGENDAMENTOS.STATUS` real só tem\n  `{AGENDADO, CANCELADO}`, mas o contrato público exige 4 valores\n  (`PENDENTE/CONFIRMADO/CONCLUIDO/CANCELADO`) — mapear `AGENDADO` para `PENDENTE` ou\n  `CONFIRMADO` seria inventar uma regra de produto que a fonte não sustenta.\n- `pagamentos.listar` (Financeiro) — BLOQUEADA por complexidade: schema confirmado, mas\n  exigiria juntar AGENDAMENTOS+PAGAMENTOS (2 planilhas) num único Code node, algo\n  substancialmente mais arriscado que o padrão de leitura única já validado — não\n  tentado nesta rodada por prudência, não por falta de schema.\n- `mensagens.listar` (Comunicação) — BLOQUEADA: exigiria mesclar 5 abas\n  (MENSAGENS/LEMBRETES/PESQUISA/FOLLOWUPS/COBRANCAS) sem chave de correlação clara entre\n  elas, mais decisões de produto em aberto (incluir mensagens inbound? MENSAGENS cresce\n  sem limpeza conhecida).\n- `ia.obter` (IA) — BLOQUEADA: `IA_MEMORIA` não tem NENHUM writer conhecido em\n  WF001-WF018 (só WF002 lê) — \"memória ativa\" seria sempre vazia ou de origem\n  desconhecida; `resumo.status` não é determinável por tenant a partir de dado real\n  (WF001 tem `id_empresa` fixo em código, não uma flag por empresa em nenhuma aba).\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS — inclusive em `GS - Buscar Empresa`/`GS - Buscar Disponibilidades`.\n\n**Convergência sem Merge**: `CODE - Montar Sucesso`, `CODE - Montar Erro` e `RESPOND -\nResultado` recebem múltiplas conexões diretas cada, uma por branch mutuamente exclusivo\n— nunca um `n8n-nodes-base.merge` para isso (bug conhecido do projeto: Merge com\n`numberInputs` trava quando só um dos branches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Configuração manual pendente**: antes de qualquer teste real, `GS - Buscar Empresa` e\n`GS - Buscar Disponibilidades` (assim como os demais nodes GS deste workflow) precisam\nser reapontados manualmente no n8n Cloud de `BEAUTYFLOW3.1` para\n`BEAUTYFLOW_HOMOLOGACAO` — não feito neste arquivo, não acessado nesta tarefa.\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
+        "content": "## APP-WF019 — Gateway App v1.12 (agendamentos.listar reconhece CONCLUIDO real)\n\nCamada de integração NestJS -> n8n para o BeautyFlow App. Conhece `clientes.listar`,\n`servicos.listar`, `profissionais.listar`, `empresa.obter`, `disponibilidades.listar` e\n`agendamentos.listar` nesta fase — qualquer outra operação recebida devolve\n`INVALID_OPERATION`. Não chamar WF001-WF018 a partir daqui.\n\n**`.obter` x `.listar`**: `empresa.obter` é a única operação singular do gateway —\n`data` no envelope de sucesso é o OBJETO da empresa diretamente (nunca embrulhado em\narray), enquanto toda `.listar` (incluindo `agendamentos.listar`) continua devolvendo\n`data` como array (mesmo `[]` vazio). `CODE - Montar Sucesso` lê `$json.clientes ??\n$json.servicos ?? $json.profissionais ?? $json.disponibilidades ?? $json.agendamentos ??\n$json.empresa ?? []` — a ordem não importa, os branches são mutuamente exclusivos por\nexecução.\n\n**Schema real EMPRESAS (corrigido v1.9)**: 18 colunas — ID_EMPRESA, NOME, CNPJ,\nTELEFONE, EMAIL, ENDERECO, CIDADE, UF, CEP, TIMEZONE, HORARIO_FUNCIONAMENTO,\nTEMPO_CANCELAMENTO_MIN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_WABA_ID, GOOGLE_CALENDAR_ID,\nSTATUS, DATA_CADASTRO, ULTIMA_ATUALIZACAO. Uma auditoria anterior, baseada só nos\nworkflows que leem um subconjunto de colunas, concluiu incorretamente que só 4\nexistiam; NOME/TELEFONE/EMAIL agora alimentam `ConfiguracoesEmpresa.negocio` com dado\nreal (trim; TELEFONE/EMAIL vazio/ausente -> null; NOME vazio/ausente -> '', nunca\nfabricado). CNPJ/ENDERECO/CIDADE/UF/CEP/HORARIO_FUNCIONAMENTO (do estabelecimento —\ndistinto de DISPONIBILIDADES por profissional)/STATUS/DATA_CADASTRO/\nULTIMA_ATUALIZACAO/WHATSAPP_WABA_ID/GOOGLE_CALENDAR_ID existem na fonte mas não fazem\nparte do contrato público — decisão de escopo, participam só da distinção placeholder x\nlinha corrompida. `WHATSAPP_PHONE_NUMBER_ID` nunca sai como valor — só a\npresença/ausência vira `whatsappConfigurado` boolean. `empresa.obter` é singular: sem\nlinha real ou com TIMEZONE/TEMPO_CANCELAMENTO_MIN inválidos, a operação falha inteira\n(`UPSTREAM_ERROR`) — nunca um \"sucesso vazio\".\n\n**Hardening de duplicidade em empresa.obter (v1.10)**: o filtro `ID_EMPRESA` do\n`GS - Buscar Empresa` deveria garantir no máximo 1 linha real por chamada, mas\n`CODE - Normalizar Empresa` nunca confia cegamente nisso — conta explicitamente as\nlinhas reais (com `ID_EMPRESA` presente) e, se houver 2 ou mais para a mesma chamada,\na operação INTEIRA falha com `UPSTREAM_ERROR` (mesma mensagem genérica de sempre, nunca\nrevela quantas linhas existem nem seu conteúdo) — nunca escolhe a primeira/última\nsilenciosamente, nunca mescla dados de duas empresas. Essa checagem tem prioridade sobre\n\"linha corrompida\"/\"ausência de empresa\".\n\n**Schema real DISPONIBILIDADES (corrigido v1.9)**: 10 colunas — ID_DISPONIBILIDADE,\nID_EMPRESA, ID_PROFISSIONAL, DIA_SEMANA_NUM (convenção do cadastro 0=domingo..6=sábado —\ndistinta do `weekday` do Luxon, ver comentário original em AGE-WF004), DIA_SEMANA\n(texto), HORA_INICIO, HORA_FIM, INTERVALO_INICIO, INTERVALO_FIM (opcionais), ATIVO\n('SIM'/'NAO'). ID_DISPONIBILIDADE e DIA_SEMANA (texto) não fazem parte do shape de\nsaída — o contrato público não tem campo equivalente a ID_DISPONIBILIDADE, e `diaSemana`\njá é DERIVADO de DIA_SEMANA_NUM em configuracoes.service.ts (expor DIA_SEMANA bruto\ncriaria uma segunda fonte de verdade sem necessidade, e o vocabulário textual real dessa\ncoluna não está confirmado). As duas participam, porém, da distinção placeholder x linha\ncorrompida (v1.9): ID_DISPONIBILIDADE ou DIA_SEMANA preenchidos sem ID_PROFISSIONAL\ntambém é dado corrompido, nunca \"nenhuma disponibilidade\". Único workflow existente que\nlê essa aba é AGE-WF004 (`GS - Buscar Disponibilidade`), com filtro adicional\n`ATIVO='SIM'` (só quer dias abertos para calcular horários livres) — `GS - Buscar\nDisponibilidades` deste gateway **não** replica esse filtro: precisa de todos os dias\n(abertos e fechados) para montar a grade completa por profissional. A tradução\n`DIA_SEMANA_NUM` (número) -> enum `DiaSemana` (string) e o preenchimento dos dias sem\nlinha real (fechado por padrão, nunca fabricado como aberto) acontecem em\n`configuracoes.service.ts` (NestJS), não aqui — nem `nome` do profissional (resolvido\nali via `ProfissionaisService`, já integrado).\n\n**Hardening de Empresa/Disponibilidades (mesmo padrão de Serviços/Profissionais)**:\n`CODE - Normalizar Disponibilidades` exige ID_PROFISSIONAL/DIA_SEMANA_NUM(0-6)/ATIVO\n('SIM'/'NAO' explícitos); quando ATIVO='SIM', HORA_INICIO/HORA_FIM também são\nobrigatórios. Distinção placeholder x linha corrompida (v1.9) considera as 8 colunas\nreais além de ID_PROFISSIONAL (incluindo ID_DISPONIBILIDADE e DIA_SEMANA) — qualquer\numa presente com ID_PROFISSIONAL ausente = dado inválido, nunca \"nenhuma\ndisponibilidade\"; valor `0` válido nunca conta como ausência. `CODE - Normalizar\nEmpresa` (v1.9) percorre todos os itens da mesma forma (17 colunas reais além de\nID_EMPRESA na detecção), embora — por ser operação singular — placeholder legítimo e\nlinha corrompida convirjam para o mesmo resultado (`UPSTREAM_ERROR`); TIMEZONE/\nTEMPO_CANCELAMENTO_MIN ausentes/inválidos na linha real também falham a operação.\n\n**Schema real AGENDAMENTOS (nova operação v1.11)**: 18 colunas — ID_AGENDAMENTO,\nID_EMPRESA, ID_CLIENTE, ID_PROFISSIONAL, ID_SERVICO, DATA, HORA_INICIO, HORA_FIM,\nDURACAO_MIN, VALOR, STATUS, ORIGEM, OBSERVACOES, GOOGLE_EVENT_ID, DATA_CRIACAO,\nULTIMA_ATUALIZACAO, DATA_CANCELAMENTO, MOTIVO_CANCELAMENTO. `agendamentos.listar`\ndevolve só o mínimo operacional + IDs (idAgendamento/idCliente/idProfissional/\nidServico/data/horaInicio/horaFim/valor/status) — nomes de cliente/profissional/\nserviço NÃO são resolvidos aqui (só os IDs); o join fica inteiramente no NestJS\n(`agenda.service.ts`, via `Promise.all` com Clientes/Profissionais/Serviços), mesmo\nprincípio de minimização de dados das demais operações. DURACAO_MIN/ORIGEM/\nOBSERVACOES/GOOGLE_EVENT_ID/DATA_CRIACAO/ULTIMA_ATUALIZACAO/DATA_CANCELAMENTO/\nMOTIVO_CANCELAMENTO existem na fonte mas não fazem parte deste shape — decisão de\nescopo, nenhuma tem necessidade legítima demonstrada aqui.\n\n**STATUS real de AGENDAMENTOS — regra não-negociável (corrigido v1.12)**: a fonte\nsustenta `AGENDADO`/`CONCLUIDO`/`CANCELADO` — a homologação contra\n`BEAUTYFLOW_HOMOLOGACAO` encontrou uma linha real (`AGE_TESTE_WF015_04`) com\n`STATUS=CONCLUIDO`, revelando incompleta a premissa anterior (v1.11) de que só\n`AGENDADO`/`CANCELADO` existiam. `PENDENTE`/`CONFIRMADO` continuam NUNCA aceitos\n(conceitos do contrato público do App sem persistência real; ver migração do modelo de\nstatus da Agenda, `libs/shared-types/src/agenda.ts`) — `CONCLUIDO` só é reconhecido\nporque a própria fonte o grava literalmente, nunca inferido por data/hora/pagamento/\nheurística alguma. `CODE - Normalizar Agendamentos` recusa a operação INTEIRA para\nqualquer STATUS fora dessa whitelist de 3 valores — nunca inventa um mapeamento (ex.:\nAGENDADO -> PENDENTE) que a fonte não sustenta. `statusConfirmacao` não é produzido\naqui: o NestJS sempre acrescenta `null` ao montar o contrato público a partir deste\nshape — para os 3 valores de STATUS, incluindo CONCLUIDO —, nunca fabricado pelo\nworkflow.\n\n**Período em agendamentos.listar**: `GS - Buscar Agendamentos` filtra só `ID_EMPRESA`\n(tenant isolation na fonte) — o node Google Sheets só suporta lookup de igualdade, não\nintervalo, então `dataInicio`/`dataFim` (já validados pelo DTO do NestJS, mas\nrevalidados aqui em formato/presença — checagem técnica, não regra de negócio) são\naplicados em `CODE - Normalizar Agendamentos`, DEPOIS de validar todas as linhas reais\nda empresa (uma linha corrompida fora do período pedido nunca escapa da checagem só por\nestar fora do intervalo).\n\n**Roteamento**: `SWITCH - Operação` decide entre os seis recursos logo após a validação\ndo envelope — fallback `none` (nunca deveria disparar, já que `CODE - Validar Envelope`\ngarante que só uma operação suportada chega até aqui). `CODE - Erro Upstream` e `CODE -\nMontar Sucesso` são compartilhados entre as seis operações, alimentados por conexões\ndiretas (nunca um `Merge`).\n\n**Operações avaliadas e conscientemente NÃO implementadas nesta rodada** (auditoria\ncompleta registrada em `n8n/documentacao/app/APP-WF019.md`, seção \"Matriz READ-ONLY\"):\n- `pagamentos.listar` (Financeiro) — BLOQUEADA por complexidade: schema confirmado, mas\n  exigiria juntar AGENDAMENTOS+PAGAMENTOS (2 planilhas) num único Code node, algo\n  substancialmente mais arriscado que o padrão de leitura única já validado — não\n  tentado nesta rodada por prudência, não por falta de schema.\n- `mensagens.listar` (Comunicação) — BLOQUEADA: exigiria mesclar 5 abas\n  (MENSAGENS/LEMBRETES/PESQUISA/FOLLOWUPS/COBRANCAS) sem chave de correlação clara entre\n  elas, mais decisões de produto em aberto (incluir mensagens inbound? MENSAGENS cresce\n  sem limpeza conhecida).\n- `ia.obter` (IA) — BLOQUEADA: `IA_MEMORIA` não tem NENHUM writer conhecido em\n  WF001-WF018 (só WF002 lê) — \"memória ativa\" seria sempre vazia ou de origem\n  desconhecida; `resumo.status` não é determinável por tenant a partir de dado real\n  (WF001 tem `id_empresa` fixo em código, não uma flag por empresa em nenhuma aba).\n\n**Autenticação**: Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`) rejeita\nANTES de qualquer node de negócio rodar — configurar a credencial manualmente no n8n\nCloud (ver n8n/documentacao/app/APP-WF019.md, credencial `CONFIGURAR_CREDENCIAL_HEADER_AUTH`\né só um placeholder, nunca um valor real).\n\n**Resposta HTTP (corrigido v1.1)**: o Webhook DEVE permanecer `responseMode: \"Using\nRespond to Webhook Node\"` (responseNode) — NUNCA trocar para \"When Last Node Finishes\",\nque devolve o payload bruto do trigger (headers, query, body, webhookUrl,\nexecutionMode — incluindo o header de autenticação) em vez do envelope. `RESPOND -\nResultado` usa `responseBody: \"={{ $json }}\"` (o objeto, não uma string) — passar\n`JSON.stringify($json)` aqui produziu body vazio em teste real; o node \"Respond to\nWebhook\" em modo JSON espera o próprio objeto para serializar, não um texto\npré-serializado.\n\n**Tenant**: `idEmpresa` vem SEMPRE do NestJS (já resolvido via Supabase Auth), nunca do\nbrowser. O filtro `ID_EMPRESA` é aplicado aqui também (defesa em profundidade), não só\nno NestJS — inclusive em `GS - Buscar Empresa`/`GS - Buscar Disponibilidades`/`GS -\nBuscar Agendamentos`.\n\n**Convergência sem Merge**: `CODE - Montar Sucesso`, `CODE - Montar Erro` e `RESPOND -\nResultado` recebem múltiplas conexões diretas cada, uma por branch mutuamente exclusivo\n— nunca um `n8n-nodes-base.merge` para isso (bug conhecido do projeto: Merge com\n`numberInputs` trava quando só um dos branches dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import (ver documentação).\n\n**Configuração manual pendente**: antes de qualquer teste real, `GS - Buscar Empresa`,\n`GS - Buscar Disponibilidades` e o novo `GS - Buscar Agendamentos` (assim como os\ndemais nodes GS deste workflow) precisam ser reapontados manualmente no n8n Cloud de\n`BEAUTYFLOW3.1` para `BEAUTYFLOW_HOMOLOGACAO` — não feito neste arquivo, não acessado\nnesta tarefa.\n\n**Drift conhecido**: este arquivo é a fonte de verdade. A cópia no n8n Cloud pode ter\nsido editada manualmente durante testes — sempre reimportar/substituir a partir daqui,\nnunca exportar a versão do Cloud por cima deste arquivo sem revisão.",
         "height": 760,
         "width": 660
       },
       "id": "68a3a5a8-6e0a-4e0a-9c0e-1a2b3c4d5e6f",
-      "name": "NOTA - WF019 v1.10",
+      "name": "NOTA - WF019 v1.12",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
@@ -866,6 +890,130 @@
         2000,
         2688
       ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-0000-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "GS - Buscar Agendamentos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        3008
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-2222-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Erro Técnico Ao Buscar Agendamentos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        3008
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AGENDAMENTOS: schema real confirmado — ID_AGENDAMENTO, ID_EMPRESA, ID_CLIENTE,\n// ID_PROFISSIONAL, ID_SERVICO, DATA, HORA_INICIO, HORA_FIM, DURACAO_MIN, VALOR, STATUS,\n// ORIGEM, OBSERVACOES, GOOGLE_EVENT_ID, DATA_CRIACAO, ULTIMA_ATUALIZACAO,\n// DATA_CANCELAMENTO, MOTIVO_CANCELAMENTO. Nunca inclui ID_EMPRESA nem colunas técnicas\n// na saída (DURACAO_MIN, ORIGEM, OBSERVACOES, GOOGLE_EVENT_ID, DATA_CRIACAO,\n// ULTIMA_ATUALIZACAO, DATA_CANCELAMENTO, MOTIVO_CANCELAMENTO) — nenhuma tem necessidade\n// legítima demonstrada nesta operação. Nomes de cliente/profissional/serviço também NÃO\n// são resolvidos aqui — só os IDs; a composição/join fica inteiramente no NestJS\n// (agenda.service.ts, via Promise.all com Clientes/Profissionais/Serviços), mesmo\n// princípio de minimização de dados já usado nas demais operações deste gateway.\n//\n// STATUS: a fonte real sustenta 'AGENDADO'/'CONCLUIDO'/'CANCELADO' — corrigido na\n// homologação contra BEAUTYFLOW_HOMOLOGACAO (achado real: linha AGE_TESTE_WF015_04\n// com STATUS=CONCLUIDO), que revelou incompleta a premissa anterior de que só\n// AGENDADO/CANCELADO existiam. 'PENDENTE'/'CONFIRMADO' continuam NUNCA aceitos\n// (conceitos do contrato público do App sem persistência real, ver migração do\n// modelo de status da Agenda) — CONCLUIDO é reconhecido só porque a própria fonte o\n// grava literalmente, nunca inferido por data/hora/pagamento. Qualquer STATUS fora\n// desta whitelist de 3 valores falha a operação INTEIRA; nunca inventa um\n// mapeamento (ex.: AGENDADO -> PENDENTE) que a fonte não sustenta.\n// `statusConfirmacao` não é produzido aqui: o NestJS sempre acrescenta `null` ao\n// converter este shape de integração para o contrato público — para os 3 valores de\n// STATUS, incluindo CONCLUIDO —, nunca fabricado pelo workflow.\n//\n// dataInicio/dataFim: já validados pelo DTO do NestJS (AgendaQuery), mas o workflow\n// nunca confia cegamente nisso — revalida aqui só formato/presença (checagem técnica,\n// não regra de negócio). O filtro de ID_EMPRESA já aconteceu em `GS - Buscar\n// Agendamentos` (tenant isolation na fonte, não só no NestJS); dataInicio/dataFim são\n// aplicados aqui porque o node Google Sheets só suporta lookup de igualdade, não\n// intervalo. Importante: TODAS as linhas reais da empresa (de qualquer período) são\n// validadas antes do corte por período — uma linha corrompida fora do intervalo pedido\n// nunca escapa silenciosamente da checagem.\n//\n// Placeholder x linha corrompida (mesmo padrão de Serviços/Profissionais/\n// Disponibilidades/Empresa): item sem NENHUM campo operacional presente é o placeholder\n// legítimo do alwaysOutputData — busca realmente vazia. Uma linha real com QUALQUER\n// campo preenchido mas ID_AGENDAMENTO ausente é dado corrompido, nunca \"nenhum\n// agendamento\". Uma linha com ID_AGENDAMENTO presente mas faltando qualquer um dos\n// demais campos obrigatórios (ID_CLIENTE/ID_PROFISSIONAL/ID_SERVICO/DATA/HORA_INICIO/\n// HORA_FIM/VALOR/STATUS) também é inválida — a operação nunca devolve lista parcial.\nconst contexto = $('CODE - Validar Envelope').first().json;\nconst requestId = contexto.requestId;\nconst dadosRequisicao = (contexto.dados && typeof contexto.dados === 'object') ? contexto.dados : {};\nconst linhas = $input.all().map((item) => item.json);\n\nconst DATA_REGEX = /^\\d{4}-\\d{2}-\\d{2}/;\nconst HORA_REGEX = /^\\d{2}:\\d{2}/;\nconst STATUS_VALIDOS = new Set(['AGENDADO', 'CONCLUIDO', 'CANCELADO']);\n\nfunction erro(codigo, mensagem) {\n  return [{ json: { erro_codigo: codigo, erro_mensagem: mensagem, requestId } }];\n}\n\nconst dataInicio = typeof dadosRequisicao.dataInicio === 'string' ? dadosRequisicao.dataInicio.trim() : '';\nconst dataFim = typeof dadosRequisicao.dataFim === 'string' ? dadosRequisicao.dataFim.trim() : '';\n\nif (!DATA_REGEX.test(dataInicio) || !DATA_REGEX.test(dataFim)) {\n  return erro('VALIDATION_ERROR', 'dataInicio/dataFim são obrigatórios e devem estar no formato YYYY-MM-DD.');\n}\n\nfunction campoPresente(valor) {\n  if (valor === undefined || valor === null) return false;\n  if (typeof valor === 'string' && valor.trim() === '') return false;\n  return true;\n}\n\nfunction normalizarValorMonetario(valor) {\n  if (typeof valor === 'number') return valor;\n  let texto = String(valor == null ? '' : valor).trim().replace(/^R\\$\\s*/i, '');\n  if (texto.includes('.') && texto.includes(',')) {\n    texto = texto.replace(/\\./g, '').replace(',', '.');\n  } else if (texto.includes(',')) {\n    texto = texto.replace(',', '.');\n  }\n  return Number(texto);\n}\n\nlet existeInvalido = false;\nconst todasReais = [];\n\nfor (const row of linhas) {\n  if (!row) continue;\n\n  const temIdAgendamento = campoPresente(row.ID_AGENDAMENTO);\n  const temOutroCampo =\n    campoPresente(row.ID_CLIENTE) ||\n    campoPresente(row.ID_PROFISSIONAL) ||\n    campoPresente(row.ID_SERVICO) ||\n    campoPresente(row.DATA) ||\n    campoPresente(row.HORA_INICIO) ||\n    campoPresente(row.HORA_FIM) ||\n    campoPresente(row.DURACAO_MIN) ||\n    campoPresente(row.VALOR) ||\n    campoPresente(row.STATUS) ||\n    campoPresente(row.ORIGEM) ||\n    campoPresente(row.OBSERVACOES) ||\n    campoPresente(row.GOOGLE_EVENT_ID) ||\n    campoPresente(row.DATA_CRIACAO) ||\n    campoPresente(row.ULTIMA_ATUALIZACAO) ||\n    campoPresente(row.DATA_CANCELAMENTO) ||\n    campoPresente(row.MOTIVO_CANCELAMENTO);\n\n  if (!temIdAgendamento && !temOutroCampo) {\n    // Placeholder real do alwaysOutputData: busca legitimamente vazia — não é erro, não\n    // é um agendamento. Ignorado.\n    continue;\n  }\n\n  if (!temIdAgendamento) {\n    // Linha real (tem algum campo operacional preenchido) mas sem ID_AGENDAMENTO —\n    // dado corrompido da fonte, nunca \"nenhum agendamento\".\n    existeInvalido = true;\n    continue;\n  }\n\n  if (\n    !campoPresente(row.ID_CLIENTE) ||\n    !campoPresente(row.ID_PROFISSIONAL) ||\n    !campoPresente(row.ID_SERVICO) ||\n    !campoPresente(row.DATA) ||\n    !campoPresente(row.HORA_INICIO) ||\n    !campoPresente(row.HORA_FIM) ||\n    !campoPresente(row.VALOR) ||\n    !campoPresente(row.STATUS)\n  ) {\n    // ID_AGENDAMENTO presente mas alguma referência/campo obrigatório ausente — dado\n    // inválido, nunca completado com um valor fabricado.\n    existeInvalido = true;\n    continue;\n  }\n\n  const dataBruta = String(row.DATA).trim();\n  const data = DATA_REGEX.test(dataBruta) ? dataBruta.slice(0, 10) : '';\n  const horaInicioBruta = String(row.HORA_INICIO).trim();\n  const horaInicio = HORA_REGEX.test(horaInicioBruta) ? horaInicioBruta.slice(0, 5) : '';\n  const horaFimBruta = String(row.HORA_FIM).trim();\n  const horaFim = HORA_REGEX.test(horaFimBruta) ? horaFimBruta.slice(0, 5) : '';\n  const valor = normalizarValorMonetario(row.VALOR);\n  const status = typeof row.STATUS === 'string' ? row.STATUS.trim().toUpperCase() : '';\n\n  if (\n    !data ||\n    !horaInicio ||\n    !horaFim ||\n    !Number.isFinite(valor) ||\n    valor < 0 ||\n    !STATUS_VALIDOS.has(status)\n  ) {\n    existeInvalido = true;\n    continue;\n  }\n\n  todasReais.push({\n    idAgendamento: String(row.ID_AGENDAMENTO),\n    idCliente: String(row.ID_CLIENTE),\n    idProfissional: String(row.ID_PROFISSIONAL),\n    idServico: String(row.ID_SERVICO),\n    data,\n    horaInicio,\n    horaFim,\n    valor,\n    status,\n  });\n}\n\nif (existeInvalido) {\n  // Mensagem genérica de propósito — nunca expõe qual linha/ID_AGENDAMENTO/ID_EMPRESA/\n  // planilha está com o dado inválido.\n  return erro('UPSTREAM_ERROR', 'Um ou mais agendamentos cadastrados possuem dados inválidos.');\n}\n\n// Corte por período aplicado só depois de validar TODAS as linhas reais da empresa —\n// ver comentário do topo: uma linha corrompida fora do intervalo pedido não escapa\n// silenciosamente da checagem acima.\nconst agendamentos = todasReais.filter((item) => item.data >= dataInicio && item.data <= dataFim);\n\nreturn [{ json: { agendamentos, requestId } }];\n"
+      },
+      "id": "d4e5f6a7-3333-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Normalizar Agendamentos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        3008
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-4444-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Agendamento Inválido Na Fonte",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2000,
+        3008
+      ]
     }
   ],
   "pinData": {},
@@ -943,6 +1091,13 @@
         [
           {
             "node": "GS - Buscar Disponibilidades",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GS - Buscar Agendamentos",
             "type": "main",
             "index": 0
           }
@@ -1237,6 +1392,64 @@
       ]
     },
     "IF - Disponibilidade Inválida Na Fonte": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Agendamentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Normalizar Agendamentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Normalizar Agendamentos": {
+      "main": [
+        [
+          {
+            "node": "IF - Agendamento Inválido Na Fonte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Agendamento Inválido Na Fonte": {
       "main": [
         [
           {

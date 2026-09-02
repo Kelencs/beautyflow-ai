@@ -6,15 +6,16 @@
  */
 
 /**
- * Operações reconhecidas pelo APP-WF019 nesta fase (camada read-only completa: +
- * `empresa.obter` + `disponibilidades.listar`, ambas de Configurações).
+ * Operações reconhecidas pelo APP-WF019 nesta fase (camada read-only: `empresa.obter` +
+ * `disponibilidades.listar`, de Configurações; `agendamentos.listar`, de Agenda).
  */
 export type N8nGatewayOperation =
   | 'clientes.listar'
   | 'servicos.listar'
   | 'profissionais.listar'
   | 'empresa.obter'
-  | 'disponibilidades.listar';
+  | 'disponibilidades.listar'
+  | 'agendamentos.listar';
 
 /**
  * Código de erro técnico do envelope. `AUTH_FAILED` nunca aparece dentro de um envelope
@@ -238,4 +239,47 @@ export interface N8nGatewayDisponibilidadeIntegracao {
   horaFim: string | null;
   intervaloInicio: string | null;
   intervaloFim: string | null;
+}
+
+/**
+ * Shape de integração de um agendamento, já normalizado pelo APP-WF019 a partir da aba
+ * AGENDAMENTOS — nunca inclui `ID_EMPRESA` nem colunas técnicas. Schema real confirmado:
+ * `ID_AGENDAMENTO`, `ID_EMPRESA`, `ID_CLIENTE`, `ID_PROFISSIONAL`, `ID_SERVICO`, `DATA`,
+ * `HORA_INICIO`, `HORA_FIM`, `DURACAO_MIN`, `VALOR`, `STATUS`, `ORIGEM`, `OBSERVACOES`,
+ * `GOOGLE_EVENT_ID`, `DATA_CRIACAO`, `ULTIMA_ATUALIZACAO`, `DATA_CANCELAMENTO`,
+ * `MOTIVO_CANCELAMENTO`.
+ *
+ * Nomes de cliente/profissional/serviço NÃO são resolvidos pelo workflow — só os IDs
+ * (mesmo princípio de minimização de dados de Clientes/Serviços/Profissionais); a
+ * composição/join fica inteiramente em `agenda.service.ts`, via `Promise.all` com
+ * `ClientesService`/`ProfissionaisService`/`ServicosService`. `DURACAO_MIN`, `ORIGEM`,
+ * `OBSERVACOES`, `GOOGLE_EVENT_ID`, `DATA_CRIACAO`, `ULTIMA_ATUALIZACAO`,
+ * `DATA_CANCELAMENTO` e `MOTIVO_CANCELAMENTO` existem na aba real mas não fazem parte
+ * deste shape — decisão de escopo (nenhuma tem necessidade legítima demonstrada nesta
+ * operação read-only), nem chegam a ser lidas por `CODE - Normalizar Agendamentos`.
+ *
+ * `status` só assume `'AGENDADO'`/`'CONCLUIDO'`/`'CANCELADO'` — corrigido na homologação
+ * contra `BEAUTYFLOW_HOMOLOGACAO` (achado real: linha `AGE_TESTE_WF015_04` com
+ * `STATUS=CONCLUIDO`), que revelou incompleta a premissa anterior de que a fonte só
+ * sustentava `AGENDADO`/`CANCELADO`. `PENDENTE`/`CONFIRMADO` continuam fora da
+ * whitelist — nunca observados na fonte real e sem persistência de confirmação alguma
+ * (ver migração do modelo de status da Agenda em `libs/shared-types/src/agenda.ts`). O
+ * WF019 recusa a operação inteira (não apenas descarta a linha) para qualquer STATUS
+ * fora dessa whitelist de 3 valores — mesmo padrão de recusa total já usado em
+ * Serviços/Profissionais/Disponibilidades para campos fora da whitelist.
+ * `statusConfirmacao` não existe aqui: `agenda.service.ts` sempre acrescenta `null` ao
+ * converter este shape para o contrato público `AgendaItem` — para os 3 valores de
+ * `status`, incluindo `CONCLUIDO` (regra não-negociável desta integração: nunca inferir
+ * confirmação a partir de conclusão, nem de qualquer outro campo).
+ */
+export interface N8nGatewayAgendamentoIntegracao {
+  idAgendamento: string;
+  idCliente: string;
+  idProfissional: string;
+  idServico: string;
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  valor: number;
+  status: 'AGENDADO' | 'CONCLUIDO' | 'CANCELADO';
 }

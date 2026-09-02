@@ -203,16 +203,23 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
       expect(validado.erro_codigo).toBe('');
     });
 
-    it('uma quarta operação (ex.: agenda.listar) continua INVALID_OPERATION', () => {
+    it('uma sétima operação (ex.: agenda.listar) continua INVALID_OPERATION', () => {
       const validado = runCode(workflow, 'CODE - Validar Envelope', {
         json: { body: { operacao: 'agenda.listar', idEmpresa: 'EMP001', requestId: 'r4' } },
       });
       expect(validado.erro_codigo).toBe('INVALID_OPERATION');
     });
+
+    it('agendamentos.listar é reconhecido (integração da Agenda real)', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: { body: { operacao: 'agendamentos.listar', idEmpresa: 'EMP001', requestId: 'r5' } },
+      });
+      expect(validado.erro_codigo).toBe('');
+    });
   });
 
   describe('Fase 2 — estrutura do branch de Serviços', () => {
-    it('SWITCH - Operação existe e roteia as cinco operações read-only suportadas', () => {
+    it('SWITCH - Operação existe e roteia as seis operações read-only suportadas', () => {
       const sw = getNode(workflow, 'SWITCH - Operação');
       const values = (sw.parameters.rules as { values: Array<Record<string, unknown>> }).values;
       const chaves = values.map((v) => v.outputKey);
@@ -222,6 +229,7 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
         'profissionais.listar',
         'empresa.obter',
         'disponibilidades.listar',
+        'agendamentos.listar',
       ]);
     });
 
@@ -1233,7 +1241,7 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
    * Camada read-only completa — adiciona `empresa.obter` e `disponibilidades.listar`
    * (Configurações) sem regredir as três operações já existentes.
    */
-  describe('Camada read-only completa — reconhecimento das 5 operações', () => {
+  describe('Camada read-only completa — reconhecimento das 6 operações', () => {
     it('clientes.listar/servicos.listar/profissionais.listar continuam reconhecidos (regressão)', () => {
       for (const operacao of ['clientes.listar', 'servicos.listar', 'profissionais.listar']) {
         const validado = runCode(workflow, 'CODE - Validar Envelope', {
@@ -1259,9 +1267,13 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
       expect(validado.erro_codigo).toBe('');
     });
 
-    it('uma sexta operação (ex.: agendamentos.listar) continua INVALID_OPERATION', () => {
+    // Corrigido nesta tarefa (integração da Agenda real): `agendamentos.listar` ERA o
+    // exemplo de operação ainda bloqueada aqui — agora é a 6ª operação reconhecida (ver
+    // describe "agendamentos.listar EMP001" abaixo); o exemplo de operação desconhecida
+    // vira `agenda.criar` (write, fora do escopo desta integração read-only).
+    it('uma sétima operação (ex.: agenda.criar) continua INVALID_OPERATION', () => {
       const validado = runCode(workflow, 'CODE - Validar Envelope', {
-        json: { body: { operacao: 'agendamentos.listar', idEmpresa: 'EMP001', requestId: 'r3' } },
+        json: { body: { operacao: 'agenda.criar', idEmpresa: 'EMP001', requestId: 'r3' } },
       });
       expect(validado.erro_codigo).toBe('INVALID_OPERATION');
     });
@@ -2001,6 +2013,414 @@ describe('APP-WF019 — simulação do workflow real (JSON versionado)', () => {
         { ID_PROFISSIONAL: 'PROF3', DIA_SEMANA_NUM: 3, ATIVO: 'NAO' },
       ]);
       expect(resultado.ok).toBe(false);
+    });
+  });
+
+  describe('agendamentos.listar EMP001 — envelope final conceitual', () => {
+    const DADOS_PERIODO = { dataInicio: '2026-09-01', dataFim: '2026-09-30' };
+
+    // Linha com as 17 colunas reais confirmadas — prova que ID_EMPRESA e as colunas
+    // técnicas (DURACAO_MIN/ORIGEM/OBSERVACOES/GOOGLE_EVENT_ID/DATA_CRIACAO/
+    // ULTIMA_ATUALIZACAO/DATA_CANCELAMENTO/MOTIVO_CANCELAMENTO) nunca vazam, mesmo
+    // presentes na fonte.
+    const LINHA_AGENDADA = {
+      ID_AGENDAMENTO: 'AGD001',
+      ID_EMPRESA: 'EMP001',
+      ID_CLIENTE: 'CLI001',
+      ID_PROFISSIONAL: 'PROF001',
+      ID_SERVICO: 'SRV001',
+      DATA: '2026-09-02',
+      HORA_INICIO: '09:00',
+      HORA_FIM: '10:00',
+      DURACAO_MIN: 60,
+      VALOR: 120,
+      STATUS: 'AGENDADO',
+      ORIGEM: 'whatsapp',
+      OBSERVACOES: 'Cliente pediu horário pela manhã.',
+      GOOGLE_EVENT_ID: 'gcal-evt-123',
+      DATA_CRIACAO: '2026-08-20T10:00:00.000Z',
+      ULTIMA_ATUALIZACAO: '2026-08-20T10:00:00.000Z',
+      DATA_CANCELAMENTO: '',
+      MOTIVO_CANCELAMENTO: '',
+    };
+
+    it('produz exatamente { ok: true, data: [...] } — nunca ID_EMPRESA/DURACAO_MIN/ORIGEM/OBSERVACOES/GOOGLE_EVENT_ID/datas técnicas/headers/webhookUrl/executionMode', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: {
+            operacao: 'agendamentos.listar',
+            idEmpresa: 'EMP001',
+            requestId: 'teste-age',
+            dados: DADOS_PERIODO,
+          },
+        },
+      });
+      expect(validado.erro_codigo).toBe('');
+
+      const normalizado = runCode(workflow, 'CODE - Normalizar Agendamentos', {
+        json: {},
+        items: [LINHA_AGENDADA],
+        nodeOutputs: { 'CODE - Validar Envelope': validado },
+      });
+
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      expect(respostaFinal).toEqual({
+        ok: true,
+        data: [
+          {
+            idAgendamento: 'AGD001',
+            idCliente: 'CLI001',
+            idProfissional: 'PROF001',
+            idServico: 'SRV001',
+            data: '2026-09-02',
+            horaInicio: '09:00',
+            horaFim: '10:00',
+            valor: 120,
+            status: 'AGENDADO',
+          },
+        ],
+        meta: { requestId: 'teste-age' },
+      });
+      expect(Array.isArray(respostaFinal.data)).toBe(true);
+      expect(respostaFinal).not.toHaveProperty('ID_EMPRESA');
+      expect(respostaFinal).not.toHaveProperty('headers');
+      expect(respostaFinal).not.toHaveProperty('webhookUrl');
+      expect(respostaFinal).not.toHaveProperty('executionMode');
+      const textoCompleto = JSON.stringify(respostaFinal);
+      expect(textoCompleto).not.toContain('EMP001');
+      expect(textoCompleto).not.toContain('gcal-evt-123');
+      expect(textoCompleto).not.toContain('whatsapp');
+      expect(textoCompleto).not.toContain('Cliente pediu');
+    });
+
+    it('Sheets vazio (placeholder sem ID_AGENDAMENTO) -> sucesso com data: []', () => {
+      const normalizado = runCode(workflow, 'CODE - Normalizar Agendamentos', {
+        json: {},
+        items: [{ ID_AGENDAMENTO: undefined }],
+        nodeOutputs: {
+          'CODE - Validar Envelope': { requestId: 'r-vazio-age', dados: DADOS_PERIODO },
+        },
+      });
+      const respostaFinal = runCode(workflow, 'CODE - Montar Sucesso', { json: normalizado });
+
+      expect(respostaFinal).toEqual({ ok: true, data: [], meta: { requestId: 'r-vazio-age' } });
+    });
+
+    it('erro técnico ao buscar AGENDAMENTOS converge para UPSTREAM_ERROR (mesmo node compartilhado das demais operações)', () => {
+      const erro = runCode(workflow, 'CODE - Erro Upstream', {
+        json: {},
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-erro-age' } },
+      });
+      expect(erro.erro_codigo).toBe('UPSTREAM_ERROR');
+
+      const envelopeErro = runCode(workflow, 'CODE - Montar Erro', { json: erro });
+      expect(envelopeErro).toEqual({
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Não foi possível consultar os dados no momento.',
+        },
+        meta: { requestId: 'r-erro-age' },
+      });
+    });
+
+    it('GS - Buscar Agendamentos filtra por ID_EMPRESA e reutiliza a credencial já existente (período fica a cargo do Code node)', () => {
+      const gs = getNode(workflow, 'GS - Buscar Agendamentos');
+      const filtros = gs.parameters.filtersUI as { values: Array<Record<string, string>> };
+
+      expect(filtros.values).toEqual([
+        { lookupColumn: 'ID_EMPRESA', lookupValue: '={{ $json.idEmpresa }}' },
+      ]);
+      expect(
+        (gs as unknown as { credentials: { googleSheetsOAuth2Api: { id: string } } }).credentials
+          .googleSheetsOAuth2Api.id,
+      ).toBe('bV94b0kU1RKmLn1F');
+    });
+  });
+
+  /**
+   * Hardening de Agendamentos — mesmo padrão de rigor já validado em Serviços/
+   * Profissionais/Disponibilidades: ID_AGENDAMENTO/ID_CLIENTE/ID_PROFISSIONAL/
+   * ID_SERVICO/DATA/HORA_INICIO/HORA_FIM/VALOR/STATUS obrigatórios, STATUS restrito à
+   * whitelist real (AGENDADO/CONCLUIDO/CANCELADO — nunca PENDENTE/CONFIRMADO) — a
+   * homologação contra BEAUTYFLOW_HOMOLOGACAO encontrou uma linha real
+   * (AGE_TESTE_WF015_04) com STATUS=CONCLUIDO, corrigindo a premissa anterior de que só
+   * AGENDADO/CANCELADO existiam — e qualquer campo obrigatório inválido em UM
+   * agendamento real reprova a operação INTEIRA — nunca lista parcial. Cobre também o
+   * corte por período (dataInicio/dataFim) e a validação defensiva de presença/formato
+   * desses dois parâmetros.
+   */
+  describe('Camada read-only — CODE - Normalizar Agendamentos: válido vs. falha da operação inteira', () => {
+    function normalizarLinhas(
+      rows: Record<string, unknown>[],
+      dados: Record<string, unknown> = { dataInicio: '2026-01-01', dataFim: '2026-12-31' },
+    ):
+      | { ok: true; agendamentos: Record<string, unknown>[] }
+      | { ok: false; erro_codigo: string; erro_mensagem: string } {
+      const resultado = runCode(workflow, 'CODE - Normalizar Agendamentos', {
+        json: {},
+        items: rows,
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r', dados } },
+      });
+      if ('erro_codigo' in resultado) {
+        return {
+          ok: false,
+          erro_codigo: resultado.erro_codigo as string,
+          erro_mensagem: resultado.erro_mensagem as string,
+        };
+      }
+      return { ok: true, agendamentos: resultado.agendamentos as Record<string, unknown>[] };
+    }
+
+    function normalizarUmaLinha(row: Record<string, unknown>) {
+      return normalizarLinhas([row]);
+    }
+
+    const BASE = {
+      ID_AGENDAMENTO: 'AGD1',
+      ID_CLIENTE: 'CLI1',
+      ID_PROFISSIONAL: 'PROF1',
+      ID_SERVICO: 'SRV1',
+      DATA: '2026-06-15',
+      HORA_INICIO: '09:00',
+      HORA_FIM: '10:00',
+      VALOR: 100,
+      STATUS: 'AGENDADO',
+    };
+
+    it('1. operação agendamentos.listar aceita (regressão do teste de reconhecimento)', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: {
+            operacao: 'agendamentos.listar',
+            idEmpresa: 'EMP001',
+            requestId: 'r1',
+            dados: { dataInicio: '2026-01-01', dataFim: '2026-12-31' },
+          },
+        },
+      });
+      expect(validado.erro_codigo).toBe('');
+    });
+
+    it('2. operação desconhecida continua INVALID_OPERATION', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: { body: { operacao: 'agenda.criar', idEmpresa: 'EMP001', requestId: 'r2' } },
+      });
+      expect(validado.erro_codigo).toBe('INVALID_OPERATION');
+    });
+
+    it('3. request sem tenant continua TENANT_REQUIRED', () => {
+      const validado = runCode(workflow, 'CODE - Validar Envelope', {
+        json: {
+          body: {
+            operacao: 'agendamentos.listar',
+            requestId: 'r3',
+            dados: { dataInicio: '2026-01-01', dataFim: '2026-12-31' },
+          },
+        },
+      });
+      expect(validado.erro_codigo).toBe('TENANT_REQUIRED');
+    });
+
+    it('4. GS - Buscar Agendamentos tem o filtro ID_EMPRESA presente (regressão)', () => {
+      const gs = getNode(workflow, 'GS - Buscar Agendamentos');
+      const filtros = gs.parameters.filtersUI as { values: Array<Record<string, string>> };
+      expect(filtros.values.some((f) => f.lookupColumn === 'ID_EMPRESA')).toBe(true);
+    });
+
+    it('5. período é respeitado: linha real válida fora de dataInicio/dataFim é excluída do resultado (sem falhar a operação)', () => {
+      const resultado = normalizarLinhas([{ ...BASE, DATA: '2026-01-01' }], {
+        dataInicio: '2026-06-01',
+        dataFim: '2026-06-30',
+      });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.agendamentos).toEqual([]);
+    });
+
+    it('5b. período é respeitado: linha dentro do intervalo [dataInicio, dataFim] é incluída (limites inclusivos)', () => {
+      const resultado = normalizarLinhas(
+        [
+          { ...BASE, ID_AGENDAMENTO: 'AGD-INI', DATA: '2026-06-01' },
+          { ...BASE, ID_AGENDAMENTO: 'AGD-FIM', DATA: '2026-06-30' },
+        ],
+        { dataInicio: '2026-06-01', dataFim: '2026-06-30' },
+      );
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.agendamentos.map((a) => a.idAgendamento)).toEqual(['AGD-INI', 'AGD-FIM']);
+      }
+    });
+
+    it('6. 0 linhas (placeholder legítimo) = sucesso []', () => {
+      const resultado = normalizarLinhas([{ ID_AGENDAMENTO: undefined }]);
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.agendamentos).toEqual([]);
+    });
+
+    it('7. uma linha AGENDADO válida é aceita e mapeada corretamente', () => {
+      const resultado = normalizarUmaLinha(BASE);
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.agendamentos).toEqual([
+          {
+            idAgendamento: 'AGD1',
+            idCliente: 'CLI1',
+            idProfissional: 'PROF1',
+            idServico: 'SRV1',
+            data: '2026-06-15',
+            horaInicio: '09:00',
+            horaFim: '10:00',
+            valor: 100,
+            status: 'AGENDADO',
+          },
+        ]);
+      }
+    });
+
+    it('8. uma linha CANCELADO válida é aceita', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: 'CANCELADO' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.agendamentos[0].status).toBe('CANCELADO');
+    });
+
+    it('9. STATUS CONFIRMADO -> UPSTREAM_ERROR (fonte real não sustenta esse valor)', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: 'CONFIRMADO' });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    // Corrigido na homologação (achado real: AGE_TESTE_WF015_04, STATUS=CONCLUIDO em
+    // BEAUTYFLOW_HOMOLOGACAO) — CONCLUIDO agora é aceito, com o mesmo mapeamento de
+    // statusConfirmacao:null dos demais status (nunca inferido por qualquer heurística).
+    it('10. uma linha CONCLUIDO válida é aceita (fonte real grava esse valor literalmente)', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, STATUS: 'CONCLUIDO' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.agendamentos[0].status).toBe('CONCLUIDO');
+    });
+
+    it('10b. STATUS CONCLUIDO real (AGE_TESTE_WF015_04, achado da homologação) produz envelope de sucesso com statusConfirmacao ausente no shape de integração', () => {
+      const resultado = normalizarUmaLinha({
+        ...BASE,
+        ID_AGENDAMENTO: 'AGE_TESTE_WF015_04',
+        STATUS: 'CONCLUIDO',
+      });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.agendamentos).toEqual([
+          {
+            idAgendamento: 'AGE_TESTE_WF015_04',
+            idCliente: 'CLI1',
+            idProfissional: 'PROF1',
+            idServico: 'SRV1',
+            data: '2026-06-15',
+            horaInicio: '09:00',
+            horaFim: '10:00',
+            valor: 100,
+            status: 'CONCLUIDO',
+          },
+        ]);
+        // O shape de integração não produz statusConfirmacao — é o NestJS
+        // (agenda.service.ts) quem sempre acrescenta null, nunca o workflow.
+        expect(resultado.agendamentos[0]).not.toHaveProperty('statusConfirmacao');
+      }
+    });
+
+    it('11. STATUS vazio/inválido -> UPSTREAM_ERROR', () => {
+      const vazio = normalizarUmaLinha({ ...BASE, STATUS: '' });
+      expect(vazio.ok).toBe(false);
+      const invalido = normalizarUmaLinha({ ...BASE, STATUS: 'PENDENTE' });
+      expect(invalido.ok).toBe(false);
+    });
+
+    it('12. VALOR inválido (não numérico ou negativo) -> UPSTREAM_ERROR', () => {
+      const naoNumerico = normalizarUmaLinha({ ...BASE, VALOR: 'abc' });
+      expect(naoNumerico.ok).toBe(false);
+      const negativo = normalizarUmaLinha({ ...BASE, VALOR: -10 });
+      expect(negativo.ok).toBe(false);
+    });
+
+    it('13. ID_AGENDAMENTO ausente em linha real (outro campo presente) -> UPSTREAM_ERROR, nunca "nenhum agendamento"', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ID_AGENDAMENTO: undefined });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('14a. referência obrigatória ausente (ID_CLIENTE) -> UPSTREAM_ERROR', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ID_CLIENTE: undefined });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('14b. referência obrigatória ausente (ID_PROFISSIONAL) -> UPSTREAM_ERROR', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ID_PROFISSIONAL: undefined });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('14c. referência obrigatória ausente (ID_SERVICO) -> UPSTREAM_ERROR', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ID_SERVICO: undefined });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('14d. DATA ausente -> UPSTREAM_ERROR', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, DATA: undefined });
+      expect(resultado.ok).toBe(false);
+      if (!resultado.ok) expect(resultado.erro_codigo).toBe('UPSTREAM_ERROR');
+    });
+
+    it('14e. HORA_INICIO/HORA_FIM ausentes ou em formato inesperado -> UPSTREAM_ERROR', () => {
+      expect(normalizarUmaLinha({ ...BASE, HORA_INICIO: undefined }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, HORA_FIM: undefined }).ok).toBe(false);
+      expect(normalizarUmaLinha({ ...BASE, HORA_INICIO: 'manhã' }).ok).toBe(false);
+    });
+
+    it('15. nunca devolve ID_EMPRESA', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, ID_EMPRESA: 'EMP001' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) expect(resultado.agendamentos[0]).not.toHaveProperty('ID_EMPRESA');
+    });
+
+    it('16. nunca devolve GOOGLE_EVENT_ID', () => {
+      const resultado = normalizarUmaLinha({ ...BASE, GOOGLE_EVENT_ID: 'gcal-evt-999' });
+      expect(resultado.ok).toBe(true);
+      if (resultado.ok) {
+        expect(resultado.agendamentos[0]).not.toHaveProperty('GOOGLE_EVENT_ID');
+        expect(JSON.stringify(resultado.agendamentos)).not.toContain('gcal-evt-999');
+      }
+    });
+
+    it('17. preserva a regra de "nenhuma lista parcial": 1 linha corrompida sem ID_AGENDAMENTO entre 2 válidas reprova tudo', () => {
+      const resultado = normalizarLinhas([
+        { ...BASE, ID_AGENDAMENTO: 'AGD1' },
+        { ...BASE, ID_AGENDAMENTO: undefined, ID_CLIENTE: 'CLI-corrompido' },
+        { ...BASE, ID_AGENDAMENTO: 'AGD3' },
+      ]);
+      expect(resultado.ok).toBe(false);
+    });
+
+    it('18. dataInicio/dataFim ausentes -> VALIDATION_ERROR (validação técnica defensiva, não regra de negócio)', () => {
+      const resultado = runCode(workflow, 'CODE - Normalizar Agendamentos', {
+        json: {},
+        items: [BASE],
+        nodeOutputs: { 'CODE - Validar Envelope': { requestId: 'r-sem-periodo' } },
+      });
+      expect(resultado.erro_codigo).toBe('VALIDATION_ERROR');
+    });
+
+    it('19. dataInicio/dataFim em formato inválido -> VALIDATION_ERROR', () => {
+      const resultado = runCode(workflow, 'CODE - Normalizar Agendamentos', {
+        json: {},
+        items: [BASE],
+        nodeOutputs: {
+          'CODE - Validar Envelope': {
+            requestId: 'r-periodo-invalido',
+            dados: { dataInicio: '01/06/2026', dataFim: '30/06/2026' },
+          },
+        },
+      });
+      expect(resultado.erro_codigo).toBe('VALIDATION_ERROR');
     });
   });
 });

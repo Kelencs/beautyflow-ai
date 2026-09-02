@@ -11,6 +11,8 @@ import { FINANCEIRO_MOCK_RECORDS } from '../financeiro/financeiro.mock-data';
 import { FinanceiroService } from '../financeiro/financeiro.service';
 import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { PROFISSIONAIS_MOCK_RECORDS } from '../profissionais/profissionais.mock-data';
+import { ProfissionaisService } from '../profissionais/profissionais.service';
+import { ServicosService } from '../servicos/servicos.service';
 import { RelatoriosService } from './relatorios.service';
 
 function usuario(overrides: Partial<AuthenticatedUser>): AuthenticatedUser {
@@ -41,15 +43,19 @@ describe('RelatoriosService', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      // ConfigModule/N8nGatewayClient: ClientesService agora depende dos dois (ver
-      // clientes.service.ts) — DATA_SOURCE_CLIENTES fica ausente aqui, então
-      // ClientesService continua no modo mock de sempre; RelatoriosService em si não
-      // muda nenhuma regra.
+      // ConfigModule/N8nGatewayClient: ClientesService/AgendaService agora dependem dos
+      // dois (ver clientes.service.ts/agenda.service.ts) — DATA_SOURCE_CLIENTES/
+      // DATA_SOURCE_AGENDA ficam ausentes aqui, então os dois continuam no modo mock de
+      // sempre; RelatoriosService em si não muda nenhuma regra. ProfissionaisService/
+      // ServicosService entram só porque AgendaService os injeta para o join do modo
+      // `n8n` (nunca exercitado nestes testes, que ficam em modo mock).
       imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true })],
       providers: [
         RelatoriosService,
         AgendaService,
         ClientesService,
+        ProfissionaisService,
+        ServicosService,
         FinanceiroService,
         ComunicacaoService,
         N8nGatewayClient,
@@ -68,7 +74,7 @@ describe('RelatoriosService', () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       const resultado = await service.obterRelatorio(owner, agosto);
 
-      const agendaEsperada = agendaService.listar(owner, agosto).data;
+      const agendaEsperada = (await agendaService.listar(owner, agosto)).data;
       expect(resultado.resumo.totalAtendimentos).toBe(agendaEsperada.length);
       // atendimentosConfirmados é sobre StatusConfirmacao (confirmação do cliente), não
       // sobre StatusAgendamento (ver relatorios.service.ts e shared-types/agenda.ts).
@@ -87,7 +93,7 @@ describe('RelatoriosService', () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       const resultado = await service.obterRelatorio(owner, agosto);
 
-      const agendaEsperada = agendaService.listar(owner, agosto).data;
+      const agendaEsperada = (await agendaService.listar(owner, agosto)).data;
       const somaEsperada = agendaEsperada
         .filter((item) => item.status !== 'CANCELADO')
         .reduce((soma, item) => soma + item.valor, 0);
@@ -101,7 +107,7 @@ describe('RelatoriosService', () => {
       const resultado = await service.obterRelatorio(owner, agosto);
 
       const agendaIds = new Set(
-        agendaService.listar(owner, agosto).data.map((item) => item.idAgendamento),
+        (await agendaService.listar(owner, agosto)).data.map((item) => item.idAgendamento),
       );
       const financeiroEsperado = financeiroService.listar(owner, agosto);
       const somaRecebidoEsperada = financeiroEsperado.data
@@ -220,7 +226,7 @@ describe('RelatoriosService', () => {
       const owner = usuario({ idEmpresa: 'EMP001', perfil: 'owner' });
       const resultado = await service.obterRelatorio(owner, agosto);
 
-      const agendaEsperada = agendaService.listar(owner, agosto).data;
+      const agendaEsperada = (await agendaService.listar(owner, agosto)).data;
       const concluidosNoPeriodo = agendaEsperada.filter((item) => item.status === 'CONCLUIDO');
       expect(concluidosNoPeriodo.length).toBeGreaterThan(0);
       expect(concluidosNoPeriodo.every((item) => item.statusConfirmacao === null)).toBe(true);
@@ -271,7 +277,7 @@ describe('RelatoriosService', () => {
       });
       const resultado = await service.obterRelatorio(profissional, agosto);
 
-      const agendaEsperada = agendaService.listar(profissional, agosto).data;
+      const agendaEsperada = (await agendaService.listar(profissional, agosto)).data;
       expect(resultado.resumo.totalAtendimentos).toBe(agendaEsperada.length);
       expect(resultado.desempenhoProfissionais.every((item) => item.nome === 'Ana Martins')).toBe(
         true,
