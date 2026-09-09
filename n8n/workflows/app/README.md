@@ -1,6 +1,6 @@
-# App — WF019
+# App — WF019 + WF020
 
-> **Sincronização:** 2026-09-01
+> **Sincronização:** 2026-09-09
 > **Fonte de verdade:** JSON desta pasta.
 
 ## Objetivo
@@ -9,31 +9,51 @@ Camada de integração entre o backend NestJS do BeautyFlow App e os dados opera
 n8n — nunca um endpoint do App chamando WF001–WF018 diretamente, nunca o browser
 conhecendo n8n. Ver `docs/09-arquitetura/` para o desenho completo aprovado.
 
+O módulo App é dividido em dois gateways deliberadamente separados:
+
+```text
+APP
+├── APP-WF019 — Gateway READ-ONLY (nunca ganha operação de escrita)
+└── APP-WF020 — Gateway de COMANDOS de escrita da Agenda
+```
+
 ## Workflows
 
 | ID | Função | `active` no JSON |
 |---|---|---|
-| WF019 | Gateway App (camada read-only: `clientes.listar` + `servicos.listar` + `profissionais.listar` + `empresa.obter` + `disponibilidades.listar`) | `false` |
+| WF019 | Gateway App read-only: `clientes.listar` + `servicos.listar` + `profissionais.listar` + `empresa.obter` + `disponibilidades.listar` + `agendamentos.listar` (6 operações, todas homologadas) | `false` |
+| WF020 | Gateway de comandos de escrita da Agenda: `agenda.cancelar` (primeira operação, homologada em `BEAUTYFLOW_HOMOLOGACAO`/Google Sheets — checkpoint funcional `585e710`) | `false` |
 
 ## Dependências
 
 ```text
 WF019 (não chama nenhum WF001–WF018)
+WF020 (não chama WF001–WF019 nem os workflows legados de Agenda AGE-WF004/005/006/007)
 ```
 
-WF019 é deliberadamente isolado do pipeline conversacional (WF001→WF002→WF003→...). Lê
-`CLIENTES`/`SERVICOS`/`PROFISSIONAIS`/`EMPRESAS`/`DISPONIBILIDADES` diretamente via
-Google Sheets, com o mesmo credential já usado pelos demais workflows (`Google Sheets
-account`) — não uma credencial nova.
+WF019 e WF020 são deliberadamente isolados do pipeline conversacional (WF001→WF002→WF003→...)
+e um do outro: WF020 nunca chama WF019, e WF019 nunca ganha uma operação de escrita — a
+separação READ/WRITE é arquitetural, não incidental. WF019 lê
+`CLIENTES`/`SERVICOS`/`PROFISSIONAIS`/`EMPRESAS`/`DISPONIBILIDADES`/`AGENDAMENTOS`
+diretamente via Google Sheets, com o mesmo credential já usado pelos demais workflows
+(`Google Sheets account`) — não uma credencial nova. WF020 usa o mesmo credential Google
+Sheets; o Header Auth do webhook atualmente é **compartilhado** com o do WF019 (dívida de
+segurança registrada — ver `n8n/documentacao/app/APP-WF020.md`).
 
 ## Integrações diretas
 
 - Google Sheets (`CLIENTES`, `SERVICOS`, `PROFISSIONAIS`, `EMPRESAS`,
-  `DISPONIBILIDADES`; leitura filtrada por `ID_EMPRESA`).
-- Nenhuma integração com WhatsApp, Gemini, Google Calendar ou Google Drive.
-- Agenda (`AGENDAMENTOS`), Financeiro (`PAGAMENTOS`) e Comunicação (`MENSAGENS` e
-  demais) foram auditados e **conscientemente não integrados nesta rodada** — ver
-  `n8n/documentacao/app/APP-WF019.md`, seção "Matriz READ-ONLY".
+  `DISPONIBILIDADES`, `AGENDAMENTOS`; leitura filtrada por `ID_EMPRESA` no WF019; escrita
+  de `agenda.cancelar` no WF020, sempre depois de localizar a linha por
+  `ID_EMPRESA`+`ID_AGENDAMENTO` e validar tenant/recurso).
+- Nenhuma integração com WhatsApp, Gemini, Google Calendar ou Google Drive em nenhum dos
+  dois gateways — Google Calendar continua deliberadamente fora do escopo do `agenda.cancelar`
+  (dívida registrada, não bug escondido).
+- Financeiro (`PAGAMENTOS`) e Comunicação (`MENSAGENS` e demais) foram auditados e
+  **conscientemente não integrados ainda** — ver `n8n/documentacao/app/APP-WF019.md`,
+  seção "Matriz READ-ONLY". Agenda (`AGENDAMENTOS`) já está integrada: leitura via
+  `agendamentos.listar` (WF019) e a primeira escrita via `agenda.cancelar` (WF020); os
+  demais comandos da Agenda (`criar`/`reagendar`/`concluir`) permanecem pendentes.
 
 ## WF019 — Gateway App
 
@@ -87,14 +107,18 @@ Responsabilidades:
   participam da distinção placeholder × linha corrompida. `DIA_SEMANA_NUM` usa numeração
   0=domingo..6=sábado — a tradução para o enum de string do contrato público
   (`DiaSemana`) acontece no NestJS, não no workflow.
-- Agenda (`AGENDAMENTOS`), Financeiro (`PAGAMENTOS`) e Comunicação (5 abas de log) foram
-  auditados e ficaram **bloqueados** nesta rodada — vocabulário de status incompatível
-  (Agenda), complexidade de join entre planilhas (Financeiro/Comunicação) ou ausência de
-  writer real (memória da IA). Ver `n8n/documentacao/app/APP-WF019.md`, seção "Matriz
-  READ-ONLY", para o detalhe completo de cada bloqueio.
-- O fallback `EMP001`, o Google Calendar fixo por instância e o descompasso de
-  vocabulário de status de `AGENDAMENTOS` (documentados na auditoria arquitetural
-  anterior) **não são tocados por este workflow** e continuam como pendências futuras.
+- Agenda (`AGENDAMENTOS`) foi auditada e o bloqueio original de vocabulário de status
+  incompatível **já foi resolvido**: a fonte real sustenta `AGENDADO`/`CONCLUIDO`/`CANCELADO`,
+  `agendamentos.listar` (WF019, leitura) e `agenda.cancelar` (WF020, escrita) já estão
+  homologados. Financeiro (`PAGAMENTOS`) e Comunicação (5 abas de log) continuam
+  **bloqueados** — complexidade de join entre planilhas (Financeiro/Comunicação) ou
+  ausência de writer real (memória da IA). Ver `n8n/documentacao/app/APP-WF019.md`, seção
+  "Matriz READ-ONLY", para o detalhe completo de cada bloqueio restante.
+- O fallback `EMP001` e o Google Calendar fixo por instância (documentados na auditoria
+  arquitetural anterior, presentes nos workflows legados AGE-WF004/005/006/007) **não são
+  tocados por WF019 nem por WF020** e continuam como pendências futuras. O descompasso de
+  vocabulário de status de `AGENDAMENTOS` citado na auditoria original já foi resolvido
+  pela integração real (ver acima).
 
 ## Regras
 

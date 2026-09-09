@@ -1,7 +1,9 @@
 # WF019 — APP - WF019 - Gateway App
 
-> **Sincronização:** 2026-09-02  
-> **Checkpoint:** `a723bff` — `feat: integrate real agenda through APP-WF019`  
+> **Sincronização:** 2026-09-09
+>
+> **Checkpoint funcional deste workflow:** `a723bff` — `feat: integrate real agenda through APP-WF019`. O checkpoint funcional seguinte, `585e710`, entrega a primeira escrita da Agenda via um workflow separado (`APP-WF020` — ver [`APP-WF020.md`](./APP-WF020.md)); nenhum dos dois foi enviado ao GitHub ainda.
+>
 > **Fonte da verdade:** [`APP-WF019-gateway-app.json`](../../workflows/app/APP-WF019-gateway-app.json) no branch `main`.
 
 ## 1. Objetivo
@@ -462,17 +464,16 @@ Quando uma flag está em `n8n`, falha do gateway não deve cair silenciosamente 
 
 ### Agenda — escrita
 
-Ainda não existem via WF019:
+Por arquitetura, **nunca existirão via WF019** — este gateway permanece 100% read-only. Escrita da Agenda vive em um workflow separado: `APP-WF020` (ver [`APP-WF020.md`](./APP-WF020.md)).
 
 ```text
-agenda.criar
-agenda.editar
-agenda.reagendar
-agenda.cancelar
-agenda.concluir
+agenda.criar        — pendente (nenhum gateway ainda)
+agenda.reagendar     — pendente (nenhum gateway ainda)
+agenda.cancelar      — ✅ homologado via APP-WF020 (checkpoint funcional 585e710)
+agenda.concluir      — pendente (nenhum gateway ainda)
 ```
 
-Também não existe writer real de confirmação do cliente.
+A arquitetura adotou comandos explícitos por operação — não existe (nem existirá) um `agenda.editar` genérico. Também não existe ainda writer real de confirmação do cliente.
 
 ### Financeiro
 
@@ -510,15 +511,13 @@ Permanece bloqueada pela correlação entre múltiplas abas e ausência de contr
 
 ## 20. Próxima evolução recomendada
 
-A próxima evolução do WF019 não deve ser adicionar operações aleatórias. A prioridade recomendada é desenhar a **Agenda operacional de escrita** em checkpoints separados, definindo claramente:
+A próxima evolução **não é do WF019** — este gateway permanece read-only por decisão de arquitetura. A decisão de desenhar a Agenda operacional de escrita em checkpoints separados já foi tomada e o primeiro checkpoint já foi entregue e versionado: `APP-WF020` + `agenda.cancelar`, checkpoint funcional `585e710`, homologado em HML (ver [`APP-WF020.md`](./APP-WF020.md)). Restam, em checkpoints futuros separados:
 
-1. autoridade das regras entre NestJS e WF004–WF007;
-2. criação;
-3. reagendamento;
-4. cancelamento;
-5. conclusão explícita;
-6. confirmação do cliente como eixo separado.
+1. `agenda.criar`;
+2. `agenda.reagendar`;
+3. `agenda.concluir`;
+4. confirmação do cliente como eixo separado.
 
 Até lá, o status correto é:
 
-> **WF019 v1.12 operacional e homologado em read-only para 6 operações; Agenda operacional em leitura, escrita ainda pendente.**
+> **WF019 v1.12 operacional e homologado em read-only para 6 operações (checkpoint funcional `a723bff`); Agenda com a primeira operação de escrita (`agenda.cancelar`, via APP-WF020) homologada em HML e versionada no checkpoint funcional `585e710` — ainda não operacional completa (criar/reagendar/concluir pendentes), nenhum dos dois checkpoints enviado ao GitHub ainda.**

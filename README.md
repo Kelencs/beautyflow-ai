@@ -11,7 +11,7 @@
 ![Status](https://img.shields.io/badge/STATUS-EM%20DESENVOLVIMENTO-7C3AED?style=for-the-badge)
 ![SaaS](https://img.shields.io/badge/PRODUTO-SaaS-111827?style=for-the-badge)
 ![Automation](https://img.shields.io/badge/AUTOMAÇÃO-n8n-EA4B71?style=for-the-badge)
-![Tests](https://img.shields.io/badge/TESTES-469%2F469-22C55E?style=for-the-badge)
+![Tests](https://img.shields.io/badge/TESTES-525%2F525-22C55E?style=for-the-badge)
 
 <br/>
 
@@ -61,11 +61,13 @@ const beautyFlow = {
     "Automatizar comunicação e follow-up",
     "Evoluir para uma plataforma SaaS de gestão"
   ],
-  statusAtual: "Em desenvolvimento ativo com integração real read-only homologada",
-  checkpoint: "a723bff",
+  statusAtual: "Em desenvolvimento ativo — leitura real homologada (APP-WF019) e primeira escrita real homologada e versionada (APP-WF020: agenda.cancelar)",
+  checkpointFuncionalAnterior: "a723bff — feat: integrate real agenda through APP-WF019",
+  checkpointFuncionalAtual: "585e710 — feat: add homologated agenda cancellation command",
   wf019: "v1.12 — 6 operações homologadas",
-  agenda: "Leitura real homologada; escrita ainda pendente",
-  proximaEtapa: "Desenhar a Agenda operacional de escrita em checkpoints separados"
+  wf020: "v1.0 — agenda.cancelar homologado em BEAUTYFLOW_HOMOLOGACAO, versionado no checkpoint 585e710",
+  agenda: "Leitura real homologada via APP-WF019; primeira escrita (cancelar) homologada e versionada via APP-WF020 — criar/reagendar/concluir ainda pendentes",
+  proximaEtapa: "Implementar e homologar os demais comandos de escrita da Agenda (criar/reagendar/concluir) em checkpoints separados"
 };
 ```
 
@@ -138,8 +140,9 @@ flowchart LR
 | 📣 Comunicação | WF012–WF015 | Mensagens, lembretes, pesquisa e follow-up |
 | ⚙️ Administração | WF016–WF018 | Backup, logs e limpeza |
 | 🧩 App | WF019 | Gateway read-only entre NestJS e dados operacionais |
+| 🧩 App | WF020 | Gateway de comandos de escrita da Agenda (hoje só `agenda.cancelar`) |
 
-WF001–WF018 continuam preservados. A evolução do App não depende de modificar os workflows legados a cada integração read-only.
+WF001–WF018 continuam preservados. A evolução do App não depende de modificar os workflows legados a cada integração read-only ou de escrita. WF019 e WF020 são gateways separados por decisão de arquitetura: WF019 nunca ganha escrita, WF020 nunca chama WF019 nem os workflows legados de Agenda.
 
 ---
 
@@ -167,6 +170,8 @@ Características do gateway:
 - sem fallback silencioso para mock;
 - sem `Merge` para convergência de branches mutuamente exclusivos;
 - JSON versionado com `active:false`.
+
+> Escrita da Agenda vive em um gateway separado, o `APP-WF020` (`agenda.cancelar`, homologado em HML/Google Sheets, versionado no checkpoint funcional `585e710`) — o WF019 nunca ganha operação de escrita. Detalhes completos em [`n8n/documentacao/app/APP-WF020.md`](n8n/documentacao/app/APP-WF020.md).
 
 ---
 
@@ -344,29 +349,31 @@ O App segue estes princípios:
 
 ## 13 // QUALIDADE ATUAL
 
-Checkpoint funcional atual:
+**Checkpoint funcional anterior** (Agenda read-only, via APP-WF019):
 
 ```text
 a723bff
 feat: integrate real agenda through APP-WF019
+
+469 testes | 20 suítes | 469/469 verdes
 ```
 
-Validações registradas:
+**Checkpoint funcional atual** (Agenda escrita — `agenda.cancelar`, via APP-WF020):
 
 ```text
-469 testes
-20 suítes
-469/469 verdes
-backend lint ✅
-frontend lint ✅
-shared-types build ✅
-backend build ✅
-frontend build ✅
-WF001–WF018 intactos ✅
+585e710
+feat: add homologated agenda cancellation command
+
+525 testes | 23 suítes | 525/525 verdes
+backend lint ✅ | frontend lint ✅
+shared-types/backend/frontend build ✅
+WF001–WF019 intactos ✅
 segredos no diff: nenhum ✅
 ```
 
-Não há atualmente GitHub Actions associados ao checkpoint; a validação foi executada localmente antes do push.
+`a6385d2` foi o commit documental que precedeu a implementação do WF020 (só documentação, sem mudança funcional). Nenhum dos três commits foi enviado ao GitHub (`push`) ainda — todos permanecem locais até nova autorização.
+
+Não há atualmente GitHub Actions associados a nenhum checkpoint; a validação é executada localmente antes de cada push.
 
 ---
 
@@ -395,14 +402,19 @@ A fonte de verdade continua sendo o JSON versionado no repositório.
 
 ### Agenda
 
-A Agenda está **operacional em leitura**, mas escrita real ainda não foi implementada pelo App:
+A Agenda possui **leitura real homologada via APP-WF019** e a **primeira operação de escrita homologada e versionada via APP-WF020** (`agenda.cancelar`, em HML/Google Sheets — checkpoint funcional `585e710`). A arquitetura adotou comandos explícitos, não um `editar` genérico. Continuam pendentes:
 
 - criar;
-- editar;
 - reagendar;
-- cancelar;
 - concluir;
 - persistir confirmação real do cliente.
+
+Dívidas específicas do `agenda.cancelar` (detalhe completo em [`n8n/documentacao/app/APP-WF020.md`](n8n/documentacao/app/APP-WF020.md)):
+
+- Google Calendar não sincroniza o cancelamento;
+- Header Auth ainda compartilhado entre WF019 e WF020;
+- `Update Row` do WF020 casa a linha só por `ID_AGENDAMENTO` (limitação da operação no n8n Cloud) — risco residual controlado, condicionado a `ID_AGENDAMENTO` permanecer globalmente único;
+- cenário E2E positivo "profissional cancela o próprio" ainda não executado contra dado real (coberto por teste automatizado).
 
 O Google Calendar legado de WF004–WF007 também permanece fora deste checkpoint.
 
@@ -431,9 +443,9 @@ A integração real precisa consolidar múltiplas fontes e correlações.
 
 ```mermaid
 flowchart TD
-    A["✅ Agenda read-only homologada"] --> B["Decisão de arquitetura para escrita"]
+    A["✅ Agenda read-only (WF019)"] --> B["✅ Cancelar (WF020) — homologado em HML"]
     B --> C["Criar agendamento"]
-    C --> D["Reagendar / Cancelar"]
+    C --> D["Reagendar"]
     D --> E["Concluir atendimento"]
     E --> F["Confirmação real"]
     F --> G["Financeiro read-only"]
@@ -460,7 +472,8 @@ beautyflow-ai/
 │   │   ├── comunicacao/
 │   │   ├── administracao/
 │   │   └── app/
-│   │       └── APP-WF019-gateway-app.json
+│   │       ├── APP-WF019-gateway-app.json
+│   │       └── APP-WF020-agenda-commands.json
 │   └── documentacao/
 ├── docs/
 └── README.md
@@ -475,6 +488,7 @@ Documentos principais:
 - [`docs/STATUS-DO-PROJETO.md`](docs/STATUS-DO-PROJETO.md)
 - [`n8n/documentacao/app/README.md`](n8n/documentacao/app/README.md)
 - [`n8n/documentacao/app/APP-WF019.md`](n8n/documentacao/app/APP-WF019.md)
+- [`n8n/documentacao/app/APP-WF020.md`](n8n/documentacao/app/APP-WF020.md)
 
 ---
 

@@ -1,16 +1,21 @@
 # Status do Projeto — BeautyFlow AI
 
-**Data de referência:** 02/09/2026  
-**Checkpoint técnico de referência:** `a723bff` — `feat: integrate real agenda through APP-WF019`
+**Data de referência:** 09/09/2026
+
+**Checkpoint funcional anterior:** `a723bff` — `feat: integrate real agenda through APP-WF019` (Agenda read-only).
+
+**Checkpoint funcional atual:** `585e710` — `feat: add homologated agenda cancellation command` (APP-WF020 / `agenda.cancelar`, homologado E2E em `BEAUTYFLOW_HOMOLOGACAO`).
+
+`a6385d2` foi o commit documental que precedeu a implementação do WF020 (só documentação, sem mudança funcional). Nenhum dos checkpoints acima foi enviado ao GitHub (`push`) ainda — permanecem locais até nova autorização.
 
 ## Resumo executivo
 
 O BeautyFlow AI possui dois blocos principais em evolução coordenada:
 
 1. **núcleo operacional n8n**, com WF001–WF018 versionados e preservados;
-2. **BeautyFlow App**, com frontend Next.js, backend NestJS, contratos compartilhados, autenticação via Supabase e integração read-only com dados operacionais reais por meio do `APP-WF019`.
+2. **BeautyFlow App**, com frontend Next.js, backend NestJS, contratos compartilhados, autenticação via Supabase e integração real com dados operacionais por meio de dois gateways separados: `APP-WF019` (leitura) e `APP-WF020` (comandos de escrita da Agenda).
 
-O `APP-WF019` está atualmente na **v1.12**, com **6 operações read-only implementadas e homologadas**:
+O `APP-WF019` está na **v1.12**, com **6 operações read-only implementadas e homologadas**:
 
 - `clientes.listar`;
 - `servicos.listar`;
@@ -19,9 +24,11 @@ O `APP-WF019` está atualmente na **v1.12**, com **6 operações read-only imple
 - `disponibilidades.listar`;
 - `agendamentos.listar`.
 
+O `APP-WF020` é um gateway novo, com **1 operação de escrita homologada em HML**: `agenda.cancelar`.
+
 Clientes, Serviços, Profissionais, Configurações e Agenda já foram validados no BeautyFlow App com dados reais de `BEAUTYFLOW_HOMOLOGACAO`.
 
-A Agenda permanece **read-only**: criar, editar, reagendar, cancelar e concluir atendimentos ainda não possuem escrita real pelo App. Financeiro, Comunicação e IA continuam sem integração operacional completa com o gateway.
+A Agenda possui **leitura real homologada via APP-WF019 e a primeira operação de escrita homologada via APP-WF020: `agenda.cancelar`**. Continuam pendentes: criar; reagendar; concluir; confirmação real do cliente; sincronização com Google Calendar; demais escritas. A arquitetura adotou comandos explícitos — não há (nem haverá) um `editar` genérico. Financeiro, Comunicação e IA continuam sem integração operacional completa com o gateway.
 
 ## Estado por área
 
@@ -33,11 +40,12 @@ A Agenda permanece **read-only**: criar, editar, reagendar, cancelar e concluir 
 | shared-types | Implementado |
 | Supabase/Auth | Implementado |
 | APP-WF019 | **v1.12; 6 operações read-only homologadas** |
+| APP-WF020 | **v1.0; gateway de comandos de escrita da Agenda; `agenda.cancelar` homologado E2E em HML — versionado no checkpoint funcional `585e710`** |
 | Clientes | **Dados reais via APP-WF019; homologado E2E** |
 | Serviços | **Dados reais via APP-WF019; homologado E2E** |
 | Profissionais | **Dados reais via APP-WF019; homologado E2E** |
 | Configurações | **Dados reais via `empresa.obter` + `disponibilidades.listar`; homologado E2E** |
-| Agenda | **Leitura real via `agendamentos.listar`; homologada E2E em Hoje/Semana/Mês e detalhes** |
+| Agenda | **Leitura real via `agendamentos.listar` (APP-WF019), homologada E2E em Hoje/Semana/Mês e detalhes; primeira escrita real via `agenda.cancelar` (APP-WF020), homologada E2E em HML** |
 | Dashboard | Estruturado; usa Agenda real quando `DATA_SOURCE_AGENDA=n8n`, mas indicadores de confirmação permanecem 0 sem fonte real de confirmação |
 | Relatórios | Estruturado; consome Agenda real quando habilitada, respeitando os mesmos limites de fonte |
 | Financeiro | Implementado/estruturado; integração real bloqueada pela composição AGENDAMENTOS + PAGAMENTOS |
@@ -45,7 +53,7 @@ A Agenda permanece **read-only**: criar, editar, reagendar, cancelar e concluir 
 | IA | Implementada/estruturada; integração real bloqueada por lacunas da fonte, incluindo `IA_MEMORIA` sem writer conhecido |
 | Dados operacionais WF001–WF018 | Google Sheets |
 | Identidade/autenticação do App | Supabase |
-| Integração App ↔ n8n | **Operacional em read-only para 6 operações** |
+| Integração App ↔ n8n | **Operacional em read-only para 6 operações (APP-WF019) + 1 operação de escrita homologada em HML (APP-WF020: `agenda.cancelar`)** |
 | Substituição de mocks do App | **Em andamento, módulo a módulo** |
 | Migração operacional completa para Postgres | Futuro; não é pré-requisito imediato |
 
@@ -72,16 +80,17 @@ Next.js
   ↓
 NestJS
   ├── Supabase (Auth / identidade)
-  └── APP-WF019 (gateway operacional read-only)
+  ├── APP-WF019 (gateway operacional read-only)
+  │     ↓
+  │   n8n → Google Sheets
+  └── APP-WF020 (gateway de comandos — agenda.cancelar)
         ↓
-      n8n
-        ↓
-      Google Sheets
+      n8n → Google Sheets
 ```
 
 O frontend **não acessa o n8n diretamente**. O NestJS é a fronteira de autenticação, autorização, contexto de empresa, regras de negócio, composição de dados e integração.
 
-O `APP-WF019` é um **gateway/adaptador**, não um substituto do backend NestJS.
+`APP-WF019` e `APP-WF020` são **gateways/adaptadores**, não substitutos do backend NestJS — READ e WRITE são deliberadamente workflows separados: WF019 nunca ganha escrita, WF020 nunca chama WF019 nem os workflows legados de Agenda (`AGE-WF004/005/006/007`).
 
 ## APP-WF019 — estado homologado
 
@@ -111,6 +120,43 @@ O JSON versionado permanece com `active:false`. Ativação/publicação no n8n C
 | `/agenda` — Semana | ✅ leitura real homologada |
 | `/agenda` — Mês | ✅ leitura real homologada |
 | `/agenda` — Detalhes | ✅ cliente, profissional, serviço, data, horário, valor e status reais |
+| `/agenda` — Cancelar | ✅ escrita real homologada em HML via APP-WF020 (`agenda.cancelar`) |
+
+## APP-WF020 — estado homologado (versionado no checkpoint funcional `585e710`)
+
+O workflow `n8n/workflows/app/APP-WF020-agenda-commands.json` é um gateway novo, separado do WF019, dedicado a **comandos de escrita da Agenda**. Nesta fase implementa **1 operação**, homologada E2E contra `BEAUTYFLOW_HOMOLOGACAO`:
+
+| Operação | Estado |
+|---|---|
+| `agenda.cancelar` | ✅ Homologada em HML (Google Sheets) |
+
+Fluxo: `Next.js (Server Action) → NestJS PATCH /agenda/:id/cancelar → N8nGatewayCommandsClient → APP-WF020 → Google Sheets AGENDAMENTOS`.
+
+Regras homologadas:
+
+- `AGENDADO → CANCELADO` é a única transição executada;
+- `CANCELADO` → sucesso idempotente, sem nova escrita (validado empiricamente: duas chamadas sobre a mesma linha preservaram o mesmo `DATA_CANCELAMENTO`/`MOTIVO_CANCELAMENTO`);
+- `CONCLUIDO` → `409 CONFLICT`, sem escrita;
+- motivo opcional (default `"Cancelado pelo usuário"` resolvido pelo NestJS);
+- somente `STATUS`, `DATA_CANCELAMENTO`, `MOTIVO_CANCELAMENTO` e `ULTIMA_ATUALIZACAO` são alterados; demais campos preservados.
+
+Tenant e autorização:
+
+- `idEmpresa` deriva exclusivamente do usuário autenticado no NestJS — browser não envia livremente;
+- `GS - Buscar Agendamento` localiza a linha por `ID_EMPRESA` + `ID_AGENDAMENTO`;
+- `CODE - Localizar E Validar Agendamento` valida tenant/recurso/estado antes de qualquer escrita;
+- `GS - Cancelar Agendamento` (`Update Row`) casa a linha só por `ID_AGENDAMENTO` — limitação conhecida e documentada da operação `Update Row` nesta versão do n8n Cloud (a alternativa, `Append or Update Row`, foi descartada por introduzir semântica de `append` em não-match, indesejável para um cancelamento). A segurança do tenant no comando depende da cadeia completa acima, não só deste node; `ID_AGENDAMENTO` precisa permanecer globalmente único; match composto real no update permanece dívida técnica futura;
+- owner pode cancelar qualquer agendamento da própria empresa; profissional só pode cancelar o próprio (teste negativo E2E homologado); o cenário positivo "profissional cancela o próprio" não foi executado contra dado real nesta rodada (permanece coberto por teste automatizado); `platform_admin` sem contexto operacional explícito permanece negado.
+
+Google Calendar **não participa** do `agenda.cancelar` nesta fase — cancelamento pelo App não sincroniza o Calendar. Isso é uma dívida registrada, não um bug escondido; Google Sheets segue como source of truth operacional deste comando.
+
+Header Auth do webhook do WF020 atualmente **compartilha a mesma credencial** do WF019 no n8n Cloud — segregação READ/WRITE permanece dívida de segurança pendente.
+
+Homologação executada contra a fixture `AGE-HML-CANCEL-001` em `BEAUTYFLOW_HOMOLOGACAO`: cancelamento E2E pela UI, idempotência real, tenant negativo, profissional negativo e `CONCLUIDO → CONFLICT` todos validados; campos alterados/preservados conferidos diretamente na planilha.
+
+Detalhe completo: [`n8n/documentacao/app/APP-WF020.md`](../n8n/documentacao/app/APP-WF020.md).
+
+**Checkpoint funcional do APP-WF020: `585e710`** (`feat: add homologated agenda cancellation command`) — implementado, homologado em HML e versionado localmente. Ainda não enviado ao GitHub (`push`).
 
 ## Agenda — modelo de domínio e integração real
 
@@ -183,21 +229,23 @@ Quando `DATA_SOURCE_AGENDA=n8n`, falha do gateway **não** gera fallback silenci
 
 ## Segurança e multi-tenancy
 
-A camada read-only homologada preserva:
+A camada homologada (leitura via WF019 e a primeira escrita via WF020) preserva:
 
 - `idEmpresa` resolvido server-side a partir do usuário autenticado;
 - browser sem escolha livre de tenant;
-- filtro `ID_EMPRESA` aplicado também no Google Sheets;
-- `platform_admin` sem tenant explícito não recebe visão cross-tenant;
-- profissionais continuam restritos aos próprios atendimentos quando aplicável;
+- filtro `ID_EMPRESA` aplicado também no Google Sheets, tanto na leitura (WF019) quanto na localização da linha antes de escrever (WF020);
+- `platform_admin` sem tenant explícito não recebe visão cross-tenant; no WF020, `platform_admin` é negado pelo NestJS antes de qualquer chamada ao gateway;
+- profissionais continuam restritos aos próprios atendimentos quando aplicável — no WF020 isso já foi validado E2E no cenário negativo (profissional não cancela agendamento de outro);
 - respostas sem `ID_EMPRESA` e sem identificadores técnicos desnecessários;
 - credenciais e segredos reais não versionados;
 - frontend sem chamada direta ao n8n;
 - erros padronizados e sem fallback silencioso para mocks.
 
+**Dívida de segurança registrada:** o Header Auth do webhook do WF020 ainda compartilha a mesma credencial do WF019 no n8n Cloud — segregação READ/WRITE das credenciais permanece pendente.
+
 ## Qualidade do checkpoint atual
 
-No checkpoint `a723bff` foram registrados:
+**No checkpoint funcional anterior `a723bff` foram registrados:**
 
 - **469 testes backend**;
 - **20 suítes**;
@@ -206,11 +254,26 @@ No checkpoint `a723bff` foram registrados:
 - builds de `shared-types`, backend e frontend verdes;
 - zero alteração em WF001–WF018;
 - zero segredo real versionado;
-- homologação manual da Agenda real concluída.
+- homologação manual da Agenda real (leitura) concluída.
 
-Não há atualmente GitHub Actions associados ao commit; a validação registrada foi executada localmente antes do push.
+**No checkpoint funcional atual `585e710` (APP-WF020 — `agenda.cancelar`) foram registrados:**
+
+- **525 testes backend**;
+- **23 suítes**;
+- **525/525 verdes**;
+- lint backend e frontend verdes;
+- builds de `shared-types`, backend e frontend verdes;
+- zero alteração em WF001–WF019;
+- zero segredo real versionado;
+- homologação E2E do `agenda.cancelar` em HML concluída.
+
+`a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). Nenhum dos checkpoints foi enviado ao GitHub ainda.
+
+Não há atualmente GitHub Actions associados a nenhum dos dois estados; a validação registrada foi executada localmente antes de cada push.
 
 ## Evidências da homologação da Agenda
+
+### Leitura (APP-WF019)
 
 Foram validados manualmente contra `BEAUTYFLOW_HOMOLOGACAO`:
 
@@ -222,6 +285,19 @@ Foram validados manualmente contra `BEAUTYFLOW_HOMOLOGACAO`:
 - `agendamentos.listar` retornando sucesso no backend;
 - `CONCLUIDO` aceito apenas quando gravado literalmente pela fonte;
 - nenhuma fabricação de `PENDENTE` ou `CONFIRMADO`.
+
+### Escrita — `agenda.cancelar` (APP-WF020)
+
+Foram validados manualmente contra `BEAUTYFLOW_HOMOLOGACAO`, fixture `AGE-HML-CANCEL-001`:
+
+- cancelamento E2E pela UI (confirmação exibida, sem exposição de IDs internos, painel atualizado);
+- idempotência: segunda chamada sobre a mesma linha já `CANCELADO` preservou `DATA_CANCELAMENTO`/`MOTIVO_CANCELAMENTO`/`ULTIMA_ATUALIZACAO` idênticos;
+- tenant negativo: outra empresa tentando cancelar um agendamento real de `EMP001` → `NOT_FOUND`, sem alteração;
+- profissional negativo: profissional tentando cancelar agendamento de outro profissional → `NOT_FOUND`, sem alteração;
+- `CONCLUIDO → CONFLICT`, sem escrita;
+- campos alterados (`STATUS`, `DATA_CANCELAMENTO`, `MOTIVO_CANCELAMENTO`, `ULTIMA_ATUALIZACAO`) e preservados (demais colunas) conferidos diretamente na planilha.
+
+Cenário positivo "profissional cancela o próprio" **não** foi executado contra dado real (permanece coberto por teste automatizado).
 
 ## Homologação × JSON versionado
 
@@ -242,18 +318,27 @@ Esse reapontamento é operacional e precisa ser refeito após reimportações qu
 
 ### Agenda — escrita
 
-A integração do App é **somente leitura**. Permanecem pendentes:
+A primeira operação de escrita (`agenda.cancelar`, via APP-WF020) já está homologada em HML. Permanecem pendentes:
 
 - criar agendamento;
-- editar atendimento;
 - reagendar;
-- cancelar;
 - concluir atendimento;
 - persistir confirmação real do cliente.
 
+A arquitetura adotou comandos explícitos por operação — não existe (nem está planejado) um `editar` genérico.
+
 O botão visual “Concluir atendimento” não deve ser interpretado como persistência real enquanto não houver writer explícito.
 
-Também permanece a dívida de configuração/hardcode legado do Google Calendar nos workflows antigos de Agenda; nenhuma correção foi feita em WF001–WF018 nesta fase.
+Dívidas específicas do `agenda.cancelar` (detalhe completo em [`../n8n/documentacao/app/APP-WF020.md`](../n8n/documentacao/app/APP-WF020.md)):
+
+1. Google Calendar não sincroniza o cancelamento;
+2. Header Auth compartilhado entre WF019 e WF020 no n8n Cloud;
+3. `Update Row` do WF020 casa a linha só por `ID_AGENDAMENTO` (limitação da operação no n8n Cloud);
+4. `ID_AGENDAMENTO` precisa permanecer globalmente único para essa proteção de tenant se sustentar;
+5. match composto real no update permanece dívida técnica futura;
+6. cenário E2E positivo de profissional cancelando o próprio agendamento não foi executado contra dado real.
+
+Também permanece a dívida de configuração/hardcode legado do Google Calendar nos workflows antigos de Agenda; nenhuma correção foi feita em WF001–WF018/APP-WF019 nesta fase.
 
 ### Financeiro
 
@@ -278,12 +363,12 @@ Há múltiplas fontes (`MENSAGENS`, `LEMBRETES`, `PESQUISA`, `FOLLOWUPS`, `COBRA
 
 ## Próxima macrofase recomendada
 
-A Agenda já está homologada em leitura. A próxima macrofase deve ser escolhida conscientemente entre:
+A Agenda já está homologada em leitura, e a primeira operação de escrita (`agenda.cancelar`) já foi homologada em HML via APP-WF020. A próxima macrofase deve ser escolhida conscientemente entre:
 
-1. **evoluir a Agenda para operações de escrita**, começando por uma decisão de arquitetura para criar/reagendar/cancelar/concluir sem duplicar regras dos WF004–WF007; ou
+1. **continuar evoluindo a Agenda em escrita**, implementando e homologando `agenda.criar`/`agenda.reagendar`/`agenda.concluir` em checkpoints separados, sem duplicar regras dos WF004–WF007; ou
 2. avançar para **Financeiro read-only**, após definir a composição AGENDAMENTOS + PAGAMENTOS e seus estados.
 
-Recomendação atual: priorizar a **Agenda operacional completa** antes de abrir um novo módulo, mantendo escrita e leitura separadas em checkpoints pequenos e homologáveis.
+Recomendação atual: priorizar a **Agenda operacional completa** antes de abrir um novo módulo, mantendo cada comando de escrita em checkpoints pequenos e homologáveis (mesmo padrão usado para `agenda.cancelar`).
 
 ## Critério para declarar um módulo operacional
 
@@ -298,7 +383,7 @@ Um módulo pode ser classificado como operacional quando:
 - existem testes/evidências mínimas;
 - a documentação foi atualizada.
 
-A Agenda deve ser descrita hoje como **operacional em leitura**, e não como operacional completa.
+A Agenda deve ser descrita hoje como **operacional em leitura, com a primeira operação de escrita (`agenda.cancelar`) homologada em HML**, e não como operacional completa.
 
 ## Governança documental
 

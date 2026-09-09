@@ -1,20 +1,34 @@
-# App — WF019
+# App — WF019 + WF020
 
-> **Sincronização:** 2026-09-02  
-> **Checkpoint de referência:** `a723bff`  
-> **Fonte da verdade:** JSON em `n8n/workflows/app/APP-WF019-gateway-app.json`.
+> **Sincronização:** 2026-09-09
+>
+> **Checkpoint funcional anterior:** `a723bff` (WF019 — Agenda read-only)
+>
+> **Checkpoint funcional atual:** `585e710` (WF020 — `agenda.cancelar`)
+>
+> `a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). Nenhum checkpoint acima foi enviado ao GitHub ainda.
+>
+> **Fonte da verdade:** JSON em `n8n/workflows/app/APP-WF019-gateway-app.json` e `n8n/workflows/app/APP-WF020-agenda-commands.json`.
 
 ## Visão geral
 
-O módulo App é a camada de integração do BeautyFlow App (Next.js + NestJS) com os dados operacionais acessados pelo n8n.
+O módulo App é a camada de integração do BeautyFlow App (Next.js + NestJS) com os dados operacionais acessados pelo n8n. Ele é dividido em dois gateways com responsabilidades deliberadamente separadas:
 
-Ele é deliberadamente separado do pipeline conversacional WF001–WF018: o `APP-WF019` **não chama nem é chamado** pelos workflows legados.
+```text
+APP
+├── APP-WF019 — Gateway READ-ONLY (nunca ganha operação de escrita)
+└── APP-WF020 — Gateway de COMANDOS de escrita da Agenda
+```
 
-O NestJS continua sendo o backend principal e a fronteira de autenticação, autorização, contexto de empresa, composição de dados e regras de negócio. O WF019 atua como **gateway/adaptador de integração**, não como substituto do backend.
+Ambos são deliberadamente separados do pipeline conversacional WF001–WF018 (não chamam nem são chamados pelos workflows legados) e **um do outro**: o WF020 nunca chama o WF019, e o WF019 nunca ganha uma operação de escrita. Essa separação READ/WRITE é uma decisão de arquitetura — não uma expansão do WF019 — porque isola o risco de um bug de escrita regredir uma leitura já homologada, e permite homologar cada comando de escrita novo incrementalmente.
+
+O NestJS continua sendo o backend principal e a fronteira de autenticação, autorização, contexto de empresa, composição de dados e regras de negócio. Os dois workflows atuam como **gateway/adaptador de integração**, não como substituto do backend.
 
 ## Estado atual
 
-O `APP-WF019` está na **v1.12**, com **6 operações read-only implementadas e homologadas**:
+### APP-WF019 (leitura)
+
+Está na **v1.12**, com **6 operações read-only implementadas e homologadas**:
 
 | Operação | Fonte | Estado |
 |---|---|---|
@@ -27,13 +41,24 @@ O `APP-WF019` está na **v1.12**, com **6 operações read-only implementadas e 
 
 As telas `/clientes`, `/servicos`, `/profissionais`, `/configuracoes` e `/agenda` foram validadas com dados reais de homologação.
 
+### APP-WF020 (comandos de escrita)
+
+Novo gateway, com **1 operação implementada e homologada E2E em `BEAUTYFLOW_HOMOLOGACAO`** (Google Sheets), versionado no checkpoint funcional `585e710`:
+
+| Operação | Estado |
+|---|---|
+| `agenda.cancelar` | ✅ Homologada em HML (Google Sheets) |
+
+`agenda.criar`, `agenda.reagendar` e `agenda.concluir` ainda não existem. Detalhes completos (contrato, tenant, autorização, idempotência, limitações conhecidas e dívidas) em [`APP-WF020.md`](./APP-WF020.md).
+
 ## Workflow
 
 | ID | Workflow | Arquivo | Responsabilidade principal | `active` no JSON |
 |---|---|---|---|---|
 | WF019 | Gateway App | `APP-WF019-gateway-app.json` | Autenticar, validar e rotear chamadas server-to-server do NestJS para dados operacionais read-only | `false` |
+| WF020 | Agenda Commands | `APP-WF020-agenda-commands.json` | Autenticar, validar e rotear comandos de escrita da Agenda (hoje só `agenda.cancelar`) | `false` no JSON local; `Published`/ativo em `BEAUTYFLOW_HOMOLOGACAO` durante a homologação |
 
-O `active:false` do JSON versionado é deliberado. Ativação/publicação no n8n Cloud é uma etapa operacional controlada.
+O `active:false` do JSON versionado é deliberado em ambos. Ativação/publicação no n8n Cloud é uma etapa operacional controlada.
 
 ## Fluxo do WF019
 
@@ -211,16 +236,14 @@ Para homologação no n8n Cloud, os **6 nodes `GS -`** devem ser reapontados man
 
 ### Agenda — escrita
 
-Ainda não existem no App via WF019:
+`agenda.cancelar` já está homologado via APP-WF020 (ver seção acima e [`APP-WF020.md`](./APP-WF020.md)). Ainda não existem:
 
 - criar;
-- editar;
 - reagendar;
-- cancelar;
 - concluir;
 - persistir confirmação do cliente.
 
-A Agenda é hoje **operacional em leitura**, não operacional completa.
+A arquitetura adotou comandos explícitos, não um `editar` genérico. A Agenda é hoje **operacional em leitura, com a primeira operação de escrita homologada** — ainda não operacional completa.
 
 ### Financeiro
 
@@ -234,9 +257,9 @@ Continua bloqueada pela correlação entre `MENSAGENS`, `LEMBRETES`, `PESQUISA`,
 
 Continua bloqueada por lacunas de fonte; `IA_MEMORIA` não possui writer conhecido em WF001–WF018.
 
-## Qualidade do checkpoint
+## Qualidade
 
-Checkpoint `a723bff`:
+**Checkpoint funcional anterior** (`a723bff` — WF019):
 
 - 469 testes;
 - 20 suítes;
@@ -246,9 +269,22 @@ Checkpoint `a723bff`:
 - WF001–WF018 intactos;
 - zero segredo real versionado.
 
+**Checkpoint funcional atual** (`585e710` — WF019 + WF020):
+
+- 525 testes;
+- 23 suítes;
+- 525/525 verdes;
+- lint backend/frontend verde;
+- builds shared-types/backend/frontend verdes;
+- WF001–WF019 intactos;
+- zero segredo real versionado.
+
+`a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). Nenhum dos dois checkpoints foi enviado ao GitHub ainda.
+
 ## Documentação individual
 
 - [`APP-WF019.md`](./APP-WF019.md)
+- [`APP-WF020.md`](./APP-WF020.md)
 - [`../../../docs/STATUS-DO-PROJETO.md`](../../../docs/STATUS-DO-PROJETO.md)
 
 ## Manutenção
