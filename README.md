@@ -371,7 +371,7 @@ WF001–WF019 intactos ✅
 segredos no diff: nenhum ✅
 ```
 
-`a6385d2` foi o commit documental que precedeu a implementação do WF020 (só documentação, sem mudança funcional). Nenhum dos três commits foi enviado ao GitHub (`push`) ainda — todos permanecem locais até nova autorização.
+`a6385d2` foi o commit documental que precedeu a implementação do WF020 (só documentação, sem mudança funcional). `585e710` e o commit documental seguinte (`docs: sync BeautyFlow after APP-WF020 homologation`) já foram publicados em `origin/main`.
 
 Não há atualmente GitHub Actions associados a nenhum checkpoint; a validação é executada localmente antes de cada push.
 

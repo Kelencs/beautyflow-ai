@@ -2,7 +2,7 @@
 
 > **Sincronização:** 2026-09-09
 >
-> **Checkpoint funcional deste workflow:** `a723bff` — `feat: integrate real agenda through APP-WF019`. O checkpoint funcional seguinte, `585e710`, entrega a primeira escrita da Agenda via um workflow separado (`APP-WF020` — ver [`APP-WF020.md`](./APP-WF020.md)); nenhum dos dois foi enviado ao GitHub ainda.
+> **Checkpoint funcional deste workflow:** `a723bff` — `feat: integrate real agenda through APP-WF019`. O checkpoint funcional seguinte, `585e710`, entrega a primeira escrita da Agenda via um workflow separado (`APP-WF020` — ver [`APP-WF020.md`](./APP-WF020.md)); ambos publicados em `origin/main`.
 >
 > **Fonte da verdade:** [`APP-WF019-gateway-app.json`](../../workflows/app/APP-WF019-gateway-app.json) no branch `main`.
 
@@ -520,4 +520,4 @@ A próxima evolução **não é do WF019** — este gateway permanece read-only 
 
 Até lá, o status correto é:
 
-> **WF019 v1.12 operacional e homologado em read-only para 6 operações (checkpoint funcional `a723bff`); Agenda com a primeira operação de escrita (`agenda.cancelar`, via APP-WF020) homologada em HML e versionada no checkpoint funcional `585e710` — ainda não operacional completa (criar/reagendar/concluir pendentes), nenhum dos dois checkpoints enviado ao GitHub ainda.**
+> **WF019 v1.12 operacional e homologado em read-only para 6 operações (checkpoint funcional `a723bff`); Agenda com a primeira operação de escrita (`agenda.cancelar`, via APP-WF020) homologada em HML e versionada no checkpoint funcional `585e710`, ambos publicados em `origin/main` — ainda não operacional completa (criar/reagendar/concluir pendentes).**

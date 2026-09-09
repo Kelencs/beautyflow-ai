@@ -6,7 +6,7 @@
 
 **Checkpoint funcional atual:** `585e710` — `feat: add homologated agenda cancellation command` (APP-WF020 / `agenda.cancelar`, homologado E2E em `BEAUTYFLOW_HOMOLOGACAO`).
 
-`a6385d2` foi o commit documental que precedeu a implementação do WF020 (só documentação, sem mudança funcional). Nenhum dos checkpoints acima foi enviado ao GitHub (`push`) ainda — permanecem locais até nova autorização.
+**`main` no GitHub:** `a891306` — `docs: sync BeautyFlow after APP-WF020 homologation`. `585e710` e este commit documental já estão publicados em `origin/main`. `a6385d2` foi o commit documental que precedeu a implementação do WF020 (só documentação, sem mudança funcional).
 
 ## Resumo executivo
 
@@ -156,7 +156,7 @@ Homologação executada contra a fixture `AGE-HML-CANCEL-001` em `BEAUTYFLOW_HOM
 
 Detalhe completo: [`n8n/documentacao/app/APP-WF020.md`](../n8n/documentacao/app/APP-WF020.md).
 
-**Checkpoint funcional do APP-WF020: `585e710`** (`feat: add homologated agenda cancellation command`) — implementado, homologado em HML e versionado localmente. Ainda não enviado ao GitHub (`push`).
+**Checkpoint funcional do APP-WF020: `585e710`** (`feat: add homologated agenda cancellation command`) — implementado, homologado em HML e publicado em `origin/main`.
 
 ## Agenda — modelo de domínio e integração real
 
@@ -267,9 +267,9 @@ A camada homologada (leitura via WF019 e a primeira escrita via WF020) preserva:
 - zero segredo real versionado;
 - homologação E2E do `agenda.cancelar` em HML concluída.
 
-`a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). Nenhum dos checkpoints foi enviado ao GitHub ainda.
+`a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). `585e710` já está publicado em `origin/main`.
 
-Não há atualmente GitHub Actions associados a nenhum dos dois estados; a validação registrada foi executada localmente antes de cada push.
+Não há atualmente GitHub Actions associados a nenhum dos dois checkpoints; a validação registrada foi executada localmente antes de cada push.
 
 ## Evidências da homologação da Agenda
 

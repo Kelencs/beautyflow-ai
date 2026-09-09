@@ -4,9 +4,9 @@
 >
 > **Checkpoint funcional anterior:** `a723bff` (WF019 — Agenda read-only)
 >
-> **Checkpoint funcional atual:** `585e710` (WF020 — `agenda.cancelar`)
+> **Checkpoint funcional atual:** `585e710` (WF020 — `agenda.cancelar`) — publicado em `origin/main`
 >
-> `a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). Nenhum checkpoint acima foi enviado ao GitHub ainda.
+> `a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional).
 >
 > **Fonte da verdade:** JSON em `n8n/workflows/app/APP-WF019-gateway-app.json` e `n8n/workflows/app/APP-WF020-agenda-commands.json`.
 
@@ -279,7 +279,7 @@ Continua bloqueada por lacunas de fonte; `IA_MEMORIA` não possui writer conheci
 - WF001–WF019 intactos;
 - zero segredo real versionado.
 
-`a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). Nenhum dos dois checkpoints foi enviado ao GitHub ainda.
+`a6385d2` foi o commit documental que precedeu esta implementação (só documentação, sem mudança funcional). `585e710` já está publicado em `origin/main`.
 
 ## Documentação individual
 

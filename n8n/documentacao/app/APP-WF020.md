@@ -1,7 +1,7 @@
 # WF020 — APP - WF020 - Agenda Commands
 
 > **Sincronização:** 2026-09-09
-> **Checkpoint funcional:** `585e710` — `feat: add homologated agenda cancellation command`. **Estado:** implementado + homologado E2E em `BEAUTYFLOW_HOMOLOGACAO` + versionado localmente. Ainda não enviado ao GitHub (`push`).
+> **Checkpoint funcional:** `585e710` — `feat: add homologated agenda cancellation command`. **Estado:** implementado + homologado E2E em `BEAUTYFLOW_HOMOLOGACAO` + publicado em `origin/main`.
 > **Fonte da verdade:** [`APP-WF020-agenda-commands.json`](../../workflows/app/APP-WF020-agenda-commands.json).
 
 ## 1. Objetivo
@@ -218,7 +218,7 @@ A fixture `AGE-HML-CANCEL-001` tinha as colunas `DURACAO_MIN` e `HORA_FIM` troca
 - WF001–WF019 intactos;
 - zero segredo real versionado no diff.
 
-O checkpoint funcional do APP-WF020 é `585e710` (`feat: add homologated agenda cancellation command`), versionado localmente. Ainda não enviado ao GitHub (`push`).
+O checkpoint funcional do APP-WF020 é `585e710` (`feat: add homologated agenda cancellation command`), publicado em `origin/main` junto com o commit documental `docs: sync BeautyFlow after APP-WF020 homologation`.
 
 ## 17. Dívidas técnicas preservadas
 
@@ -232,9 +232,8 @@ O checkpoint funcional do APP-WF020 é `585e710` (`feat: add homologated agenda 
 
 ## 18. Critérios antes de produção
 
-Antes de considerar `agenda.cancelar` pronto para produção, ainda faltam:
+O checkpoint funcional `585e710` já foi publicado em `origin/main`. Antes de considerar `agenda.cancelar` pronto para produção, ainda faltam:
 
-- enviar o checkpoint funcional `585e710` ao GitHub (`push`) — permanece só local até nova autorização;
 - decidir e segregar Header Auth READ/WRITE (dívida 2);
 - decidir se o risco residual do match por `ID_AGENDAMENTO` único é aceitável em produção ou se justifica revisar a operação do node (dívida 3–5);
 - decidir a regra de resolução de Google Calendar (`PROFISSIONAIS` vs `EMPRESAS`, com/sem fallback) antes de sincronizar cancelamento com o Calendar;

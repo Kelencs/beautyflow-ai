@@ -62,11 +62,11 @@ Responsabilidades:
 - autenticar a chamada via Header Auth do próprio Webhook (`X-BeautyFlow-Gateway-Key`),
   antes de qualquer acesso a dado;
 - validar o envelope de requisição (`operacao`/`idEmpresa`/`requestId`/`dados`);
-- rejeitar operação desconhecida com `INVALID_OPERATION` (só as 5 operações listadas
-  acima existem);
+- rejeitar operação desconhecida com `INVALID_OPERATION` (só as operações listadas em
+  `OPERACOES_SUPORTADAS`/`SWITCH - Operação` existem — hoje as 6 da tabela acima);
 - rotear por `SWITCH - Operação` para o branch correspondente;
-- filtrar `CLIENTES`/`SERVICOS`/`PROFISSIONAIS`/`EMPRESAS`/`DISPONIBILIDADES` por
-  `ID_EMPRESA` (defesa em profundidade — o NestJS já filtra por tenant antes de chamar o
+- filtrar `CLIENTES`/`SERVICOS`/`PROFISSIONAIS`/`EMPRESAS`/`DISPONIBILIDADES`/`AGENDAMENTOS`
+  por `ID_EMPRESA` (defesa em profundidade — o NestJS já filtra por tenant antes de chamar o
   gateway, mas o próprio workflow nunca confia cegamente nisso);
 - normalizar a linha do Sheets para um shape de integração mínimo, sem `ID_EMPRESA` nem
   colunas técnicas;
