@@ -412,9 +412,10 @@ A Agenda possui **leitura real homologada via APP-WF019** e a **primeira operaç
 Dívidas específicas do `agenda.cancelar` (detalhe completo em [`n8n/documentacao/app/APP-WF020.md`](n8n/documentacao/app/APP-WF020.md)):
 
 - Google Calendar não sincroniza o cancelamento;
-- Header Auth ainda compartilhado entre WF019 e WF020;
 - `Update Row` do WF020 casa a linha só por `ID_AGENDAMENTO` (limitação da operação no n8n Cloud) — risco residual controlado, condicionado a `ID_AGENDAMENTO` permanecer globalmente único;
 - cenário E2E positivo "profissional cancela o próprio" ainda não executado contra dado real (coberto por teste automatizado).
+
+Header Auth READ (APP-WF019) e WRITE (APP-WF020) já estão segregadas em credenciais exclusivas no n8n Cloud — dívida resolvida.
 
 O Google Calendar legado de WF004–WF007 também permanece fora deste checkpoint.
 

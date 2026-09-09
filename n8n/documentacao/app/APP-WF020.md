@@ -176,9 +176,20 @@ A auditoria da escrita da Agenda encontrou 4 workflows legados (`AGE-WF004/005/0
 
 Decisão registrada (não inventada, decidida explicitamente durante a implementação): `GOOGLE_EVENT_ID` não é lido nem escrito por este workflow; nenhum node Google Calendar existe no WF020. Google Sheets é a **única** fonte tocada e é o source of truth operacional desta fase. **Cancelamento pelo App não sincroniza Google Calendar** — isso é uma dívida registrada, não um bug escondido. Sincronizar Calendar fica para uma tarefa futura, quando a regra de resolução de calendário for decidida.
 
-## 13. Header Auth compartilhado — dívida de segurança
+## 13. Header Auth segregada — READ × WRITE
 
-Decisão original era que o WF020 usasse uma credencial Header Auth **exclusiva** para comandos. Na prática, durante a homologação, WF019 e WF020 continuam **compartilhando a mesma credencial** `"Header Auth account"` no n8n Cloud (confirmado: a credencial aparece vinculada a 2 workflows). Isso foi uma decisão explícita para esta rodada de homologação (não um esquecimento), registrada aqui como **dívida de segurança pendente**: segregar credenciais READ/WRITE seria o próximo passo antes de produção.
+Decisão original era que o WF020 usasse uma credencial Header Auth **exclusiva** para comandos. Durante a homologação, WF019 e WF020 chegaram a compartilhar temporariamente a mesma credencial `"Header Auth account"` — registrado então como dívida de segurança. Essa dívida foi **resolvida**: foi criada uma credencial Header Auth exclusiva, `"BeautyFlow App WRITE - WF020"` (mesmo header `X-BeautyFlow-Gateway-Key`, valor diferente do usado pelo WF019), associada apenas ao webhook do `APP-WF020`. `APP-WF019` continua usando exclusivamente `"Header Auth account"`.
+
+Matriz de autenticação validada diretamente contra os dois webhooks reais:
+
+| Chave | Destino | Resultado |
+|---|---|---|
+| READ (`Header Auth account`) | WF019 | autentica (200) |
+| WRITE (`BeautyFlow App WRITE - WF020`) | WF020 | autentica (200) |
+| READ (`Header Auth account`) | WF020 | rejeitada (403) |
+| WRITE (`BeautyFlow App WRITE - WF020`) | WF019 | rejeitada (403) |
+
+Confirmado no n8n Cloud: a credencial `"Header Auth account"` aparece vinculada a 1 workflow (WF019); `"BeautyFlow App WRITE - WF020"` aparece vinculada a 1 workflow (WF020). Nenhum valor de chave é exposto neste documento. O valor WRITE fica só no backend (`N8N_GATEWAY_COMMANDS_API_KEY`, nunca versionado) e na credencial do n8n Cloud.
 
 ## 14. Homologação real (`BEAUTYFLOW_HOMOLOGACAO`)
 
@@ -223,19 +234,19 @@ O checkpoint funcional do APP-WF020 é `585e710` (`feat: add homologated agenda 
 ## 17. Dívidas técnicas preservadas
 
 1. Google Calendar não sincroniza cancelamento (seção 12).
-2. Header Auth compartilhado entre WF019/WF020 (seção 13).
-3. `Update Row` do WF020 casa apenas por `ID_AGENDAMENTO` (seção 11).
-4. `ID_AGENDAMENTO` precisa permanecer globalmente único para a proteção de tenant do update se sustentar.
-5. Match composto real no update é dívida futura, condicionada a decisão de arquitetura.
-6. Cenário E2E positivo de profissional cancelando o próprio agendamento não foi executado contra dado real (seção 14).
-7. `agenda.criar`, `agenda.reagendar` e `agenda.concluir` ainda não implementados nem homologados.
+2. `Update Row` do WF020 casa apenas por `ID_AGENDAMENTO` (seção 11).
+3. `ID_AGENDAMENTO` precisa permanecer globalmente único para a proteção de tenant do update se sustentar.
+4. Match composto real no update é dívida futura, condicionada a decisão de arquitetura.
+5. Cenário E2E positivo de profissional cancelando o próprio agendamento não foi executado contra dado real (seção 14).
+6. `agenda.criar`, `agenda.reagendar` e `agenda.concluir` ainda não implementados nem homologados.
+
+**Resolvida nesta rodada:** Header Auth compartilhado entre WF019/WF020 — credenciais segregadas e validadas (seção 13).
 
 ## 18. Critérios antes de produção
 
 O checkpoint funcional `585e710` já foi publicado em `origin/main`. Antes de considerar `agenda.cancelar` pronto para produção, ainda faltam:
 
-- decidir e segregar Header Auth READ/WRITE (dívida 2);
-- decidir se o risco residual do match por `ID_AGENDAMENTO` único é aceitável em produção ou se justifica revisar a operação do node (dívida 3–5);
+- decidir se o risco residual do match por `ID_AGENDAMENTO` único é aceitável em produção ou se justifica revisar a operação do node (dívidas 2–4);
 - decidir a regra de resolução de Google Calendar (`PROFISSIONAIS` vs `EMPRESAS`, com/sem fallback) antes de sincronizar cancelamento com o Calendar;
 - executar o cenário E2E positivo de profissional contra uma fixture dedicada (não uma fixture histórica de outro workflow);
 - reapontar de `BEAUTYFLOW_HOMOLOGACAO` para a planilha de produção real, com o mesmo cuidado de configuração manual usado na homologação.

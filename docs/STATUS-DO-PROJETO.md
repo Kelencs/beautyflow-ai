@@ -150,7 +150,7 @@ Tenant e autorização:
 
 Google Calendar **não participa** do `agenda.cancelar` nesta fase — cancelamento pelo App não sincroniza o Calendar. Isso é uma dívida registrada, não um bug escondido; Google Sheets segue como source of truth operacional deste comando.
 
-Header Auth do webhook do WF020 atualmente **compartilha a mesma credencial** do WF019 no n8n Cloud — segregação READ/WRITE permanece dívida de segurança pendente.
+Header Auth do webhook do WF020 usa uma credencial exclusiva (`BeautyFlow App WRITE - WF020`), segregada da credencial READ do WF019 (`Header Auth account`) no n8n Cloud. Matriz de autenticação validada: chave READ autentica só no WF019, chave WRITE autentica só no WF020 (cruzamentos rejeitados com 403).
 
 Homologação executada contra a fixture `AGE-HML-CANCEL-001` em `BEAUTYFLOW_HOMOLOGACAO`: cancelamento E2E pela UI, idempotência real, tenant negativo, profissional negativo e `CONCLUIDO → CONFLICT` todos validados; campos alterados/preservados conferidos diretamente na planilha.
 
@@ -241,7 +241,7 @@ A camada homologada (leitura via WF019 e a primeira escrita via WF020) preserva:
 - frontend sem chamada direta ao n8n;
 - erros padronizados e sem fallback silencioso para mocks.
 
-**Dívida de segurança registrada:** o Header Auth do webhook do WF020 ainda compartilha a mesma credencial do WF019 no n8n Cloud — segregação READ/WRITE das credenciais permanece pendente.
+**Dívida de segurança resolvida:** o Header Auth do webhook do WF020 usa credencial exclusiva (`BeautyFlow App WRITE - WF020`), segregada da credencial READ do WF019 (`Header Auth account`) no n8n Cloud — validado por matriz de autenticação (READ→WF019 e WRITE→WF020 autenticam; READ→WF020 e WRITE→WF019 são rejeitados).
 
 ## Qualidade do checkpoint atual
 
@@ -332,11 +332,12 @@ O botão visual “Concluir atendimento” não deve ser interpretado como persi
 Dívidas específicas do `agenda.cancelar` (detalhe completo em [`../n8n/documentacao/app/APP-WF020.md`](../n8n/documentacao/app/APP-WF020.md)):
 
 1. Google Calendar não sincroniza o cancelamento;
-2. Header Auth compartilhado entre WF019 e WF020 no n8n Cloud;
-3. `Update Row` do WF020 casa a linha só por `ID_AGENDAMENTO` (limitação da operação no n8n Cloud);
-4. `ID_AGENDAMENTO` precisa permanecer globalmente único para essa proteção de tenant se sustentar;
-5. match composto real no update permanece dívida técnica futura;
-6. cenário E2E positivo de profissional cancelando o próprio agendamento não foi executado contra dado real.
+2. `Update Row` do WF020 casa a linha só por `ID_AGENDAMENTO` (limitação da operação no n8n Cloud);
+3. `ID_AGENDAMENTO` precisa permanecer globalmente único para essa proteção de tenant se sustentar;
+4. match composto real no update permanece dívida técnica futura;
+5. cenário E2E positivo de profissional cancelando o próprio agendamento não foi executado contra dado real.
+
+~~Header Auth compartilhado entre WF019 e WF020~~ — **resolvida**: credenciais segregadas (`Header Auth account` para WF019, `BeautyFlow App WRITE - WF020` para WF020), validado por matriz de autenticação.
 
 Também permanece a dívida de configuração/hardcode legado do Google Calendar nos workflows antigos de Agenda; nenhuma correção foi feita em WF001–WF018/APP-WF019 nesta fase.
 

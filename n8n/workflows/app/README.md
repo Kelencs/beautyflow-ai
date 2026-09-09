@@ -37,8 +37,9 @@ separação READ/WRITE é arquitetural, não incidental. WF019 lê
 `CLIENTES`/`SERVICOS`/`PROFISSIONAIS`/`EMPRESAS`/`DISPONIBILIDADES`/`AGENDAMENTOS`
 diretamente via Google Sheets, com o mesmo credential já usado pelos demais workflows
 (`Google Sheets account`) — não uma credencial nova. WF020 usa o mesmo credential Google
-Sheets; o Header Auth do webhook atualmente é **compartilhado** com o do WF019 (dívida de
-segurança registrada — ver `n8n/documentacao/app/APP-WF020.md`).
+Sheets; o Header Auth do webhook usa uma credencial **exclusiva** (`BeautyFlow App WRITE -
+WF020`), segregada da credencial do WF019 (`Header Auth account`) — ver
+`n8n/documentacao/app/APP-WF020.md`.
 
 ## Integrações diretas
 
