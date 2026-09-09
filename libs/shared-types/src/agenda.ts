@@ -48,3 +48,15 @@ export interface AgendaItem {
 export interface AgendaResponse {
   data: AgendaItem[];
 }
+
+/**
+ * Contrato de PATCH /agenda/:id/cancelar (backend NestJS, APP-WF020). Deliberadamente
+ * mínimo — o frontend recarrega a Agenda (GET /agenda) para refletir o estado completo
+ * após o cancelamento, então esta resposta só confirma a transição em si. `status` é
+ * sempre `'CANCELADO'` (o único desfecho de sucesso possível desta operação); nunca
+ * inclui idEmpresa, GOOGLE_EVENT_ID, ou qualquer outro dado interno.
+ */
+export interface AgendaCancelarResponse {
+  idAgendamento: string;
+  status: 'CANCELADO';
+}

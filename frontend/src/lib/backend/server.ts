@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+  AgendaCancelarResponse,
   AgendaResponse,
   ClienteDetalhado,
   ClientesResponse,
@@ -64,7 +65,15 @@ async function getAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
-async function backendFetch<T>(path: string): Promise<T> {
+/**
+ * `init` opcional — omitido, o comportamento é EXATAMENTE o de antes (GET, sem corpo).
+ * Só existe para as poucas mutações reais (hoje: `cancelarAgendamento`) reaproveitarem a
+ * mesma resolução de token/erro em vez de duplicá-la.
+ */
+async function backendFetch<T>(
+  path: string,
+  init?: { method: "PATCH"; body: unknown },
+): Promise<T> {
   const backendUrl = getBackendUrl();
   const accessToken = await getAccessToken();
 
@@ -75,7 +84,12 @@ async function backendFetch<T>(path: string): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${backendUrl}${path}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      method: init?.method ?? "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        ...(init ? { "Content-Type": "application/json" } : {}),
+      },
+      body: init ? JSON.stringify(init.body) : undefined,
       cache: "no-store",
     });
   } catch {
@@ -195,4 +209,21 @@ export function getConfiguracoes(): Promise<ConfiguracoesEmpresa> {
  */
 export function getIa(): Promise<IaConfiguracao> {
   return backendFetch<IaConfiguracao>("/ia");
+}
+
+/**
+ * PATCH /agenda/:id/cancelar — primeira mutação real da Agenda (ver
+ * frontend/src/features/agenda/actions.ts, chamada de lá como Server Action). Nunca
+ * envia idEmpresa/status/dataCancelamento/googleEventId/calendarId — só `motivo`
+ * (opcional; ausente/vazio faz o backend usar um texto padrão). `idAgendamento` vem só
+ * na URL, nunca duplicado no corpo.
+ */
+export function cancelarAgendamento(
+  idAgendamento: string,
+  motivo?: string,
+): Promise<AgendaCancelarResponse> {
+  return backendFetch<AgendaCancelarResponse>(
+    `/agenda/${encodeURIComponent(idAgendamento)}/cancelar`,
+    { method: "PATCH", body: motivo ? { motivo } : {} },
+  );
 }

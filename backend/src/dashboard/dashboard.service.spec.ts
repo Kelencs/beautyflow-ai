@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { AgendaService } from '../agenda/agenda.service';
 import { ClientesService } from '../clientes/clientes.service';
+import { N8nGatewayCommandsClient } from '../n8n-gateway/n8n-gateway-commands.client';
 import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { ProfissionaisService } from '../profissionais/profissionais.service';
 import { ServicosService } from '../servicos/servicos.service';
@@ -32,10 +33,12 @@ describe('DashboardService', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      // ConfigModule/N8nGatewayClient: ClientesService agora depende dos dois (ver
-      // clientes.service.ts) — DATA_SOURCE_CLIENTES fica ausente aqui, então
-      // ClientesService continua no modo mock de sempre; DashboardService em si não
-      // muda nenhuma regra.
+      // ConfigModule/N8nGatewayClient: ClientesService/AgendaService agora dependem dos
+      // dois (ver clientes.service.ts/agenda.service.ts) — DATA_SOURCE_CLIENTES/
+      // DATA_SOURCE_AGENDA ficam ausentes aqui, então os dois continuam no modo mock de
+      // sempre; DashboardService em si não muda nenhuma regra. N8nGatewayCommandsClient
+      // entra só porque AgendaService o injeta para `cancelar` (nunca exercitado por
+      // DashboardService, que só chama `listar`).
       imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true })],
       providers: [
         DashboardService,
@@ -44,6 +47,7 @@ describe('DashboardService', () => {
         ServicosService,
         ProfissionaisService,
         N8nGatewayClient,
+        N8nGatewayCommandsClient,
       ],
     }).compile();
     service = moduleRef.get(DashboardService);

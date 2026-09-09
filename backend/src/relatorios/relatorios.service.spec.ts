@@ -9,6 +9,7 @@ import { ComunicacaoService } from '../comunicacao/comunicacao.service';
 import { deslocarDiasISO, getHojeBrasilISO } from '../dashboard/dashboard-date.util';
 import { FINANCEIRO_MOCK_RECORDS } from '../financeiro/financeiro.mock-data';
 import { FinanceiroService } from '../financeiro/financeiro.service';
+import { N8nGatewayCommandsClient } from '../n8n-gateway/n8n-gateway-commands.client';
 import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { PROFISSIONAIS_MOCK_RECORDS } from '../profissionais/profissionais.mock-data';
 import { ProfissionaisService } from '../profissionais/profissionais.service';
@@ -59,6 +60,7 @@ describe('RelatoriosService', () => {
         FinanceiroService,
         ComunicacaoService,
         N8nGatewayClient,
+        N8nGatewayCommandsClient,
       ],
     }).compile();
 

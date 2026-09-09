@@ -12,7 +12,9 @@ import { AgendaService } from './agenda.service';
   // AgendaService fazer o join (idCliente/idProfissional/idServico -> nome) reutilizando
   // os services já existentes (Promise.all), em vez de duplicar mock/gateway aqui — sem
   // ciclo de DI: nenhum dos três importa AgendaModule de volta. N8nGatewayModule
-  // encapsulado aqui, mesmo padrão de Clientes/Serviços/ProfissionaisModule.
+  // encapsulado aqui, mesmo padrão de Clientes/Serviços/ProfissionaisModule — agora
+  // exporta tanto N8nGatewayClient (leitura, APP-WF019) quanto N8nGatewayCommandsClient
+  // (comandos, APP-WF020), ambos injetados em AgendaService.
   imports: [AuthModule, N8nGatewayModule, ClientesModule, ProfissionaisModule, ServicosModule],
   controllers: [AgendaController],
   providers: [AgendaService],

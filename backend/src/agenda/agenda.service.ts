@@ -1,8 +1,17 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { AgendaItem, AgendaResponse } from '@beautyflow/shared-types';
+import type { AgendaCancelarResponse, AgendaItem, AgendaResponse } from '@beautyflow/shared-types';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { ClientesService } from '../clientes/clientes.service';
+import { N8nGatewayCommandsClient } from '../n8n-gateway/n8n-gateway-commands.client';
+import type { N8nGatewayCancelarAgendamentoDados } from '../n8n-gateway/n8n-gateway-commands.types';
 import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { N8nGatewayException } from '../n8n-gateway/n8n-gateway.exception';
 import type { N8nGatewayAgendamentoIntegracao } from '../n8n-gateway/n8n-gateway.types';
@@ -34,6 +43,7 @@ export class AgendaService {
   constructor(
     private readonly configService: ConfigService,
     private readonly n8nGatewayClient: N8nGatewayClient,
+    private readonly n8nGatewayCommandsClient: N8nGatewayCommandsClient,
     private readonly clientesService: ClientesService,
     private readonly profissionaisService: ProfissionaisService,
     private readonly servicosService: ServicosService,
@@ -177,6 +187,76 @@ export class AgendaService {
       // Já é um erro controlado (ServiceUnavailableException da checagem de
       // integridade referencial acima, ou propagado de dentro de Clientes/
       // Profissionais/ServicosService) — repassa como está, nunca mascara.
+      throw error;
+    }
+  }
+
+  /**
+   * PATCH /agenda/:id/cancelar — primeira (e única, nesta fase) operação de escrita da
+   * Agenda, via APP-WF020 (`agenda.cancelar`). Ver auditoria da escrita da Agenda para a
+   * arquitetura completa; resumo das decisões aplicadas aqui:
+   *
+   * - `idEmpresa` vem SEMPRE de `user.idEmpresa` (nunca de parâmetro/body — o
+   *   AgendaController não aceita esse campo). platform_admin (idEmpresa null) é negado
+   *   ANTES de qualquer chamada ao gateway — diferente do read-only `listar()`, uma
+   *   mutação não tem um "resultado vazio" seguro para devolver, então nega
+   *   explicitamente (ForbiddenException) em vez de retornar silenciosamente.
+   * - Escrita só existe em modo `n8n` (`DATA_SOURCE_AGENDA=n8n`) nesta primeira fase —
+   *   modo mock nunca simula uma mutação em memória (mascararia a ausência real de
+   *   persistência) nem cai silenciosamente para "sucesso": falha com erro controlado.
+   * - `chamadorPerfil`/`chamadorIdProfissional` são enviados ao workflow só para ele
+   *   aplicar a regra "profissional só cancela o próprio agendamento" na MESMA leitura
+   *   que já localiza a linha real (evita uma segunda chamada de rede só para descobrir
+   *   o dono do agendamento antes de autorizar) — a IDENTIDADE do chamador continua
+   *   resolvida inteiramente aqui no NestJS (SupabaseAuthGuard), nunca do browser.
+   * - `NOT_FOUND` do gateway cobre tanto "não existe no tenant" quanto "existe mas é de
+   *   outro profissional" (quando o chamador é profissional) — as duas convergem no
+   *   mesmo 404 genérico, nunca revelando a diferença (mesmo princípio de
+   *   `buscarPorId` em Clientes/Serviços/Profissionais).
+   * - `CONFLICT` (ex.: agendamento já `CONCLUIDO`) vira 409. Cancelar um `CANCELADO` NÃO
+   *   é erro — é idempotente, o workflow devolve sucesso sem reescrever nada, e este
+   *   método simplesmente repassa esse sucesso como está.
+   */
+  async cancelar(
+    user: AuthenticatedUser,
+    idAgendamento: string,
+    motivo: string,
+  ): Promise<AgendaCancelarResponse> {
+    if (!user.idEmpresa) {
+      throw new ForbiddenException('Você não tem permissão para cancelar este agendamento.');
+    }
+
+    if (!this.usaFonteReal()) {
+      throw new ServiceUnavailableException(
+        'O cancelamento de agendamentos ainda não está disponível neste ambiente.',
+      );
+    }
+
+    const dados: N8nGatewayCancelarAgendamentoDados = {
+      idAgendamento,
+      motivo,
+      chamadorPerfil: user.perfil,
+      chamadorIdProfissional: user.idProfissional ?? '',
+    };
+
+    try {
+      return await this.n8nGatewayCommandsClient.call<AgendaCancelarResponse>(
+        'agenda.cancelar',
+        user.idEmpresa,
+        dados,
+      );
+    } catch (error) {
+      if (error instanceof N8nGatewayException) {
+        if (error.code === 'NOT_FOUND') {
+          throw new NotFoundException('Agendamento não encontrado.');
+        }
+        if (error.code === 'CONFLICT') {
+          throw new ConflictException('Este atendimento não pode ser cancelado no estado atual.');
+        }
+        throw new ServiceUnavailableException(
+          'Não foi possível cancelar o agendamento no momento. Tente novamente em instantes.',
+        );
+      }
       throw error;
     }
   }

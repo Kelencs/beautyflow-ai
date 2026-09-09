@@ -1,9 +1,15 @@
-import { ServiceUnavailableException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import type { AuthenticatedUser } from '../auth/types/authenticated-user.type';
 import { deslocarDiasISO, getHojeBrasilISO } from '../dashboard/dashboard-date.util';
 import { ClientesService } from '../clientes/clientes.service';
+import { N8nGatewayCommandsClient } from '../n8n-gateway/n8n-gateway-commands.client';
 import { N8nGatewayClient } from '../n8n-gateway/n8n-gateway.client';
 import { N8nGatewayException } from '../n8n-gateway/n8n-gateway.exception';
 import type { N8nGatewayAgendamentoIntegracao } from '../n8n-gateway/n8n-gateway.types';
@@ -53,6 +59,7 @@ describe('AgendaService', () => {
           ProfissionaisService,
           ServicosService,
           N8nGatewayClient,
+          N8nGatewayCommandsClient,
         ],
       }).compile();
       service = moduleRef.get(AgendaService);
@@ -254,6 +261,7 @@ describe('AgendaService', () => {
           ProfissionaisService,
           ServicosService,
           N8nGatewayClient,
+          N8nGatewayCommandsClient,
         ],
       }).compile();
 
@@ -427,6 +435,175 @@ describe('AgendaService', () => {
           dataFim: '2026-09-30',
         }),
       ).rejects.toThrow(ServiceUnavailableException);
+    });
+  });
+
+  /**
+   * `cancelar` — PATCH /agenda/:id/cancelar (APP-WF020). A enforcement real de "quem
+   * pode cancelar o quê" (dono/tenant/status) acontece dentro do workflow (ver
+   * wf020-agenda-commands.simulation.spec.ts) — aqui testamos que AgendaService: (1)
+   * nunca chama o gateway sem idEmpresa/DATA_SOURCE_AGENDA=n8n, (2) envia exatamente os
+   * campos esperados (nunca confia em nada vindo do browser além de idAgendamento/
+   * motivo, já validados pelo controller/DTO antes de chegar aqui), e (3) traduz cada
+   * código de erro do gateway para a exceção HTTP correta.
+   */
+  describe('cancelar', () => {
+    let service: AgendaService;
+    let commandsClient: N8nGatewayCommandsClient;
+    let commandsCallSpy: jest.SpyInstance<
+      ReturnType<N8nGatewayCommandsClient['call']>,
+      Parameters<N8nGatewayCommandsClient['call']>
+    >;
+
+    async function montarServico(dataSource: 'mock' | 'n8n') {
+      process.env =
+        dataSource === 'n8n' ? { ...ORIGINAL_ENV, DATA_SOURCE_AGENDA: 'n8n' } : { ...ORIGINAL_ENV };
+      if (dataSource === 'mock') delete process.env.DATA_SOURCE_AGENDA;
+
+      const moduleRef = await Test.createTestingModule({
+        imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true })],
+        providers: [
+          AgendaService,
+          ClientesService,
+          ProfissionaisService,
+          ServicosService,
+          N8nGatewayClient,
+          N8nGatewayCommandsClient,
+        ],
+      }).compile();
+
+      service = moduleRef.get(AgendaService);
+      commandsClient = moduleRef.get(N8nGatewayCommandsClient);
+    }
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    describe('modo mock (DATA_SOURCE_AGENDA ausente ou "mock")', () => {
+      beforeEach(async () => {
+        await montarServico('mock');
+        commandsCallSpy = jest.spyOn(commandsClient, 'call');
+      });
+
+      it('nenhum fallback mock: falha com erro controlado, nunca simula uma mutação', async () => {
+        await expect(
+          service.cancelar(usuario({ idEmpresa: 'EMP001', perfil: 'owner' }), 'AGD001', 'Motivo'),
+        ).rejects.toThrow(ServiceUnavailableException);
+        expect(commandsCallSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('modo n8n (DATA_SOURCE_AGENDA=n8n)', () => {
+      beforeEach(async () => {
+        await montarServico('n8n');
+      });
+
+      it('platform_admin (sem id_empresa) nunca chega a chamar o gateway — negado antes', async () => {
+        commandsCallSpy = jest.spyOn(commandsClient, 'call');
+
+        await expect(
+          service.cancelar(
+            usuario({ idEmpresa: null, idProfissional: null, perfil: 'platform_admin' }),
+            'AGD001',
+            'Motivo',
+          ),
+        ).rejects.toThrow(ForbiddenException);
+        expect(commandsCallSpy).not.toHaveBeenCalled();
+      });
+
+      it('owner: chama agenda.cancelar com idEmpresa do usuário e dados corretos (idEmpresa nunca vem de outro lugar)', async () => {
+        commandsCallSpy = jest
+          .spyOn(commandsClient, 'call')
+          .mockResolvedValue({ idAgendamento: 'AGD001', status: 'CANCELADO' });
+
+        const resultado = await service.cancelar(
+          usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
+          'AGD001',
+          'Motivo do owner',
+        );
+
+        expect(commandsCallSpy).toHaveBeenCalledWith('agenda.cancelar', 'EMP001', {
+          idAgendamento: 'AGD001',
+          motivo: 'Motivo do owner',
+          chamadorPerfil: 'owner',
+          chamadorIdProfissional: '',
+        });
+        expect(resultado).toEqual({ idAgendamento: 'AGD001', status: 'CANCELADO' });
+      });
+
+      it('profissional: envia o próprio idProfissional como chamadorIdProfissional', async () => {
+        commandsCallSpy = jest
+          .spyOn(commandsClient, 'call')
+          .mockResolvedValue({ idAgendamento: 'AGD002', status: 'CANCELADO' });
+
+        await service.cancelar(
+          usuario({ idEmpresa: 'EMP001', perfil: 'profissional', idProfissional: 'PROF001' }),
+          'AGD002',
+          'Motivo',
+        );
+
+        expect(commandsCallSpy).toHaveBeenCalledWith(
+          'agenda.cancelar',
+          'EMP001',
+          expect.objectContaining({
+            chamadorPerfil: 'profissional',
+            chamadorIdProfissional: 'PROF001',
+          }),
+        );
+      });
+
+      it('CANCELADO repetido é idempotente: o gateway responde sucesso, e o service simplesmente repassa', async () => {
+        commandsCallSpy = jest
+          .spyOn(commandsClient, 'call')
+          .mockResolvedValue({ idAgendamento: 'AGD003', status: 'CANCELADO' });
+
+        const resultado = await service.cancelar(
+          usuario({ idEmpresa: 'EMP001', perfil: 'owner' }),
+          'AGD003',
+          'Motivo',
+        );
+        expect(resultado).toEqual({ idAgendamento: 'AGD003', status: 'CANCELADO' });
+      });
+
+      it('agendamento inexistente (ou de outro tenant/profissional) -> NOT_FOUND vira NotFoundException', async () => {
+        jest
+          .spyOn(commandsClient, 'call')
+          .mockRejectedValue(
+            new N8nGatewayException('NOT_FOUND', 'Agendamento não encontrado.', 'r1'),
+          );
+
+        await expect(
+          service.cancelar(usuario({ idEmpresa: 'EMP001', perfil: 'owner' }), 'AGD999', 'Motivo'),
+        ).rejects.toThrow(NotFoundException);
+      });
+
+      it('CONCLUIDO não pode cancelar -> CONFLICT vira ConflictException', async () => {
+        jest
+          .spyOn(commandsClient, 'call')
+          .mockRejectedValue(new N8nGatewayException('CONFLICT', 'Já concluído.', 'r2'));
+
+        await expect(
+          service.cancelar(usuario({ idEmpresa: 'EMP001', perfil: 'owner' }), 'AGD004', 'Motivo'),
+        ).rejects.toThrow(ConflictException);
+      });
+
+      it('falha técnica do WF020 (UPSTREAM_ERROR) -> erro controlado 503, nunca detalhe interno', async () => {
+        jest
+          .spyOn(commandsClient, 'call')
+          .mockRejectedValue(new N8nGatewayException('UPSTREAM_ERROR', 'falha simulada', 'r3'));
+
+        await expect(
+          service.cancelar(usuario({ idEmpresa: 'EMP001', perfil: 'owner' }), 'AGD005', 'Motivo'),
+        ).rejects.toThrow(ServiceUnavailableException);
+      });
+
+      it('status/GOOGLE_EVENT_ID/idEmpresa nunca são parâmetros aceitos por este método (assinatura só aceita idAgendamento/motivo)', () => {
+        // Prova estrutural: a assinatura pública de `cancelar` é (user, idAgendamento,
+        // motivo) — não há como um chamador passar idEmpresa/status/googleEventId por
+        // aqui, mesmo maliciosamente, porque o método não tem esses parâmetros.
+        expect(service.cancelar.length).toBe(3);
+      });
     });
   });
 });

@@ -1,0 +1,731 @@
+{
+  "name": "APP - WF020 - Agenda Commands",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "beautyflow-app-agenda-commands",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "b1c2d3e4-0001-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "Webhook - Gateway App Commands",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        672,
+        1536
+      ],
+      "webhookId": "a2b3c4d5-e6f7-4890-a1b2-c3d4e5f6a7b8",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURAR_CREDENCIAL_HEADER_AUTH",
+          "name": "BeautyFlow Gateway Key (configurar manualmente)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst operacao = typeof body.operacao === 'string' ? body.operacao.trim() : '';\nconst idEmpresa = typeof body.idEmpresa === 'string' ? body.idEmpresa.trim() : '';\nconst requestId = (typeof body.requestId === 'string' && body.requestId.trim().length > 0)\n  ? body.requestId.trim()\n  : ('sem-request-id-' + Date.now());\nconst dadosBrutos = (body.dados && typeof body.dados === 'object') ? body.dados : {};\n\n// Única operação reconhecida por este workflow — o APP-WF020 é exclusivo para\n// comandos/mutações da Agenda (ver n8n/documentacao/app/APP-WF020.md). Nunca reconhece\n// operações de leitura (essas continuam no APP-WF019, que permanece read-only) nem\n// comandos futuros ainda não implementados (agenda.criar/reagendar/concluir) —\n// adicioná-los exige voltar aqui E ao fluxo real, mesmo padrão do APP-WF019.\nconst OPERACOES_SUPORTADAS = ['agenda.cancelar'];\n\nconst idAgendamento = typeof dadosBrutos.idAgendamento === 'string' ? dadosBrutos.idAgendamento.trim() : '';\nconst motivoBruto = typeof dadosBrutos.motivo === 'string' ? dadosBrutos.motivo : '';\n// Defesa em profundidade: o NestJS já normaliza/trima/limita o motivo antes de enviar\n// (ver agenda.service.ts/agenda-cancelar.dto.ts), mas o workflow nunca confia\n// cegamente nisso — reaplica aqui um corte de segurança equivalente (nunca grava um\n// texto com HTML ou arbitrariamente grande na planilha).\nconst motivo = motivoBruto.replace(/[<>]/g, '').trim().slice(0, 500);\nconst chamadorPerfil = typeof dadosBrutos.chamadorPerfil === 'string' ? dadosBrutos.chamadorPerfil : '';\nconst chamadorIdProfissional = typeof dadosBrutos.chamadorIdProfissional === 'string' ? dadosBrutos.chamadorIdProfissional : '';\n\nlet erro_codigo = '';\nlet erro_mensagem = '';\n\nif (!operacao) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'operacao é obrigatória.';\n} else if (!idEmpresa) {\n  erro_codigo = 'TENANT_REQUIRED';\n  erro_mensagem = 'idEmpresa é obrigatório.';\n} else if (!OPERACOES_SUPORTADAS.includes(operacao)) {\n  erro_codigo = 'INVALID_OPERATION';\n  erro_mensagem = 'Operação \"' + operacao + '\" não é reconhecida pelo APP-WF020.';\n} else if (!idAgendamento) {\n  erro_codigo = 'VALIDATION_ERROR';\n  erro_mensagem = 'dados.idAgendamento é obrigatório.';\n}\n\nreturn [{ json: { operacao, idEmpresa, requestId, idAgendamento, motivo, chamadorPerfil, chamadorIdProfissional, erro_codigo, erro_mensagem } }];\n"
+      },
+      "id": "b1c2d3e4-0002-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Validar Envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1c2d3e4-0003-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Envelope Válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1152,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ID_EMPRESA",
+              "lookupValue": "={{ $json.idEmpresa }}"
+            },
+            {
+              "lookupColumn": "ID_AGENDAMENTO",
+              "lookupValue": "={{ $json.idAgendamento }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1c2d3e4-0004-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "GS - Buscar Agendamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1392,
+        1408
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1c2d3e4-0005-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Erro Técnico Ao Buscar Agendamento",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1632,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Localiza o agendamento SEMPRE por idEmpresa + ID_AGENDAMENTO (nunca só por\n// ID_AGENDAMENTO) — GS - Buscar Agendamento já filtra pelos dois; este node nunca\n// confia cegamente nisso e reforça a checagem de duplicidade abaixo (mesmo padrão de\n// hardening já usado em CODE - Normalizar Empresa, APP-WF019).\n//\n// \"Não encontrado\" e \"encontrado mas pertence a outro profissional\" (quando o chamador\n// é profissional) convergem PROPOSITALMENTE no mesmo NOT_FOUND genérico — nunca revela\n// a um profissional que um agendamento de outro colega existe (mesmo princípio de\n// buscarPorId em Clientes/Serviços/Profissionais no NestJS).\n//\n// STATUS: só AGENDADO pode transicionar para CANCELADO. CONCLUIDO é CONFLICT (não pode\n// cancelar um atendimento já concluído). CANCELADO é IDEMPOTENTE — repetir o\n// cancelamento de algo já cancelado é sucesso, sem tocar a planilha de novo (nunca\n// reescreve DATA_CANCELAMENTO/MOTIVO_CANCELAMENTO já gravados por uma chamada\n// anterior). Qualquer outro valor de STATUS é dado corrompido — nunca inventa uma\n// transição para um valor fora da whitelist real (AGENDADO/CONCLUIDO/CANCELADO).\n//\n// Google Calendar (GOOGLE_EVENT_ID) é DELIBERADAMENTE não lido/tocado nesta fase — ver\n// sticky note desta workflow: decisão de adiar a sincronização até existir uma regra\n// inequívoca de resolução do calendário (PROFISSIONAIS.GOOGLE_CALENDAR_ID x\n// EMPRESAS.GOOGLE_CALENDAR_ID), nunca inventada aqui.\nconst contexto = $('CODE - Validar Envelope').first().json;\nconst requestId = contexto.requestId;\nconst idAgendamentoSolicitado = contexto.idAgendamento;\nconst motivo = contexto.motivo;\nconst chamadorPerfil = contexto.chamadorPerfil;\nconst chamadorIdProfissional = contexto.chamadorIdProfissional;\n\nfunction campoPresente(valor) {\n  if (valor === undefined || valor === null) return false;\n  if (typeof valor === 'string' && valor.trim() === '') return false;\n  return true;\n}\n\nfunction erro(codigo, mensagem) {\n  return [{ json: { erro_codigo: codigo, erro_mensagem: mensagem, requestId } }];\n}\n\nconst linhas = $input.all().map((item) => item.json);\nconst reais = linhas.filter((row) => row && campoPresente(row.ID_AGENDAMENTO));\n\nif (reais.length > 1) {\n  // Duplicidade acidental na fonte para o mesmo ID_AGENDAMENTO dentro do mesmo tenant —\n  // nunca escolher uma linha silenciosamente. Mensagem genérica, nunca revela detalhe.\n  return erro('UPSTREAM_ERROR', 'Não foi possível processar o cancelamento no momento.');\n}\n\nif (reais.length === 0) {\n  return erro('NOT_FOUND', 'Agendamento não encontrado.');\n}\n\nconst row = reais[0];\n\nif (chamadorPerfil === 'profissional' && String(row.ID_PROFISSIONAL || '') !== String(chamadorIdProfissional || '')) {\n  return erro('NOT_FOUND', 'Agendamento não encontrado.');\n}\n\nconst status = typeof row.STATUS === 'string' ? row.STATUS.trim().toUpperCase() : '';\n\nif (status === 'CONCLUIDO') {\n  return erro('CONFLICT', 'Este atendimento já foi concluído e não pode ser cancelado.');\n}\n\nif (status === 'CANCELADO') {\n  return [{ json: {\n    requestId,\n    idAgendamento: idAgendamentoSolicitado,\n    precisaCancelar: false,\n    erro_codigo: '',\n  } }];\n}\n\nif (status !== 'AGENDADO') {\n  return erro('UPSTREAM_ERROR', 'Não foi possível processar o cancelamento no momento.');\n}\n\nconst agora = new Date().toISOString();\nreturn [{ json: {\n  requestId,\n  idAgendamento: idAgendamentoSolicitado,\n  precisaCancelar: true,\n  erro_codigo: '',\n  motivoNormalizado: motivo || 'Cancelado pelo usuário',\n  dataCancelamento: agora,\n  ultimaAtualizacao: agora,\n} }];\n"
+      },
+      "id": "b1c2d3e4-0006-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Localizar E Validar Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ !!$json.erro_codigo }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1c2d3e4-0007-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Erro Ao Localizar Agendamento",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2112,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.precisaCancelar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2352,
+        1664
+      ],
+      "id": "b1c2d3e4-0008-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "IF - Precisa Cancelar"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E",
+          "mode": "list",
+          "cachedResultName": "BEAUTYFLOW3.1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 459010281,
+          "mode": "list",
+          "cachedResultName": "AGENDAMENTOS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lJtjTZU8xH8rNGZqqMwH8xlmGrUdm4ml-DFR4DOjV6E/edit#gid=459010281"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID_AGENDAMENTO": "={{ $('CODE - Localizar E Validar Agendamento').first().json.idAgendamento }}",
+            "ID_EMPRESA": "={{ $('CODE - Validar Envelope').first().json.idEmpresa }}",
+            "STATUS": "={{ 'CANCELADO' }}",
+            "DATA_CANCELAMENTO": "={{ $('CODE - Localizar E Validar Agendamento').first().json.dataCancelamento }}",
+            "MOTIVO_CANCELAMENTO": "={{ $('CODE - Localizar E Validar Agendamento').first().json.motivoNormalizado }}",
+            "ULTIMA_ATUALIZACAO": "={{ $('CODE - Localizar E Validar Agendamento').first().json.ultimaAtualizacao }}"
+          },
+          "matchingColumns": [
+            "ID_AGENDAMENTO"
+          ],
+          "schema": [
+            {
+              "id": "ID_AGENDAMENTO",
+              "displayName": "ID_AGENDAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_EMPRESA",
+              "displayName": "ID_EMPRESA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_CLIENTE",
+              "displayName": "ID_CLIENTE",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_PROFISSIONAL",
+              "displayName": "ID_PROFISSIONAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID_SERVICO",
+              "displayName": "ID_SERVICO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA",
+              "displayName": "DATA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORA_INICIO",
+              "displayName": "HORA_INICIO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DURACAO_MIN",
+              "displayName": "DURACAO_MIN",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "HORA_FIM",
+              "displayName": "HORA_FIM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "VALOR",
+              "displayName": "VALOR",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "displayName": "STATUS",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ORIGEM",
+              "displayName": "ORIGEM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "OBSERVACOES",
+              "displayName": "OBSERVACOES",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "GOOGLE_EVENT_ID",
+              "displayName": "GOOGLE_EVENT_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CRIACAO",
+              "displayName": "DATA_CRIACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ULTIMA_ATUALIZACAO",
+              "displayName": "ULTIMA_ATUALIZACAO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DATA_CANCELAMENTO",
+              "displayName": "DATA_CANCELAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "MOTIVO_CANCELAMENTO",
+              "displayName": "MOTIVO_CANCELAMENTO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "b1c2d3e4-0009-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "GS - Cancelar Agendamento",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2592,
+        1536
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bV94b0kU1RKmLn1F",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compartilhado entre \"erro técnico ao buscar\" e \"erro técnico ao cancelar\" — mensagem\n// genérica de propósito, nunca expõe detalhe do Google Sheets.\nconst requestId = $('CODE - Validar Envelope').first().json.requestId;\nreturn [{ json: {\n  erro_codigo: 'UPSTREAM_ERROR',\n  erro_mensagem: 'Não foi possível processar o cancelamento no momento.',\n  requestId,\n} }];\n"
+      },
+      "id": "b1c2d3e4-0010-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Erro Upstream",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1792
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compartilhado pelos dois desfechos de sucesso de agenda.cancelar: cancelamento\n// idempotente (já estava CANCELADO, nenhuma escrita nova) e cancelamento efetivo (GS -\n// Cancelar Agendamento acabou de gravar). Os dois convergem aqui sem Merge, lendo o\n// contexto de CODE - Localizar E Validar Agendamento — nunca confia no shape bruto\n// devolvido pelo node do Google Sheets.\nconst contexto = $('CODE - Localizar E Validar Agendamento').first().json;\nreturn [{ json: {\n  ok: true,\n  data: { idAgendamento: contexto.idAgendamento, status: 'CANCELADO' },\n  meta: { requestId: contexto.requestId },\n} }];\n"
+      },
+      "id": "b1c2d3e4-0011-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Montar Sucesso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Alimentado por múltiplas origens mutuamente exclusivas (envelope inválido, erro\n// técnico ao buscar/cancelar, ou regra de negócio violada em CODE - Localizar E Validar\n// Agendamento) — todas conectadas diretamente na mesma entrada (nunca um Merge; ver\n// sticky note desta workflow). Nunca expõe stack, payload bruto do Sheets, credencial\n// ou API key — só code/message já decididos antes.\nreturn [{ json: {\n  ok: false,\n  error: { code: $json.erro_codigo, message: $json.erro_mensagem },\n  meta: { requestId: $json.requestId },\n} }];\n"
+      },
+      "id": "b1c2d3e4-0012-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "CODE - Montar Erro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        1904
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "b1c2d3e4-0013-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "RESPOND - Resultado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3072,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## APP-WF020 — Agenda Commands v1.0 (agenda.cancelar)\n\nCamada de INTEGRAÇÃO de comandos/mutações da Agenda do BeautyFlow App — separada do\nAPP-WF019 (que permanece 100% read-only, nunca ganha operações de escrita). Conhece só\n`agenda.cancelar` nesta fase — qualquer outra operação recebida devolve\n`INVALID_OPERATION`. Não chama WF001-WF019 nem os workflows legados de Agenda\n(AGE-WF005/006/007, que continuam existindo só para o fluxo WhatsApp, sem nenhuma\nalteração).\n\n**Por que um workflow novo, não uma expansão do WF019**: ver auditoria da escrita da\nAgenda — isolar comandos evita que um bug de escrita regrida a leitura já homologada 6x,\ne permite homologar cada comando novo incrementalmente.\n\n**Tenant**: `idEmpresa` chega sempre resolvido pelo NestJS (SupabaseAuthGuard +\n@CurrentUser()) — nunca do browser, nunca um valor livre. `GS - Buscar Agendamento`\nfiltra por `ID_EMPRESA` **e** `ID_AGENDAMENTO` juntos (nunca só pelo segundo) — mesma\nexigência de tenant isolation na fonte já aplicada em todo o APP-WF019. `CODE - Localizar\nE Validar Agendamento` valida o tenant/recurso sobre essa linha ANTES de qualquer\nescrita — só depois disso o fluxo pode alcançar `GS - Cancelar Agendamento`.\n\n**Match do update — limitação conhecida (auditada, não inventada)**: `GS - Cancelar\nAgendamento` usa `Update Row` (Google Sheets), cuja UI nesta versão do n8n Cloud expõe\numa única `matchingColumns` — por isso o update casa só por `ID_AGENDAMENTO`, NÃO por\n`ID_EMPRESA`+`ID_AGENDAMENTO` juntos (a operação `Append or Update Row` suportaria match\ncomposto, mas foi descartada deliberadamente: introduziria semântica de `append` em caso\nde não-match, indesejável para um comando de cancelamento). A segurança do tenant no\ncomando **não depende exclusivamente deste node**: depende da cadeia completa acima\n(NestJS resolve idEmpresa -> busca filtra por ID_EMPRESA+ID_AGENDAMENTO -> CODE valida\ntenant -> só então o update roda). Isso é um **risco residual controlado**, não ausência\nde risco: exige que `ID_AGENDAMENTO` permaneça globalmente único no sistema (verdade\nhoje, dado o gerador de ID). Match composto real no update é dívida técnica / melhoria\nfutura, condicionada a trocar de operação (decisão de arquitetura ainda não tomada).\n\n**Proibido, e ausente deste arquivo (auditado)**: fallback `'EMP001'`, qualquer Calendar\nID hardcoded, `\"BeautyFlow - Studio Bella\"`, segredo real versionado (só o mesmo\nplaceholder `CONFIGURAR_CREDENCIAL_HEADER_AUTH` já usado no WF019).\n\n**Autorização \"profissional só cancela o próprio\"**: o NestJS resolve a IDENTIDADE do\nchamador (perfil + idProfissional, via SupabaseAuthGuard — nunca do browser) e envia\ncomo `dados.chamadorPerfil`/`dados.chamadorIdProfissional`; `CODE - Localizar E Validar\nAgendamento` aplica a regra na MESMA leitura que já localizou a linha (evita uma segunda\nchamada de rede só para descobrir o dono antes de autorizar). \"Não encontrado\" e\n\"encontrado mas é de outro profissional\" convergem PROPOSITALMENTE no mesmo\n`NOT_FOUND` — nunca revela a diferença (mesmo princípio de buscarPorId no NestJS).\nplatform_admin nunca chega a esta chamada: o NestJS nega ANTES (ver agenda.service.ts).\n\n**Máquina de estados**: AGENDADO -> CANCELADO é a única transição executada aqui.\nCONCLUIDO -> tentar cancelar é `CONFLICT` (409 no NestJS). CANCELADO -> cancelar de novo\né IDEMPOTENTE: sucesso, sem tocar `GS - Cancelar Agendamento` de novo (nunca reescreve\nDATA_CANCELAMENTO/MOTIVO_CANCELAMENTO já gravados). Qualquer STATUS fora da whitelist\nreal (AGENDADO/CONCLUIDO/CANCELADO) é `UPSTREAM_ERROR` — nunca inventa uma transição.\n\n**Google Calendar — DELIBERADAMENTE ADIADO nesta fase**: a auditoria da escrita da\nAgenda encontrou 4 workflows legados (WF004-007) usando um único calendário hardcoded\n(\"BeautyFlow - Studio Bella\") e nenhuma leitura real de\n`PROFISSIONAIS.GOOGLE_CALENDAR_ID`/`EMPRESAS.GOOGLE_CALENDAR_ID` em lugar nenhum do\nprojeto — ou seja, não existe hoje uma regra inequívoca de qual coluna é autoridade nem\nse há fallback profissional->empresa. Decisão registrada (não inventada): `GOOGLE_EVENT_ID`\nnão é lido nem escrito por este workflow ainda; nenhum node Google Calendar existe\naqui. Google Sheets é a ÚNICA fonte tocada — e é o source of truth operacional desta\nfase. Sincronizar Calendar fica para uma tarefa futura, quando essa regra for decidida.\n\n**Dados gravados no sucesso real (STATUS AGENDADO -> CANCELADO)**: `STATUS='CANCELADO'`,\n`DATA_CANCELAMENTO` (timestamp gerado por CODE - Localizar E Validar Agendamento, nunca\npelo browser), `MOTIVO_CANCELAMENTO` (já normalizado pelo NestJS — trim, sem `<`/`>`,\nmáx. 300 caracteres — e novamente cortado aqui em 500 como defesa em profundidade),\n`ULTIMA_ATUALIZACAO`. Nenhuma outra coluna é tocada (ID_CLIENTE, ID_PROFISSIONAL,\nID_SERVICO, DATA, HORA_INICIO, HORA_FIM, VALOR, ORIGEM, DATA_CRIACAO, GOOGLE_EVENT_ID\npermanecem exatamente como estavam).\n\n**Motivo default**: quando o App não informa motivo, o NestJS já resolve para\n\"Cancelado pelo usuário\" (nunca herda \"Cancelado a pedido do cliente\" do fluxo WhatsApp\nlegado — no App, quem cancela pode ser o próprio owner/profissional, não\nnecessariamente a pedido do cliente). Este workflow repete o mesmo default como rede de\nsegurança, caso motivo chegue vazio por qualquer outro motivo.\n\n**Resposta HTTP**: mesmo padrão do WF019 — `responseMode: \"Using Respond to Webhook\nNode\"` (responseNode), NUNCA \"When Last Node Finishes\". `RESPOND - Resultado` usa\n`responseBody: \"={{ $json }}\"` (objeto direto, nunca `JSON.stringify`).\n\n**Convergência sem Merge**: `CODE - Montar Sucesso` e `CODE - Montar Erro` recebem\nmúltiplas conexões diretas cada, uma por branch mutuamente exclusivo — nunca um\n`n8n-nodes-base.merge` (mesmo motivo documentado no WF019: Merge com `numberInputs`\ntrava quando só um branch dispara por execução).\n\n**active: false** — ativação é passo manual após revisão/import. Documento operacional\ncompleto (incluindo o passo a passo de configuração manual no n8n Cloud, reapontamento\npara BEAUTYFLOW_HOMOLOGACAO e Calendar de homologação) fica no relatório da tarefa, não\nneste arquivo.\n\n**Drift conhecido**: este arquivo é a fonte de verdade. Nunca exportar a versão do Cloud\npor cima deste arquivo sem revisão.\n",
+        "height": 900,
+        "width": 700
+      },
+      "id": "b1c2d3e4-0014-4a2b-9c3d-e4f5a6b7c8d9",
+      "name": "NOTA - WF020 v1.0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        672,
+        480
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Gateway App Commands": {
+      "main": [
+        [
+          {
+            "node": "CODE - Validar Envelope",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Validar Envelope": {
+      "main": [
+        [
+          {
+            "node": "IF - Envelope Válido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Envelope Válido": {
+      "main": [
+        [
+          {
+            "node": "GS - Buscar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Buscar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Técnico Ao Buscar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Técnico Ao Buscar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Localizar E Validar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Localizar E Validar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "IF - Erro Ao Localizar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Erro Ao Localizar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Precisa Cancelar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Precisa Cancelar": {
+      "main": [
+        [
+          {
+            "node": "GS - Cancelar Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Cancelar Agendamento": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CODE - Erro Upstream",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Erro Upstream": {
+      "main": [
+        [
+          {
+            "node": "CODE - Montar Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Montar Sucesso": {
+      "main": [
+        [
+          {
+            "node": "RESPOND - Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CODE - Montar Erro": {
+      "main": [
+        [
+          {
+            "node": "RESPOND - Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "ebc9039b4f1b9666ff01af7ce637eb0779714759172327ce76571f11c190077e"
+  },
+  "nodeGroups": [],
+  "id": "wf020AgendaCommandsNEW",
+  "tags": [
+    {
+      "updatedAt": "2026-08-04T16:34:13.092Z",
+      "createdAt": "2026-08-04T16:34:13.092Z",
+      "id": "2yVuxAJxPp1dmSlP",
+      "name": "Google Sheets"
+    },
+    {
+      "updatedAt": "2026-08-05T15:27:49.519Z",
+      "createdAt": "2026-08-05T15:27:49.519Z",
+      "id": "kBpyDFlwbrEc6QP9",
+      "name": "Agenda"
+    }
+  ]
+}
